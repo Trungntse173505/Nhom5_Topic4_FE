@@ -1,5 +1,6 @@
 // src/pages/Auth/Login.jsx
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const ROLES = [
   { value: "admin", label: "Administrator" },
@@ -31,6 +32,7 @@ function ShieldIcon() {
 }
 
 export default function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("admin");
@@ -44,7 +46,8 @@ export default function Login() {
     else if (!/^\S+@\S+\.\S+$/.test(email)) e.email = "Email is invalid.";
 
     if (!password) e.password = "Password is required.";
-    else if (password.length < 6) e.password = "Password must be at least 6 characters.";
+    else if (password.length < 6)
+      e.password = "Password must be at least 6 characters.";
     return e;
   }, [email, password]);
 
@@ -65,8 +68,9 @@ export default function Login() {
       await new Promise((r) => setTimeout(r, 700));
 
       console.log("LOGIN:", { email, password, role });
-      // TODO: navigate to workspace based on role
-      // navigate(`/${role}`);
+
+      // Chuyển hướng tới route tương ứng với role
+      navigate(`/${role}`);
     } finally {
       setLoading(false);
     }
@@ -79,7 +83,6 @@ export default function Login() {
         <div className="absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-blue-600/20 blur-3xl" />
         <div className="absolute -right-40 top-20 h-[520px] w-[520px] rounded-full bg-indigo-600/10 blur-3xl" />
         <div className="absolute bottom-0 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-sky-500/10 blur-3xl" />
-        {/* changed here */}
         <div className="absolute inset-0 bg-linear-to-b from-white/[0.03] to-transparent" />
       </div>
 
@@ -97,7 +100,9 @@ export default function Login() {
             <form onSubmit={onSubmit} className="mt-7 space-y-5">
               {/* Email */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">Email</label>
+                <label className="mb-2 block text-sm font-medium text-white/80">
+                  Email
+                </label>
                 <div className="relative">
                   <input
                     value={email}
@@ -122,7 +127,9 @@ export default function Login() {
 
               {/* Password */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">Password</label>
+                <label className="mb-2 block text-sm font-medium text-white/80">
+                  Password
+                </label>
                 <div className="relative">
                   <input
                     value={password}
@@ -148,7 +155,9 @@ export default function Login() {
                   </button>
                 </div>
                 {touched.password && errors.password && (
-                  <p className="mt-2 text-xs text-rose-400">{errors.password}</p>
+                  <p className="mt-2 text-xs text-rose-400">
+                    {errors.password}
+                  </p>
                 )}
               </div>
 
@@ -164,7 +173,11 @@ export default function Login() {
                     className="w-full appearance-none rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10"
                   >
                     {ROLES.map((r) => (
-                      <option key={r.value} value={r.value} className="bg-[#0B1224]">
+                      <option
+                        key={r.value}
+                        value={r.value}
+                        className="bg-[#0B1224]"
+                      >
                         {r.label}
                       </option>
                     ))}

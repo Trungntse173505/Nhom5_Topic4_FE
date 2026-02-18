@@ -1,7 +1,38 @@
 import React from 'react';
 
 export default function UserList() {
-    const users = [];
+    const users = [
+        {
+            id: '1',
+            name: 'Admin User',
+            email: 'admin@example.com',
+            role: 'ADMIN'
+        },
+        {
+            id: '2',
+            name: 'Manager One',
+            email: 'manager1@example.com',
+            role: 'MANAGER'
+        },
+        {
+            id: '3',
+            name: 'Manager Two',
+            email: 'manager2@example.com',
+            role: 'MANAGER'
+        },
+        {
+            id: '4',
+            name: 'Annotator Alpha',
+            email: 'annotator1@example.com',
+            role: 'ANNOTATOR'
+        },
+        {
+            id: '5',
+            name: 'Annotator Beta',
+            email: 'annotator2@example.com',
+            role: 'ANNOTATOR'
+        },
+    ];
 
     return (
 
