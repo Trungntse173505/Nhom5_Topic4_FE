@@ -14,6 +14,12 @@ import UserList from "./components/pages/Admin/UserList";
 import ActivityLogs from "./components/pages/Admin/ActivityLogs";
 import SystemConfig from "./components/pages/Admin/SystemConfig";
 
+import ReviewerGlobalLayout from "./components/pages/Reviewer/ReviewerGlobalLayout";
+import ReviewerDashboard from "./components/pages/Reviewer/ReviewerDashboard";
+import ReviewTask from "./components/pages/Reviewer/ReviewTask";
+
+import AnnotatorDashboard from "./components/pages/Annotator/AnnotatorDashboard";
+
 function App() {
   return (
     <Routes>
@@ -36,6 +42,16 @@ function App() {
         <Route path="logs" element={<ActivityLogs />} />
         <Route path="config" element={<SystemConfig />} />
       </Route>
+
+      {/* Reviewer flow */}
+      <Route path="/reviewer" element={<ReviewerGlobalLayout />}>
+        <Route index element={<ReviewerDashboard />} />
+        <Route path="history" element={<ReviewerDashboard />} />
+        <Route path="tasks/:taskId" element={<ReviewTask />} />
+      </Route>
+
+      {/* Placeholder for annotator */}
+      <Route path="/annotator" element={<AnnotatorDashboard />} />
     </Routes>
   );
 }

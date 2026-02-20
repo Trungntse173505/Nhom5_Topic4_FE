@@ -1,6 +1,7 @@
 // src/pages/Auth/Login.jsx
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../hooks/useAuth.jsx";
 
 const ROLES = [
   { value: "admin", label: "Administrator" },
@@ -33,11 +34,11 @@ function ShieldIcon() {
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login, loading: authLoading, error: authError } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("admin");
   const [showPw, setShowPw] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState({ email: false, password: false });
 
   const errors = useMemo(() => {
@@ -51,7 +52,7 @@ export default function Login() {
     return e;
   }, [email, password]);
 
-  const canSubmit = Object.keys(errors).length === 0 && !loading;
+  const canSubmit = Object.keys(errors).length === 0 && !authLoading;
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -59,20 +60,17 @@ export default function Login() {
     if (!canSubmit) return;
 
     try {
-      setLoading(true);
+      await login({ email, password, role });
 
-      // TODO: Replace with your API call
-      // await authApi.login({ email, password, role });
-
-      // Demo: simulate request
-      await new Promise((r) => setTimeout(r, 700));
-
-      console.log("LOGIN:", { email, password, role });
-
-      // Chuyển hướng tới route tương ứng với role
-      navigate(`/${role}`);
-    } finally {
-      setLoading(false);
+      const roleToPath = {
+        admin: "/admin",
+        manager: "/manager",
+        reviewer: "/reviewer",
+        annotator: "/annotator",
+      };
+      navigate(roleToPath[role] || "/login");
+    } catch {
+      // error is exposed via authError from useAuth
     }
   }
 
@@ -209,8 +207,14 @@ export default function Login() {
                   "disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-blue-600",
                 ].join(" ")}
               >
-                {loading ? "Signing In..." : "Sign In"}
+                {authLoading ? "Signing In..." : "Sign In"}
               </button>
+
+              {authError && (
+                <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                  {authError}
+                </div>
+              )}
             </form>
           </div>
 
