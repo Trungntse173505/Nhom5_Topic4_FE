@@ -1,5 +1,5 @@
-// src/pages/Auth/Login.jsx
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const ROLES = [
   { value: "admin", label: "Administrator" },
@@ -31,6 +31,7 @@ function ShieldIcon() {
 }
 
 export default function Login() {
+  const navigate = useNavigate(); 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("admin");
@@ -57,16 +58,18 @@ export default function Login() {
 
     try {
       setLoading(true);
-
       // TODO: Replace with your API call
       // await authApi.login({ email, password, role });
-
       // Demo: simulate request
       await new Promise((r) => setTimeout(r, 700));
-
       console.log("LOGIN:", { email, password, role });
-      // TODO: navigate to workspace based on role
-      // navigate(`/${role}`);
+      // Chuyển hướng dựa trên role đã chọn
+      if (role === "annotator") {
+        navigate("/annotator");
+      } else {
+        alert(`Đăng nhập thành công với vai trò: ${role}. Giao diện này đang được phát triển!`);
+      }
+
     } finally {
       setLoading(false);
     }
