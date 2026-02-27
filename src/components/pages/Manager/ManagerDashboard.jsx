@@ -3,6 +3,7 @@ import ManagerLayout from "./ManagerLayout";
 import DatasetUpload from "./DatasetUpload";
 import WorkDistribution from "./WorkDistribution";
 import LabelSetEditor from "./LabelSetEditor";
+import TaskTracking from "./TaskTracking"; // <-- Đã import thêm Tab Tracking
 
 // Tách Component Overview Content ra cho code sạch sẽ
 const OverviewContent = () => {
@@ -50,37 +51,78 @@ const OverviewContent = () => {
         </div>
       </div>
 
-      {/* Project Progress */}
-      <div className="rounded-xl border border-white/5 bg-[#151D2F] p-8 shadow-sm">
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-white">Project Progress</h2>
-          <p className="text-sm text-gray-400 mt-1">
-            Overall dataset labeling status
-          </p>
-        </div>
-        <div className="space-y-8">
-          <div>
-            <div className="flex justify-between text-sm mb-3 text-gray-300">
-              <span className="font-medium">Labeling Progress</span>
-              <span className="text-gray-400">320 / 500</span>
+      {/* Gộp Project Progress và Annotator Performance vào 1 dòng (Grid 2 cột) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Project Progress (Giữ nguyên của ông) */}
+        <div className="rounded-xl border border-white/5 bg-[#151D2F] p-8 shadow-sm">
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-white">
+              Project Progress
+            </h2>
+            <p className="text-sm text-gray-400 mt-1">
+              Overall dataset labeling status
+            </p>
+          </div>
+          <div className="space-y-8">
+            <div>
+              <div className="flex justify-between text-sm mb-3 text-gray-300">
+                <span className="font-medium">Labeling Progress</span>
+                <span className="text-gray-400">320 / 500</span>
+              </div>
+              <div className="w-full bg-[#0B1120] h-2.5 rounded-full overflow-hidden border border-white/5">
+                <div
+                  className="bg-[#1E293B] h-2.5 rounded-full"
+                  style={{ width: "64%" }}
+                ></div>
+              </div>
             </div>
-            <div className="w-full bg-[#0B1120] h-2.5 rounded-full overflow-hidden border border-white/5">
-              <div
-                className="bg-[#1E293B] h-2.5 rounded-full"
-                style={{ width: "64%" }}
-              ></div>
+            <div>
+              <div className="flex justify-between text-sm mb-3 text-gray-300">
+                <span className="font-medium">Quality Approved</span>
+                <span className="text-gray-400">275 / 320</span>
+              </div>
+              <div className="w-full bg-[#0B1120] h-2.5 rounded-full overflow-hidden border border-white/5">
+                <div
+                  className="bg-[#1E293B] h-2.5 rounded-full"
+                  style={{ width: "85%" }}
+                ></div>
+              </div>
             </div>
           </div>
-          <div>
-            <div className="flex justify-between text-sm mb-3 text-gray-300">
-              <span className="font-medium">Quality Approved</span>
-              <span className="text-gray-400">275 / 320</span>
+        </div>
+
+        {/* MỚI THÊM: Bảng Năng Suất Annotator */}
+        <div className="rounded-xl border border-white/5 bg-[#151D2F] p-8 shadow-sm">
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-white">
+              Annotator Performance
+            </h2>
+            <p className="text-sm text-gray-400 mt-1">
+              Task completion and quality in this project
+            </p>
+          </div>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center p-4 bg-[#0B1120] rounded-lg border border-white/5">
+              <div>
+                <p className="text-sm font-medium text-white">
+                  Sarah Annotator
+                </p>
+                <p className="text-xs text-emerald-400">Avg. 95% Approved</p>
+              </div>
+              <div className="text-right">
+                <p className="text-lg font-bold text-white">180</p>
+                <p className="text-xs text-gray-500">tasks done</p>
+              </div>
             </div>
-            <div className="w-full bg-[#0B1120] h-2.5 rounded-full overflow-hidden border border-white/5">
-              <div
-                className="bg-[#1E293B] h-2.5 rounded-full"
-                style={{ width: "85%" }}
-              ></div>
+            <div className="flex justify-between items-center p-4 bg-[#0B1120] rounded-lg border border-white/5">
+              <div>
+                <p className="text-sm font-medium text-white">Lisa Annotator</p>
+                <p className="text-xs text-amber-400">Avg. 70% Approved</p>
+              </div>
+              <div className="text-right">
+                <p className="text-lg font-bold text-white">95</p>
+                <p className="text-xs text-gray-500">tasks done</p>
+              </div>
             </div>
           </div>
         </div>
@@ -101,6 +143,8 @@ export default function ManagerDashboard() {
         return <DatasetUpload />;
       case "distribution":
         return <WorkDistribution />;
+      case "tracking": // <-- MỚI THÊM: Tab Tracking
+        return <TaskTracking />;
       case "labels":
         return <LabelSetEditor />;
       default:
