@@ -14,6 +14,7 @@ export default function AdminGlobalLayout() {
     { path: "/admin/users", label: "Users", icon: "👥" },
     { path: "/admin/logs", label: "Activity Logs", icon: "📋" },
     { path: "/admin/config", label: "System Config", icon: "⚙️" },
+    { path: "/admin/storage", label: "Storage Control", icon: "💾" },
   ];
 
   const isActive = (path) => {
@@ -44,11 +45,10 @@ export default function AdminGlobalLayout() {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                isActive(item.path)
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive(item.path)
                   ? "bg-blue-600 text-white shadow-md shadow-blue-500/10"
                   : "text-gray-400 hover:bg-white/5 hover:text-white"
-              }`}
+                }`}
             >
               <span>{item.icon}</span>
               {item.label}

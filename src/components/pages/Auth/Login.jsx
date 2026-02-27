@@ -1,7 +1,5 @@
-// src/pages/Auth/Login.jsx
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../../hooks/useAuth.jsx";
 
 const ROLES = [
   { value: "admin", label: "Administrator" },
@@ -34,7 +32,8 @@ function ShieldIcon() {
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, loading: authLoading, error: authError } = useAuth();
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("admin");
@@ -54,23 +53,37 @@ export default function Login() {
 
   const canSubmit = Object.keys(errors).length === 0 && !authLoading;
 
+  async function login({ email, role }) {
+    localStorage.setItem("auth", JSON.stringify({ email, role }));
+  }
+
   async function onSubmit(e) {
     e.preventDefault();
     setTouched({ email: true, password: true });
     if (!canSubmit) return;
 
     try {
-      await login({ email, password, role });
+      setAuthError("");
+      setAuthLoading(true);
 
       const roleToPath = {
         admin: "/admin",
         manager: "/manager",
-        reviewer: "/reviewer",
-        annotator: "/annotator",
       };
-      navigate(roleToPath[role] || "/login");
-    } catch {
-      // error is exposed via authError from useAuth
+
+      const targetPath = roleToPath[role];
+      if (!targetPath) {
+        setAuthError("Role is not supported yet.");
+        return;
+      }
+
+      await login({ email, role });
+
+      navigate(targetPath);
+    } catch (err) {
+      setAuthError(err?.message || "Sign in failed.");
+    } finally {
+      setAuthLoading(false);
     }
   }
 
