@@ -1,28 +1,30 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, XCircle, FolderOpen, Filter, Clock } from 'lucide-react';
+import { CheckCircle2, XCircle, FolderOpen, Filter, Clock, Trophy } from 'lucide-react';
 
 const AnnotatorDashboard = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState('All');
+  
   const stats = { totalTasks: 12, completedTasks: 8, rejectedTasks: 1 };
+  
   const mockTasks = [
     { 
       id: 'TASK-2026-001', 
       name: 'Gán nhãn xe cộ - Cam 01', 
-      status: 'In Progress', 
-      deadline: '2026-02-28', 
+      status: 'New', 
+      deadline: '2026-03-05', 
       totalImages: 100, 
-      completedImages: 45,
       project: 'Traffic Vision AI' 
     },
     { 
       id: 'TASK-2026-002', 
       name: 'Biển báo giao thông - QL1A', 
-      status: 'New', 
-      deadline: '2026-03-05', 
+      status: 'In Progress', 
+      deadline: '2026-02-28', 
       totalImages: 50, 
-      completedImages: 0,
+      doneImages: 20,
+      rejectedImages: 0,
       project: 'Traffic Vision AI' 
     },
     { 
@@ -31,7 +33,8 @@ const AnnotatorDashboard = () => {
       status: 'Rejected', 
       deadline: '2026-02-27', 
       totalImages: 30, 
-      completedImages: 30, 
+      doneImages: 25, 
+      rejectedImages: 5, 
       project: 'Smart City',
       note: 'Gán nhầm biển báo thành xe cộ ở 5 ảnh cuối'
     },
@@ -41,7 +44,8 @@ const AnnotatorDashboard = () => {
       status: 'Done', 
       deadline: '2026-02-20', 
       totalImages: 200, 
-      completedImages: 200,
+      doneImages: 200,
+      rejectedImages: 0,
       project: 'Smart City' 
     },
   ];
@@ -53,15 +57,34 @@ const AnnotatorDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200 p-8">
+      
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
+      <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Dashboard Quản Lý Nhiệm Vụ</h1>
+        </div>
+
+        {/* Thẻ Điểm Tín Nhiệm (Bấm vào để sang trang Lịch sử) */}
+        <button 
+          onClick={() => navigate('/annotator/score')}
+          className="flex items-center gap-4 bg-[#1e293b] border border-yellow-500/30 hover:border-yellow-500/60 p-3 pr-6 rounded-2xl transition-all cursor-pointer shadow-lg shadow-yellow-500/10 group"
+        >
+          <div className="p-3 bg-yellow-500/20 rounded-xl text-yellow-500 group-hover:scale-110 transition-transform">
+            <Trophy size={28} />
+          </div>
+          <div className="text-left">
+            <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Điểm Tín Nhiệm</p>
+            <p className="text-2xl font-black text-yellow-400">85 <span className="text-sm font-medium text-slate-500">pts</span></p>
+          </div>
+        </button>
       </div>
+
+      {/* Thống kê chung */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-[#1e293b] border border-slate-700 p-6 rounded-2xl flex items-center gap-4">
           <div className="p-4 bg-blue-500/20 rounded-xl text-blue-500"><FolderOpen size={28} /></div>
           <div>
-            <p className="text-sm text-slate-400 font-medium">Tổng Task</p>
+            <p className="text-sm text-slate-400 font-medium">Tổng Gói Task</p>
             <p className="text-3xl font-bold text-white">{stats.totalTasks}</p>
           </div>
         </div>
@@ -120,7 +143,16 @@ const AnnotatorDashboard = () => {
           <tbody>
             {filteredTasks.length > 0 ? (
               filteredTasks.map(task => {
-                const progressPercent = Math.round((task.completedImages / task.totalImages) * 100);
+                // Tính toán phần trăm
+                let donePercent = 0;
+                let rejectPercent = 0;
+                let totalProgressPercent = 0;
+
+                if (task.status !== 'New') {
+                  donePercent = (task.doneImages / task.totalImages) * 100;
+                  rejectPercent = (task.rejectedImages / task.totalImages) * 100;
+                  totalProgressPercent = Math.round(donePercent + rejectPercent);
+                }
                 
                 return (
                   <tr key={task.id} className="border-t border-slate-700 hover:bg-slate-800/50 transition-colors">
@@ -132,16 +164,28 @@ const AnnotatorDashboard = () => {
 
                     {/* Tiến độ (Progress Bar) */}
                     <td className="p-4">
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-slate-300">{task.completedImages} / {task.totalImages} ảnh</span>
-                        <span className="text-blue-400 font-medium">{progressPercent}%</span>
-                      </div>
-                      <div className="w-full bg-slate-700 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full ${task.status === 'Done' ? 'bg-green-500' : 'bg-blue-500'}`} 
-                          style={{ width: `${progressPercent}%` }}
-                        ></div>
-                      </div>
+                      {task.status === 'New' ? (
+                        <div className="text-sm font-medium text-slate-400 bg-slate-800/50 inline-block px-3 py-1.5 rounded-lg border border-slate-700">
+                          Tổng số: <span className="text-white">{task.totalImages} ảnh</span>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="flex justify-between text-xs mb-1.5">
+                            <span className="text-slate-300">
+                              <span className="text-green-400 font-semibold">{task.doneImages} Done</span>
+                              {task.rejectedImages > 0 && <span className="text-red-400 font-semibold"> • {task.rejectedImages} Reject</span>}
+                              <span className="text-slate-500"> / {task.totalImages} Tổng</span>
+                            </span>
+                            <span className="text-blue-400 font-medium">{totalProgressPercent}%</span>
+                          </div>
+                          <div className="w-full bg-slate-700/50 rounded-full h-2 flex overflow-hidden">
+                            <div className="bg-green-500 h-full" style={{ width: `${donePercent}%` }}></div>
+                            {task.rejectedImages > 0 && (
+                              <div className="bg-red-500 h-full" style={{ width: `${rejectPercent}%` }}></div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </td>
 
                     {/* Trạng thái */}
@@ -169,9 +213,12 @@ const AnnotatorDashboard = () => {
                     <td className="p-4 text-right">
                       <button 
                         onClick={() => navigate(`/annotator/workspace/${task.id}`)}
-                        className="bg-blue-600 hover:bg-blue-500 px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-all shadow-lg shadow-blue-500/20"
+                        className={`px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-all shadow-lg 
+                          ${task.status === 'New' ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20' :
+                            task.status === 'Done' ? 'bg-slate-700 hover:bg-slate-600 border border-slate-600' :
+                            'bg-yellow-600 hover:bg-yellow-500 shadow-yellow-500/20'}`}
                       >
-                        {task.status === 'Done' ? 'Xem lại' : 'Vào làm'}
+                        {task.status === 'New' ? 'Bắt đầu làm' : task.status === 'Done' ? 'Xem lại' : 'Tiếp tục làm'}
                       </button>
                     </td>
                   </tr>
