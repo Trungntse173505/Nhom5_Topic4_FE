@@ -16,6 +16,14 @@ import ActivityLogs from "./components/pages/Admin/ActivityLogs";
 import SystemConfig from "./components/pages/Admin/SystemConfig";
 import StorageMonitor from "./components/pages/Admin/StorageControl";
 
+// Manager
+import ManagerGlobalLayout from "./components/pages/Manager/ManagerGlobalLayout";
+import ProjectManagement from "./components/pages/Manager/ProjectManagement";
+import DisputeResolution from "./components/pages/Manager/DisputeResolution";
+import ExportData from "./components/pages/Manager/ExportData";
+import QualityScore from "./components/pages/Manager/QualityScore";
+import ManagerDashboard from "./components/pages/Manager/ManagerDashboard";
+
 function App() {
   return (
     <Routes>
@@ -23,7 +31,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<Login />} />
 
-      {/* Annotator Routes */}
+      {/* ================= ANNOTATOR ================= */}
       <Route path="/annotator" element={<AnnotatorDashboard />} />
       <Route
         path="/annotator/workspace/:taskId"
@@ -31,7 +39,7 @@ function App() {
       />
       <Route path="/annotator/score" element={<CreditScorePage />} />
 
-      {/* Admin Routes */}
+      {/* ================= ADMIN ================= */}
       <Route path="/admin" element={<AdminGlobalLayout />}>
         <Route index element={<AdminOverview />} />
         <Route path="users" element={<UserList />} />
@@ -39,6 +47,20 @@ function App() {
         <Route path="config" element={<SystemConfig />} />
         <Route path="storage" element={<StorageMonitor />} />
       </Route>
+
+      {/* ================= MANAGER ================= */}
+      <Route path="/manager" element={<ManagerGlobalLayout />}>
+        <Route index element={<ProjectManagement />} />
+        <Route path="disputes" element={<DisputeResolution />} />
+        <Route path="quality" element={<QualityScore />} />
+        <Route path="export" element={<ExportData />} />
+      </Route>
+
+      {/* Manager Project Detail Full Screen */}
+      <Route
+        path="/manager/projects/:projectId"
+        element={<ManagerDashboard />}
+      />
     </Routes>
   );
 }

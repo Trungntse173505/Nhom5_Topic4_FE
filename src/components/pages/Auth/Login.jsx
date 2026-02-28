@@ -11,13 +11,7 @@ const ROLES = [
 function ShieldIcon() {
   return (
     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600/20 ring-1 ring-blue-500/30">
-      <svg
-        width="22"
-        height="22"
-        viewBox="0 0 24 24"
-        fill="none"
-        className="text-blue-500"
-      >
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="text-blue-500">
         <path
           d="M12 2l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V6l7-4z"
           stroke="currentColor"
@@ -31,8 +25,10 @@ function ShieldIcon() {
 
 export default function Login() {
   const navigate = useNavigate();
+
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("admin");
@@ -97,6 +93,13 @@ export default function Login() {
 
   return (
     <div className="min-h-screen w-full bg-[#050B1A]">
+      {/* background glow */}
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-blue-600/20 blur-3xl" />
+        <div className="absolute -right-40 top-20 h-[520px] w-[520px] rounded-full bg-indigo-600/10 blur-3xl" />
+        <div className="absolute bottom-0 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-sky-500/10 blur-3xl" />
+      </div>
+
       <div className="relative flex min-h-screen items-center justify-center px-4 py-10">
         <div className="w-full max-w-lg">
           <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-8 shadow-2xl shadow-black/40 backdrop-blur-xl">
@@ -109,22 +112,48 @@ export default function Login() {
             </div>
 
             <form onSubmit={onSubmit} className="mt-7 space-y-5">
-              <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                type="email"
-                placeholder="Email"
-                className="w-full rounded-xl px-4 py-3"
-              />
+              {/* Email */}
+              <div>
+                <input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+                  type="email"
+                  placeholder="Email"
+                  className="w-full rounded-xl px-4 py-3"
+                />
+                {touched.email && errors.email && (
+                  <p className="mt-2 text-xs text-rose-400">{errors.email}</p>
+                )}
+              </div>
 
-              <input
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                type={showPw ? "text" : "password"}
-                placeholder="Password"
-                className="w-full rounded-xl px-4 py-3"
-              />
+              {/* Password */}
+              <div>
+                <div className="relative">
+                  <input
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+                    type={showPw ? "text" : "password"}
+                    placeholder="Password"
+                    className="w-full rounded-xl px-4 py-3"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((s) => !s)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-white/60"
+                  >
+                    {showPw ? "Hide" : "Show"}
+                  </button>
+                </div>
+                {touched.password && errors.password && (
+                  <p className="mt-2 text-xs text-rose-400">
+                    {errors.password}
+                  </p>
+                )}
+              </div>
 
+              {/* Role */}
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
@@ -146,9 +175,7 @@ export default function Login() {
               </button>
 
               {authError && (
-                <div className="text-red-400 text-sm">
-                  {authError}
-                </div>
+                <div className="text-red-400 text-sm">{authError}</div>
               )}
             </form>
           </div>
