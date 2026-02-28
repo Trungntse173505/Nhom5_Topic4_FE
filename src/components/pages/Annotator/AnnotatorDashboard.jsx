@@ -1,59 +1,22 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, XCircle, FolderOpen, Filter, Clock, Trophy } from 'lucide-react';
+import { CheckCircle2, XCircle, FolderOpen, Filter, Clock, Trophy, FileText, Headphones, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { useDashboard } from '../../../hooks/useDashboard';
 
 const AnnotatorDashboard = () => {
   const navigate = useNavigate();
-  const [filter, setFilter] = useState('All');
-  
-  const stats = { totalTasks: 12, completedTasks: 8, rejectedTasks: 1 };
-  
-  const mockTasks = [
-    { 
-      id: 'TASK-2026-001', 
-      name: 'Gán nhãn xe cộ - Cam 01', 
-      status: 'New', 
-      deadline: '2026-03-05', 
-      totalImages: 100, 
-      project: 'Traffic Vision AI' 
-    },
-    { 
-      id: 'TASK-2026-002', 
-      name: 'Biển báo giao thông - QL1A', 
-      status: 'In Progress', 
-      deadline: '2026-02-28', 
-      totalImages: 50, 
-      doneImages: 20,
-      rejectedImages: 0,
-      project: 'Traffic Vision AI' 
-    },
-    { 
-      id: 'TASK-2026-003', 
-      name: 'Người đi bộ - Ngã tư X', 
-      status: 'Rejected', 
-      deadline: '2026-02-27', 
-      totalImages: 30, 
-      doneImages: 25, 
-      rejectedImages: 5, 
-      project: 'Smart City',
-      note: 'Gán nhầm biển báo thành xe cộ ở 5 ảnh cuối'
-    },
-    { 
-      id: 'TASK-2026-004', 
-      name: 'Xe máy - Bãi đỗ xe', 
-      status: 'Done', 
-      deadline: '2026-02-20', 
-      totalImages: 200, 
-      doneImages: 200,
-      rejectedImages: 0,
-      project: 'Smart City' 
-    },
-  ];
+  // GỌI HOOK LẤY DATA
+  const { filteredTasks, isLoading, filter, setFilter, stats } = useDashboard();
 
-  const filteredTasks = mockTasks.filter(task => {
-    if (filter === 'All') return true;
-    return task.status === filter;
-  });
+  const renderTypeIcon = (type) => {
+    switch (type) {
+      case 'text': return <FileText size={16} className="text-blue-400" />;
+      case 'audio': return <Headphones size={16} className="text-amber-400" />;
+      case 'image': default: return <ImageIcon size={16} className="text-green-400" />;
+    }
+  };
+
+  if (isLoading) return <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white"><Loader2 className="animate-spin w-8 h-8 mr-3" /> Đang tải dữ liệu...</div>;
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200 p-8">
@@ -64,7 +27,7 @@ const AnnotatorDashboard = () => {
           <h1 className="text-3xl font-bold text-white">Dashboard Quản Lý Nhiệm Vụ</h1>
         </div>
 
-        {/* Thẻ Điểm Tín Nhiệm (Bấm vào để sang trang Lịch sử) */}
+        {/* Thẻ Điểm Tín Nhiệm */}
         <button 
           onClick={() => navigate('/annotator/score')}
           className="flex items-center gap-4 bg-[#1e293b] border border-yellow-500/30 hover:border-yellow-500/60 p-3 pr-6 rounded-2xl transition-all cursor-pointer shadow-lg shadow-yellow-500/10 group"
@@ -134,7 +97,7 @@ const AnnotatorDashboard = () => {
           <thead className="bg-[#0f172a]/50 text-slate-400 text-sm">
             <tr>
               <th className="p-4 font-medium">Mã / Tên Task</th>
-              <th className="p-4 font-medium w-1/4">Tiến độ ảnh</th>
+              <th className="p-4 font-medium w-1/4">Tiến độ</th>
               <th className="p-4 font-medium">Trạng thái</th>
               <th className="p-4 font-medium">Deadline</th>
               <th className="p-4 font-medium text-right">Thao tác</th>
@@ -143,7 +106,7 @@ const AnnotatorDashboard = () => {
           <tbody>
             {filteredTasks.length > 0 ? (
               filteredTasks.map(task => {
-                // Tính toán phần trăm
+                // LOGIC TÍNH TOÁN TIẾN ĐỘ
                 let donePercent = 0;
                 let rejectPercent = 0;
                 let totalProgressPercent = 0;
@@ -156,17 +119,20 @@ const AnnotatorDashboard = () => {
                 
                 return (
                   <tr key={task.id} className="border-t border-slate-700 hover:bg-slate-800/50 transition-colors">
-                    {/* Tên Task */}
+                    {/* Tên Task & Icon phân loại */}
                     <td className="p-4">
-                      <p className="font-bold text-white">{task.name}</p>
-                      <p className="text-xs text-slate-400 mt-1">{task.id} • {task.project}</p>
+                      <div className="flex items-center gap-2 font-bold text-white mb-1">
+                        {renderTypeIcon(task.type)}
+                        {task.name}
+                      </div>
+                      <p className="text-xs text-slate-400 pl-6">{task.id} • {task.project}</p>
                     </td>
 
                     {/* Tiến độ (Progress Bar) */}
                     <td className="p-4">
                       {task.status === 'New' ? (
                         <div className="text-sm font-medium text-slate-400 bg-slate-800/50 inline-block px-3 py-1.5 rounded-lg border border-slate-700">
-                          Tổng số: <span className="text-white">{task.totalImages} ảnh</span>
+                          Tổng số: <span className="text-white">{task.totalImages} item</span>
                         </div>
                       ) : (
                         <div>
@@ -188,13 +154,13 @@ const AnnotatorDashboard = () => {
                       )}
                     </td>
 
-                    {/* Trạng thái */}
+                    {/* Trạng thái (Tự động đổi màu) */}
                     <td className="p-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold inline-block
-                        ${task.status === 'New' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 
-                          task.status === 'In Progress' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' : 
-                          task.status === 'Rejected' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 
-                          'bg-green-500/20 text-green-400 border border-green-500/30'}`}
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold inline-block border
+                        ${task.status === 'New' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 
+                          task.status === 'In Progress' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' : 
+                          task.status === 'Rejected' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 
+                          'bg-green-500/20 text-green-400 border-green-500/30'}`}
                       >
                         {task.status}
                       </span>
@@ -209,10 +175,10 @@ const AnnotatorDashboard = () => {
                       </div>
                     </td>
 
-                    {/* Thao tác */}
+                    {/* Thao tác (Đổi màu và chữ theo trạng thái) */}
                     <td className="p-4 text-right">
                       <button 
-                        onClick={() => navigate(`/annotator/workspace/${task.id}`)}
+                        onClick={() => navigate(`/annotator/workspace/${task.id}?type=${task.type}`)}
                         className={`px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-all shadow-lg 
                           ${task.status === 'New' ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20' :
                             task.status === 'Done' ? 'bg-slate-700 hover:bg-slate-600 border border-slate-600' :
