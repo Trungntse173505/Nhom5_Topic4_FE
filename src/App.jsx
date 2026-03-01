@@ -10,6 +10,7 @@ import ActivityLogs from "./components/pages/Admin/ActivityLogs";
 import SystemConfig from "./components/pages/Admin/SystemConfig";
 import StorageMonitor from "./components/pages/Admin/StorageControl";
 
+import ReviewerDashboard from "./components/pages/Reviewer/ReviewerDashboard";
 
 function App() {
   return (
@@ -26,6 +27,9 @@ function App() {
         <Route path="config" element={<SystemConfig />} />
         <Route path="storage" element={<StorageMonitor />} />
       </Route>
+
+      {/* Reviewer routes */}
+      <Route path="/reviewer" element={<ReviewerDashboard />} />
 
     </Routes>
   );

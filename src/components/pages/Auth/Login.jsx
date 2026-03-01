@@ -69,6 +69,8 @@ export default function Login() {
       const roleToPath = {
         admin: "/admin",
         manager: "/manager",
+        reviewer: "/reviewer",
+        annotator: "/annotator",
       };
 
       const targetPath = roleToPath[role];
