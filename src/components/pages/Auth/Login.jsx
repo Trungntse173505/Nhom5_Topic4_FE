@@ -1,12 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const ROLES = [
-  { value: "admin", label: "Administrator" },
-  { value: "manager", label: "Manager" },
-  { value: "annotator", label: "Annotator" },
-  { value: "reviewer", label: "Reviewer" },
-];
+import { useLogin } from "../../../hooks/useLogin";
 
 function ShieldIcon() {
   return (
@@ -32,61 +26,62 @@ function ShieldIcon() {
 
 export default function Login() {
   const navigate = useNavigate();
-  const [authLoading, setAuthLoading] = useState(false);
-  const [authError, setAuthError] = useState("");
-  const [email, setEmail] = useState("");
+  const { login, loading: authLoading, error: authError } = useLogin();
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("admin");
   const [showPw, setShowPw] = useState(false);
-  const [touched, setTouched] = useState({ email: false, password: false });
+  const [touched, setTouched] = useState({ username: false, password: false });
 
   const errors = useMemo(() => {
     const e = {};
-    if (!email.trim()) e.email = "Email is required.";
-    else if (!/^\S+@\S+\.\S+$/.test(email)) e.email = "Email is invalid.";
+    if (!username.trim()) e.username = "Username is required.";
 
     if (!password) e.password = "Password is required.";
-    else if (password.length < 6)
-      e.password = "Password must be at least 6 characters.";
+    else if (password.length < 5)
+      e.password = "Password must be at least 5 characters.";
     return e;
-  }, [email, password]);
+  }, [username, password]);
 
   const canSubmit = Object.keys(errors).length === 0 && !authLoading;
 
-  async function login({ email, role }) {
-    localStorage.setItem("auth", JSON.stringify({ email, role }));
+  function normalizeRole(rawRole) {
+    if (rawRole === null || rawRole === undefined) return "";
+
+    if (typeof rawRole === "number") {
+      const roleById = {
+        0: "admin",
+        1: "manager",
+        2: "annotator",
+        3: "reviewer",
+      };
+      return roleById[rawRole] || "";
+    }
+
+    const normalized = String(rawRole).toLowerCase();
+    if (normalized.startsWith("role_")) return normalized.slice("role_".length);
+    return normalized;
   }
 
   async function onSubmit(e) {
     e.preventDefault();
-    setTouched({ email: true, password: true });
+    setTouched({ username: true, password: true });
     if (!canSubmit) return;
 
-    try {
-      setAuthError("");
-      setAuthLoading(true);
+    const res = await login({ username, password });
+    if (!res.success || !res.user) return;
 
       const roleToPath = {
         admin: "/admin",
-        manager: "/manager",
         reviewer: "/reviewer",
-        annotator: "/annotator",
       };
 
-      const targetPath = roleToPath[role];
-      if (!targetPath) {
-        setAuthError("Role is not supported yet.");
-        return;
+      // Lấy path dựa trên role thật của User từ Database
+      const normalizedRole = normalizeRole(res.user.role);
+      const targetPath = roleToPath[normalizedRole] || "/admin";
+
+      if (targetPath) {
+        navigate(targetPath);
       }
-
-      await login({ email, role });
-
-      navigate(targetPath);
-    } catch (err) {
-      setAuthError(err?.message || "Sign in failed.");
-    } finally {
-      setAuthLoading(false);
-    }
   }
 
   return (
@@ -111,30 +106,30 @@ export default function Login() {
             </div>
 
             <form onSubmit={onSubmit} className="mt-7 space-y-5">
-              {/* Email */}
+              {/* Username */}
               <div>
                 <label className="mb-2 block text-sm font-medium text-white/80">
-                  Email
+                  Username
                 </label>
                 <div className="relative">
                   <input
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onBlur={() => setTouched((t) => ({ ...t, email: true }))}
-                    type="email"
-                    placeholder="user@company.com"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    onBlur={() => setTouched((t) => ({ ...t, username: true }))}
+                    type="text"
+                    placeholder="Enter your username"
                     className={[
                       "w-full rounded-xl border bg-white/[0.04] px-4 py-3 text-sm text-white outline-none",
                       "placeholder:text-white/30",
                       "border-white/10 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10",
-                      touched.email && errors.email
+                      touched.username && errors.username
                         ? "border-rose-500/60 focus:border-rose-500/70 focus:ring-rose-500/10"
                         : "",
                     ].join(" ")}
                   />
                 </div>
-                {touched.email && errors.email && (
-                  <p className="mt-2 text-xs text-rose-400">{errors.email}</p>
+                {touched.username && errors.username && (
+                  <p className="mt-2 text-xs text-rose-400">{errors.username}</p>
                 )}
               </div>
 
@@ -172,44 +167,6 @@ export default function Login() {
                     {errors.password}
                   </p>
                 )}
-              </div>
-
-              {/* Role */}
-              <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">
-                  Role
-                </label>
-                <div className="relative">
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    className="w-full appearance-none rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10"
-                  >
-                    {ROLES.map((r) => (
-                      <option
-                        key={r.value}
-                        value={r.value}
-                        className="bg-[#0B1224]"
-                      >
-                        {r.label}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* caret */}
-                  <svg
-                    className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
               </div>
 
               <button

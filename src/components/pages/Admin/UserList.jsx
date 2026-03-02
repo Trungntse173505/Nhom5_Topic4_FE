@@ -1,41 +1,162 @@
 import React, { useState } from 'react';
+import { useAdminUsers } from '../../../hooks/useAdminUsers';
 
 export default function UserList() {
-    // 1. Quản lý danh sách User bằng State (đã loại bỏ phone, giữ lại role)
-    const [userList, setUserList] = useState([
-        { id: '1', name: 'Admin User', email: 'admin@example.com', role: 'ADMIN', status: 'Active' },
-        { id: '2', name: 'Manager One', email: 'manager1@example.com', role: 'MANAGER', status: 'Active' },
-        { id: '3', name: 'Annotator Alpha', email: 'annotator1@example.com', role: 'ANNOTATOR', status: 'Inactive' },
-        { id: '5', name: 'Reviewer Zeta', email: 'reviewer2@example.com', role: 'REVIEWER', status: 'Active' },
-    ]);
+    const {
+        users,
+        setUsers,
+        usersLoading,
+        usersError,
+        refresh,
+        createUser,
+        creating,
+        deleteUser,
+        deletingId,
+        resetPassword,
+        resettingId,
+        toggleStatus,
+        togglingId,
+        updateUser,
+        updatingId,
+        assignRole,
+        assigningRoleId,
+    } = useAdminUsers();
+    const loading = creating;
+    const userList = users;
 
     // State cho Modal chi tiết & Chỉnh sửa
     const [selectedUser, setSelectedUser] = useState(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
 
+    // State cho Modal tạo mới
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [createForm, setCreateForm] = useState({
+        name: '',
+        username: '',
+        email: '',
+        role: 'ANNOTATOR',
+        password: '',
+    });
+
     // State mới: Dữ liệu tạm thời khi đang sửa
     const [editForm, setEditForm] = useState(null);
 
     // --- CÁC HÀM XỬ LÝ LOGIC ---
+    const handleActionCreate = async () => {
+        const res = await createUser(createForm);
+        if (res.success) {
+            alert("Tạo user thành công!");
+            const refreshRes = await refresh();
+            if (!refreshRes?.success) {
+                const created = res.data?.data ?? res.data;
+                const createdId =
+                    created?.id ??
+                    created?.userId ??
+                    created?.userID ??
+                    created?.accountId ??
+                    created?.accountID ??
+                    Date.now().toString();
 
-    // 1. Bật/Tắt trạng thái (đặt ở dòng danh sách)
-    const handleToggleStatus = (id) => {
-        const updatedUsers = userList.map(u => {
-            if (u.id === id) {
-                const newStatus = u.status === 'Active' ? 'Inactive' : 'Active';
-                if (window.confirm(`Xác nhận ${newStatus === 'Inactive' ? 'vô hiệu hóa' : 'kích hoạt'} tài khoản ${u.name}?`)) {
-                    return { ...u, status: newStatus };
-                }
+                setUsers((prev) => [
+                    {
+                        id: String(createdId),
+                        name: createForm.name,
+                        email: createForm.email,
+                        role: createForm.role,
+                        status: 'Active',
+                    },
+                    ...prev,
+                ]);
             }
-            return u;
+            setIsCreateOpen(false);
+            // Reset form
+            setCreateForm({ name: '', username: '', email: '', role: 'ANNOTATOR', password: '' });
+        } else {
+            alert("Lỗi: " + res.error);
+        }
+    };
+    // 1. Bật/Tắt trạng thái (đặt ở dòng danh sách)
+    const handleToggleStatus = async (user) => {
+        if (loading || usersLoading || deletingId || updatingId || resettingId || togglingId) return;
+        const intendedNextStatus = user.status === 'Active' ? 'Inactive' : 'Active';
+        if (!window.confirm(`Xác nhận ${intendedNextStatus === 'Inactive' ? 'vô hiệu hóa' : 'kích hoạt'} tài khoản ${user.name}?`)) return;
+
+        const res = await toggleStatus(user.id, {
+            status: intendedNextStatus,
+            name: user.name,
+            email: user.email,
+            role: user.role,
         });
-        setUserList(updatedUsers);
+        if (res.success) {
+            const raw = res.data?.data ?? res.data;
+            const isActive = raw?.isActive;
+            const nextStatus =
+                typeof isActive === 'boolean'
+                    ? isActive
+                        ? 'Active'
+                        : 'Inactive'
+                    : intendedNextStatus;
+
+            const updatedUser = { ...user, status: nextStatus };
+
+            // Optimistic update so user doesn't disappear immediately.
+            setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: nextStatus } : u)));
+
+            // Some backends may exclude inactive users from `all-users`. After refresh, ensure the toggled
+            // user still appears in the list with the correct status.
+            await refresh();
+            setUsers((prev) => {
+                const exists = prev.some((u) => u.id === user.id);
+                if (!exists) return [updatedUser, ...prev];
+                return prev.map((u) => (u.id === user.id ? { ...u, status: nextStatus } : u));
+            });
+        } else {
+            alert("Lỗi: " + res.error);
+        }
     };
 
     // 2. Reset mật khẩu (đặt ở dòng danh sách)
-    const handleResetPassword = (name, email) => {
-        if (window.confirm(`Gửi link đặt lại mật khẩu mới tới email của ${name} (${email})?`)) {
-            alert(`Đã gửi email cấp lại mật khẩu tới ${email}`);
+    const handleResetPassword = async (user) => {
+        if (loading || usersLoading || deletingId || updatingId || resettingId) return;
+
+        const password = window.prompt(`Nhập mật khẩu mới cho ${user.name} (${user.email}):`);
+        if (password === null) return;
+        if (String(password).trim() === '') {
+            alert('Password cannot be empty.');
+            return;
+        }
+        if (!window.confirm(`Xác nhận reset mật khẩu cho ${user.name} (${user.email})?`)) return;
+
+        const res = await resetPassword(user.id, password);
+        if (res.success) {
+            const msg =
+                res.data?.message ||
+                res.data?.data?.message ||
+                `Reset mật khẩu thành công cho ${user.email}`;
+            alert(msg);
+        } else {
+            alert("Lỗi: " + res.error);
+        }
+    };
+
+    const handleDeleteUser = async (user) => {
+        if (loading || deletingId || usersLoading) return;
+        if (!window.confirm(`Xóa user "${user.name}" (${user.email})? Hành động này không thể hoàn tác.`)) return;
+
+        const res = await deleteUser(user.id);
+        if (res.success) {
+            const deletedId = String(user.id);
+            setUsers((prev) => prev.filter((u) => String(u.id) !== deletedId));
+            await refresh();
+            setUsers((prev) => prev.filter((u) => String(u.id) !== deletedId));
+            if (selectedUser?.id === user.id) {
+                setIsDetailOpen(false);
+                setSelectedUser(null);
+                setEditForm(null);
+            }
+            alert("Xóa user thành công!");
+        } else {
+            alert("Lỗi: " + res.error);
         }
     };
 
@@ -46,20 +167,131 @@ export default function UserList() {
         setIsDetailOpen(true);
     };
 
+    const handleAssignRole = async (user, nextRole) => {
+        if (loading || usersLoading || deletingId || updatingId || resettingId || togglingId || assigningRoleId) return;
+        const normalizedNextRole = String(nextRole || '').toUpperCase();
+        if (normalizedNextRole === String(user.role || '').toUpperCase()) return;
+
+        if (!window.confirm(`Xác nhận đổi vai trò của ${user.name} thành ${normalizedNextRole}?`)) return;
+
+        const prevRole = user.role;
+        setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role: normalizedNextRole } : u)));
+
+        const res = await assignRole(user.id, normalizedNextRole);
+        if (res.success) {
+            await refresh();
+            const ensured = { ...user, role: normalizedNextRole };
+            setUsers((prev) => {
+                const exists = prev.some((u) => u.id === user.id);
+                if (!exists) return [ensured, ...prev];
+                return prev.map((u) => (u.id === user.id ? { ...u, role: normalizedNextRole } : u));
+            });
+        } else {
+            console.error('assign-role failed', { userId: user.id, nextRole: normalizedNextRole, details: res.details, status: res.status });
+            setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role: prevRole } : u)));
+            alert("Lỗi: " + res.error);
+        }
+    };
+
     // 4. Lưu thay đổi từ Modal
     const handleSaveEdit = () => {
-        const updatedUsers = userList.map(u =>
-            u.id === editForm.id ? editForm : u
-        );
-        setUserList(updatedUsers);
-        setSelectedUser(editForm); // Cập nhật lại user đang xem
-        setIsDetailOpen(false); // Đóng modal
-        alert("Cập nhật thông tin thành công!");
+        (async () => {
+            if (loading || usersLoading || deletingId || updatingId || assigningRoleId) return;
+
+            const original = selectedUser;
+            const roleChanged =
+                original && String(original.role || '').toUpperCase() !== String(editForm.role || '').toUpperCase();
+
+            const updateRes = await updateUser(editForm.id, { name: editForm.name, email: editForm.email });
+            if (!updateRes.success) {
+                alert("Lỗi: " + updateRes.error);
+                return;
+            }
+
+            setUsers((prev) =>
+                prev.map((u) =>
+                    u.id === editForm.id ? { ...u, name: editForm.name, email: editForm.email } : u
+                )
+            );
+
+            if (roleChanged) {
+                const roleRes = await assignRole(editForm.id, editForm.role);
+                if (!roleRes.success) {
+                    setUsers((prev) =>
+                        prev.map((u) =>
+                            u.id === editForm.id ? { ...u, role: original?.role } : u
+                        )
+                    );
+                    setEditForm((prev) => ({ ...prev, role: original?.role }));
+                    alert("Lỗi: " + roleRes.error);
+                    return;
+                }
+                setUsers((prev) => prev.map((u) => (u.id === editForm.id ? { ...u, role: editForm.role } : u)));
+            }
+
+            const nextSelected = {
+                ...(original || {}),
+                ...editForm,
+                name: editForm.name,
+                email: editForm.email,
+                role: roleChanged ? editForm.role : original?.role ?? editForm.role,
+            };
+
+            setSelectedUser(nextSelected);
+            setIsDetailOpen(false);
+
+            // Best-effort sync with backend
+            const refreshRes = await refresh();
+            if (refreshRes?.success) {
+                // Ensure UI keeps the edited fields even if backend list is stale.
+                const ensured = {
+                    id: editForm.id,
+                    name: editForm.name,
+                    email: editForm.email,
+                    role: nextSelected.role,
+                    status: original?.status || 'Active',
+                };
+                setUsers((prev) =>
+                    prev.some((u) => u.id === editForm.id)
+                        ? prev.map((u) =>
+                            u.id === editForm.id
+                                ? { ...u, name: editForm.name, email: editForm.email, role: nextSelected.role }
+                                : u
+                        )
+                        : [ensured, ...prev]
+                );
+            } else {
+                // Ensure UI still reflects the user's last edits.
+                setUsers((prev) =>
+                    prev.map((u) =>
+                        u.id === editForm.id
+                            ? { ...u, name: editForm.name, email: editForm.email, role: nextSelected.role }
+                            : u
+                    )
+                );
+            }
+            alert("Cập nhật thông tin thành công!");
+        })();
     };
 
     return (
         <div className="p-6 min-h-screen bg-[#050B1A] text-white font-sans">
-            <h1 className="text-2xl font-bold mb-8">Quản lý nhân sự</h1>
+            <div className="flex items-center justify-between gap-4 mb-8">
+                <h1 className="text-2xl font-bold">Quản lý nhân sự</h1>
+                <button
+                    onClick={() => setIsCreateOpen(true)}
+                    className="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                    disabled={loading || usersLoading}
+                >
+                    + Tạo user
+                </button>
+            </div>
+
+            {usersError && (
+                <div className="mb-4 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                    {usersError}
+                </div>
+            )}
 
             {/* BẢNG DANH SÁCH */}
             <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden shadow-2xl">
@@ -74,6 +306,13 @@ export default function UserList() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
+                        {usersLoading && (
+                            <tr>
+                                <td className="px-6 py-6 text-sm text-white/50" colSpan={4}>
+                                    Đang tải danh sách user...
+                                </td>
+                            </tr>
+                        )}
                         {userList.map((user) => (
                             <tr key={user.id} className="hover:bg-white/[0.03] transition-all">
                                 <td className="px-6 py-4">
@@ -82,9 +321,21 @@ export default function UserList() {
                                 </td>
                                 {/* --- HIỂN THỊ VAI TRÒ --- */}
                                 <td className="px-6 py-4 text-center">
-                                    <span className="text-xs font-semibold text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full">
-                                        {user.role}
-                                    </span>
+                                    <select
+                                        value={user.role}
+                                        onChange={(e) => handleAssignRole(user, e.target.value)}
+                                        disabled={loading || usersLoading || deletingId || updatingId || resettingId || togglingId || assigningRoleId === user.id}
+                                        className="text-xs font-semibold text-blue-300 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20 hover:border-blue-500/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                        title="Đổi vai trò"
+                                    >
+                                        <option value="ADMIN">ADMIN</option>
+                                        <option value="MANAGER">MANAGER</option>
+                                        <option value="ANNOTATOR">ANNOTATOR</option>
+                                        <option value="REVIEWER">REVIEWER</option>
+                                        {!['ADMIN', 'MANAGER', 'ANNOTATOR', 'REVIEWER'].includes(String(user.role || '').toUpperCase()) && (
+                                            <option value={user.role}>{user.role}</option>
+                                        )}
+                                    </select>
                                 </td>
                                 <td className="px-6 py-4 text-center">
                                     <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${user.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
@@ -101,21 +352,32 @@ export default function UserList() {
                                         </button>
 
                                         <button
-                                            onClick={() => handleResetPassword(user.name, user.email)}
+                                            onClick={() => handleResetPassword(user)}
                                             className="text-xs bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 px-3 py-1.5 rounded-lg"
                                             title="Reset Mật Khẩu"
+                                            disabled={loading || usersLoading || deletingId || updatingId || resettingId === user.id}
                                         >
-                                            🔑
+                                            {resettingId === user.id ? '...' : '🔑'}
                                         </button>
 
                                         <button
-                                            onClick={() => handleToggleStatus(user.id)}
+                                            onClick={() => handleToggleStatus(user)}
                                             className={`text-xs px-3 py-1.5 rounded-lg font-bold ${user.status === 'Active'
                                                 ? 'bg-rose-600/10 hover:bg-rose-600/20 text-rose-400'
                                                 : 'bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400'
                                                 }`}
+                                            disabled={loading || usersLoading || deletingId || updatingId || resettingId || togglingId === user.id}
                                         >
-                                            {user.status === 'Active' ? 'Vô hiệu' : 'Kích hoạt'}
+                                            {togglingId === user.id ? '...' : user.status === 'Active' ? 'Vô hiệu' : 'Kích hoạt'}
+                                        </button>
+
+                                        <button
+                                            onClick={() => handleDeleteUser(user)}
+                                            className="text-xs bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 px-3 py-1.5 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                                            disabled={loading || usersLoading || deletingId === user.id}
+                                            title="Xóa user"
+                                        >
+                                            {deletingId === user.id ? 'Đang xóa...' : 'Xóa'}
                                         </button>
                                     </div>
                                 </td>
@@ -124,6 +386,103 @@ export default function UserList() {
                     </tbody>
                 </table>
             </div>
+
+            {/* --- MODAL TẠO USER --- */}
+            {isCreateOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => !loading && setIsCreateOpen(false)}></div>
+
+                    <div className="relative bg-[#0A1225] border border-white/10 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in duration-200">
+                        <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                            <h2 className="text-xl font-bold text-emerald-400">Tạo người dùng</h2>
+                            <button
+                                onClick={() => setIsCreateOpen(false)}
+                                className="text-white/40 hover:text-white text-2xl disabled:opacity-60 disabled:cursor-not-allowed"
+                                disabled={loading}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="p-8 space-y-4">
+                            <div className="bg-white/5 p-4 rounded-xl">
+                                <label className="text-white/40 block mb-1 text-sm">Họ và tên</label>
+                                <input
+                                    type="text"
+                                    value={createForm.name}
+                                    onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
+                                    className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20"
+                                    placeholder="Nguyễn Văn A"
+                                />
+                            </div>
+
+                            <div className="bg-white/5 p-4 rounded-xl">
+                                <label className="text-white/40 block mb-1 text-sm">Username</label>
+                                <input
+                                    type="text"
+                                    value={createForm.username}
+                                    onChange={(e) => setCreateForm((prev) => ({ ...prev, username: e.target.value }))}
+                                    className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20"
+                                    placeholder="vd: admin01"
+                                />
+                            </div>
+
+                            <div className="bg-white/5 p-4 rounded-xl">
+                                <label className="text-white/40 block mb-1 text-sm">Email</label>
+                                <input
+                                    type="email"
+                                    value={createForm.email}
+                                    onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
+                                    className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20"
+                                    placeholder="user@email.com"
+                                />
+                            </div>
+
+                            <div className="bg-white/5 p-4 rounded-xl">
+                                <label className="text-white/40 block mb-1 text-sm">Vai trò</label>
+                                <select
+                                    value={createForm.role}
+                                    onChange={(e) => setCreateForm((prev) => ({ ...prev, role: e.target.value }))}
+                                    className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20"
+                                >
+                                    <option value="ADMIN">ADMIN</option>
+                                    <option value="MANAGER">MANAGER</option>
+                                    <option value="ANNOTATOR">ANNOTATOR</option>
+                                    <option value="REVIEWER">REVIEWER</option>
+                                </select>
+                            </div>
+
+                            <div className="bg-white/5 p-4 rounded-xl">
+                                <label className="text-white/40 block mb-1 text-sm">Mật khẩu</label>
+                                <input
+                                    type="password"
+                                    value={createForm.password}
+                                    onChange={(e) => setCreateForm((prev) => ({ ...prev, password: e.target.value }))}
+                                    className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20"
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="px-8 py-6 bg-white/[0.02] border-t border-white/5 flex gap-3">
+                            <button
+                                onClick={handleActionCreate}
+                                className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                disabled={loading}
+                            >
+                                {loading ? 'Đang tạo...' : 'Tạo user'}
+                            </button>
+                            <button
+                                onClick={() => setIsCreateOpen(false)}
+                                className="flex-1 bg-white/5 hover:bg-white/10 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                disabled={loading}
+                            >
+                                Hủy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* --- MODAL CHI TIẾT & CHỈNH SỬA (GIỮ NGUYÊN) --- */}
             {isDetailOpen && selectedUser && (
@@ -193,9 +552,10 @@ export default function UserList() {
                         <div className="px-8 py-6 bg-white/[0.02] border-t border-white/5 flex gap-3">
                             <button
                                 onClick={handleSaveEdit}
-                                className="flex-1 bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-sm font-bold transition-all"
+                                className="flex-1 bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                disabled={loading || usersLoading || deletingId || updatingId === editForm.id || assigningRoleId === editForm.id}
                             >
-                                Lưu thay đổi
+                                {updatingId === editForm.id || assigningRoleId === editForm.id ? 'Đang lưu...' : 'Lưu thay đổi'}
                             </button>
                             <button
                                 onClick={() => setIsDetailOpen(false)}

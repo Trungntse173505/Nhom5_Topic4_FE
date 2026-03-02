@@ -25,21 +25,19 @@ const QueuePanel = ({
         <div className="flex items-center gap-2">
           <button
             onClick={() => setTab('pending')}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-              tab === 'pending'
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${tab === 'pending'
                 ? 'bg-blue-600 text-white'
                 : 'bg-[#0f172a] text-slate-300 border border-slate-700 hover:bg-slate-800/60'
-            }`}
+              }`}
           >
             Pending Review
           </button>
           <button
             onClick={() => setTab('reviewed')}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-              tab === 'reviewed'
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${tab === 'reviewed'
                 ? 'bg-blue-600 text-white'
                 : 'bg-[#0f172a] text-slate-300 border border-slate-700 hover:bg-slate-800/60'
-            }`}
+              }`}
           >
             Reviewed
           </button>
