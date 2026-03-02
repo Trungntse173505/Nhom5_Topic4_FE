@@ -1,43 +1,58 @@
-// src/hooks/useTaskTracking.js
 import { useState, useEffect } from "react";
-import { getProjectTasks, updateTask, revokeTask } from "../api/managerApi";
+import {
+  getProjectTasks,
+  updateTaskDeadline,
+  assignTaskPersonnel,
+  revokeTask,
+  getUsersList,
+} from "../api/managerApi";
 
 export const useTaskTracking = (projectId) => {
   const [tasks, setTasks] = useState([]);
+  const [users, setUsers] = useState([]); // Chứa danh sách nhân sự để Reassign
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
-  const fetchTasks = async () => {
+  const fetchData = async () => {
     if (!projectId) return;
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      const data = await getProjectTasks(projectId);
-      const taskList = Array.isArray(data) ? data : data.data || [];
+      const [tasksRes, usersRes] = await Promise.all([
+        getProjectTasks(projectId).catch(() => []),
+        getUsersList().catch(() => []),
+      ]);
 
-      // Xử lý thêm flag isOverdue dựa trên ngày hiện tại 2026-03-02
-      const today = new Date("2026-03-02");
+      const taskList = Array.isArray(tasksRes) ? tasksRes : tasksRes.data || [];
+      const userList = Array.isArray(usersRes) ? usersRes : usersRes.data || [];
+
+      // Logic tính toán quá hạn (Overdue)
+      const today = new Date();
       const processedTasks = taskList.map((t) => ({
         ...t,
-        isOverdue: new Date(t.deadline) < today && t.status !== "Approved",
+        isOverdue:
+          new Date(t.deadline) < today &&
+          !["Approved", "Completed", "Done"].includes(t.status),
       }));
 
       setTasks(processedTasks);
+      setUsers(userList);
     } catch (error) {
-      console.error(error);
+      console.error("Lỗi lấy dữ liệu Task Tracking:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTasks();
+    fetchData();
   }, [projectId]);
 
+  // Hành động gọi API
   const handleAction = async (actionFn, ...args) => {
     try {
       setIsActionLoading(true);
       await actionFn(...args);
-      await fetchTasks(); // Refresh danh sách sau khi làm xong
+      await fetchData(); // Refresh lại danh sách sau khi làm xong
       return true;
     } catch (error) {
       alert(error.message);
@@ -49,13 +64,14 @@ export const useTaskTracking = (projectId) => {
 
   return {
     tasks,
+    users, // Trả ra để UI đổ vào Dropdown Reassign
     isLoading,
     isActionLoading,
-    fetchTasks,
+    fetchTasks: fetchData,
     extendDeadline: (taskId, date) =>
-      handleAction(updateTask, taskId, { deadline: date }),
-    reassignTask: (taskId, userId) =>
-      handleAction(updateTask, taskId, { annotatorId: userId }),
+      handleAction(updateTaskDeadline, taskId, date),
+    reassignTask: (taskId, annotatorId, reviewerId) =>
+      handleAction(assignTaskPersonnel, taskId, annotatorId, reviewerId),
     revoke: (taskId) => handleAction(revokeTask, taskId),
   };
 };

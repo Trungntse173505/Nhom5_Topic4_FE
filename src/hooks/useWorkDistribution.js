@@ -1,48 +1,77 @@
-// src/hooks/useWorkDistribution.js
 import { useState, useEffect } from "react";
-import { getUsersList, splitProjectTasks } from "../api/managerApi";
+import {
+  getUsersList,
+  getUnassignedItems,
+  createBatchTask,
+  assignTaskPersonnel,
+  updateTaskDeadline,
+} from "../api/managerApi";
 
-export const useWorkDistribution = (project, onRefresh) => {
+export const useWorkDistribution = (projectId, onRefresh) => {
   const [users, setUsers] = useState([]);
-  const [selectedDataIds, setSelectedDataIds] = useState([]);
+  const [unassignedItems, setUnassignedItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // 1. Lấy danh sách User khi vào trang
-  useEffect(() => {
-    getUsersList()
-      .then((data) => setUsers(Array.isArray(data) ? data : data.data || []))
-      .catch((err) => console.error("Lỗi lấy user:", err));
-  }, []);
-
-  // 2. Lọc danh sách file chưa được giao việc từ project prop
-  const unassignedItems =
-    project?.dataItems?.filter((item) => !item.isAssigned) || [];
-
-  const toggleSelection = (dataId) => {
-    setSelectedDataIds((prev) =>
-      prev.includes(dataId)
-        ? prev.filter((id) => id !== dataId)
-        : [...prev, dataId],
-    );
+  // 1. Kéo dữ liệu File chưa giao và Danh sách nhân viên
+  const fetchData = async () => {
+    if (!projectId) return;
+    setIsLoading(true);
+    try {
+      const [itemsRes, usersRes] = await Promise.all([
+        getUnassignedItems(projectId).catch(() => []),
+        getUsersList().catch(() => []),
+      ]);
+      setUnassignedItems(
+        Array.isArray(itemsRes) ? itemsRes : itemsRes.data || [],
+      );
+      setUsers(Array.isArray(usersRes) ? usersRes : usersRes.data || []);
+    } catch (error) {
+      console.error("Lỗi lấy dữ liệu:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // 3. Xử lý tạo Task Batch
-  const createBatch = async (assignmentData) => {
-    try {
-      setIsProcessing(true);
-      const payload = {
-        dataIds: selectedDataIds,
-        annotatorId: assignmentData.annotatorId,
-        reviewerId: assignmentData.reviewerId,
-        deadline: assignmentData.deadline,
-      };
+  useEffect(() => {
+    fetchData();
+  }, [projectId]);
 
-      await splitProjectTasks(project.projectID, payload);
-      alert("Đã tạo Task và giao việc thành công!");
-      setSelectedDataIds([]);
-      if (onRefresh) onRefresh(); // Tải lại Dashboard để cập nhật số liệu
+  // 2. Chạy liên hoàn 3 API: Gom lô -> Giao việc -> Deadline
+  const createBatchAndAssign = async (selectedIds, assignmentData) => {
+    if (!selectedIds || selectedIds.length === 0) return false;
+    setIsProcessing(true);
+    try {
+      // BƯỚC 1: Gom lô tạo Task
+      const taskRes = await createBatchTask(projectId, selectedIds);
+      const newTaskId =
+        taskRes.taskId || taskRes.id || (taskRes.data && taskRes.data.id);
+
+      if (!newTaskId)
+        throw new Error(
+          "Tạo lô thành công nhưng không lấy được Task ID từ Backend",
+        );
+
+      // BƯỚC 2: Giao Annotator & Reviewer
+      if (assignmentData.annotatorId) {
+        await assignTaskPersonnel(
+          newTaskId,
+          assignmentData.annotatorId,
+          assignmentData.reviewerId || null,
+        );
+      }
+
+      // BƯỚC 3: Đặt Deadline
+      if (assignmentData.deadline) {
+        await updateTaskDeadline(newTaskId, assignmentData.deadline);
+      }
+
+      await fetchData(); // Load lại list file chưa giao
+      if (onRefresh) onRefresh();
+      return true;
     } catch (error) {
       alert(error.message);
+      return false;
     } finally {
       setIsProcessing(false);
     }
@@ -51,9 +80,8 @@ export const useWorkDistribution = (project, onRefresh) => {
   return {
     users,
     unassignedItems,
-    selectedDataIds,
+    isLoading,
     isProcessing,
-    toggleSelection,
-    createBatch,
+    createBatchAndAssign,
   };
 };
