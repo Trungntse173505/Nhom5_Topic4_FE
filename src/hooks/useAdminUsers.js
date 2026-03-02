@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import adminApi from '../components/api/adminApi';
-import axiosClient from '../components/api/axiosClient';
+import adminApi from '../api/adminApi';
 
 const roleToId = {
   ADMIN: 1,

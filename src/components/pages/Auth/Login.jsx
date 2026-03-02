@@ -1,17 +1,13 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLogin } from "../../../hooks/useLogin";
+import { updateUserPresence } from "../../../services/firebase";
 
 function ShieldIcon() {
   return (
     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600/20 ring-1 ring-blue-500/30">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="text-blue-500">
-        <path
-          d="M12 2l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V6l7-4z"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
+        <path d="M12 2l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V6l7-4z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
       </svg>
     </div>
   );
@@ -28,142 +24,96 @@ export default function Login() {
   const errors = useMemo(() => {
     const e = {};
     if (!username.trim()) e.username = "Username is required.";
-
     if (!password) e.password = "Password is required.";
-    else if (password.length < 5)
-      e.password = "Password must be at least 5 characters.";
+    else if (password.length < 5) e.password = "Password must be at least 5 chars.";
     return e;
   }, [username, password]);
 
   const canSubmit = Object.keys(errors).length === 0 && !authLoading;
 
-  function normalizeRole(rawRole) {
-    if (rawRole === null || rawRole === undefined) return "";
-
-    if (typeof rawRole === "number") {
-      const roleById = {
-        0: "admin",
-        1: "manager",
-        2: "annotator",
-        3: "reviewer",
-      };
-      return roleById[rawRole] || "";
-    }
-
-    const normalized = String(rawRole).toLowerCase();
-    if (normalized.startsWith("role_")) return normalized.slice("role_".length);
-    return normalized;
-  }
-
   async function onSubmit(e) {
     e.preventDefault();
-    setTouched({ username: true, password: true });
     if (!canSubmit) return;
 
     const res = await login({ username, password });
-    if (!res.success || !res.user) return;
+
+    // Nếu res.success là true thì mới chạy tiếp, không là nó đứng im hiện chữ đỏ đó!
+    if (res.success && res.user) {
+      const { userId, roleName, fullName } = res.user; //
+
+      try {
+        // TRUYỀN ĐÚNG userId (GUID) VÀ roleName ("Admin")
+        await updateUserPresence(userId, roleName, true);
+        console.log("Đã báo danh Firestore thành công!");
+      } catch (err) {
+        console.error("Lỗi Firebase:", err);
+      }
 
       const roleToPath = {
         admin: "/admin",
-        reviewer: "/reviewer",
+        manager: "/manager",
+        annotator: "/annotator",
+        reviewer: "/reviewer"
       };
 
-      // Lấy path dựa trên role thật của User từ Database
-      const normalizedRole = normalizeRole(res.user.role);
-      const targetPath = roleToPath[normalizedRole] || "/admin";
-
-      if (targetPath) {
-        navigate(targetPath);
-      }
+      navigate(roleToPath[roleName.toLowerCase()] || "/admin");
+    }
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#050B1A]">
-      {/* background glow */}
-      <div className="pointer-events-none fixed inset-0">
-        <div className="absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-blue-600/20 blur-3xl" />
-        <div className="absolute -right-40 top-20 h-[520px] w-[520px] rounded-full bg-indigo-600/10 blur-3xl" />
-        <div className="absolute bottom-0 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-sky-500/10 blur-3xl" />
+    <div className="min-h-screen w-full bg-[#050B1A] relative flex items-center justify-center px-4">
+      {/* Background decoration */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-blue-600/10 blur-3xl" />
+        <div className="absolute -right-40 bottom-0 h-[520px] w-[520px] rounded-full bg-indigo-600/10 blur-3xl" />
       </div>
 
-      <div className="relative flex min-h-screen items-center justify-center px-4 py-10">
-        <div className="w-full max-w-lg">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-8 shadow-2xl shadow-black/40 backdrop-blur-xl">
-            <div className="flex flex-col items-center text-center">
-              <ShieldIcon />
-              <h1 className="mt-5 text-2xl font-semibold tracking-tight text-white">
-                Data Labeling System
-              </h1>
-              <p className="mt-2 text-sm text-white/60">Sign in</p>
+      <div className="w-full max-w-md relative">
+        <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-10 shadow-2xl backdrop-blur-2xl">
+          <div className="flex flex-col items-center text-center mb-8">
+            <ShieldIcon />
+            <h1 className="mt-6 text-2xl font-bold tracking-tight text-white">Data Labeling System</h1>
+            <p className="mt-2 text-sm text-white/40 font-medium">Please sign in to your account</p>
+          </div>
+
+          <form onSubmit={onSubmit} className="space-y-6">
+            <div>
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                onBlur={() => setTouched(t => ({ ...t, username: true }))}
+                type="text"
+                placeholder="Username"
+                className={`w-full rounded-xl border bg-white/[0.03] px-4 py-3.5 text-sm text-white outline-none transition-all placeholder:text-white/20 
+                  ${touched.username && errors.username ? 'border-rose-500/50 focus:ring-rose-500/10' : 'border-white/10 focus:border-blue-500/50 focus:ring-blue-500/10 focus:ring-4'}`}
+              />
             </div>
 
-            <form onSubmit={onSubmit} className="mt-7 space-y-5">
-              {/* Username */}
-              <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">
-                  Username
-                </label>
-                <div className="relative">
-                  <input
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    onBlur={() => setTouched((t) => ({ ...t, username: true }))}
-                    type="text"
-                    placeholder="Enter your username"
-                    className={[
-                      "w-full rounded-xl border bg-white/[0.04] px-4 py-3 text-sm text-white outline-none",
-                      "placeholder:text-white/30",
-                      "border-white/10 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10",
-                      touched.username && errors.username
-                        ? "border-rose-500/60 focus:border-rose-500/70 focus:ring-rose-500/10"
-                        : "",
-                    ].join(" ")}
-                  />
-                </div>
-                {touched.username && errors.username && (
-                  <p className="mt-2 text-xs text-rose-400">{errors.username}</p>
-                )}
-              </div>
-
-              {/* Password */}
-              <div>
-                <div className="relative">
-                  <input
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-                    type={showPw ? "text" : "password"}
-                    placeholder="Password"
-                    className="w-full rounded-xl px-4 py-3"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPw((s) => !s)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-white/60"
-                  >
-                    {showPw ? "Hide" : "Show"}
-                  </button>
-                </div>
-                {touched.password && errors.password && (
-                  <p className="mt-2 text-xs text-rose-400">
-                    {errors.password}
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                disabled={!canSubmit}
-                className="w-full rounded-xl py-3 bg-blue-600 text-white"
-              >
-                {authLoading ? "Signing In..." : "Sign In"}
+            <div className="relative">
+              <input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => setTouched(t => ({ ...t, password: true }))}
+                type={showPw ? "text" : "password"}
+                placeholder="Password"
+                className={`w-full rounded-xl border bg-white/[0.03] px-4 py-3.5 text-sm text-white outline-none transition-all placeholder:text-white/20
+                  ${touched.password && errors.password ? 'border-rose-500/50' : 'border-white/10 focus:border-blue-500/50'}`}
+              />
+              <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-white/30 hover:text-white/60">
+                {showPw ? "HIDE" : "SHOW"}
               </button>
+            </div>
 
-              {authError && (
-                <div className="text-red-400 text-sm">{authError}</div>
-              )}
-            </form>
-          </div>
+            <button
+              type="submit"
+              disabled={!canSubmit}
+              className="w-full rounded-xl bg-blue-600 py-4 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-500 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+            >
+              {authLoading ? "Authenticating..." : "Sign In"}
+            </button>
+
+            {authError && <p className="text-center text-xs font-medium text-rose-400 mt-4 bg-rose-400/10 py-2 rounded-lg">{authError}</p>}
+          </form>
         </div>
       </div>
     </div>

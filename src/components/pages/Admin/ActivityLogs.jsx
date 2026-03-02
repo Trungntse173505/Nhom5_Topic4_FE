@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import adminApi from '../../api/adminApi';
+import adminApi from '../../../api/adminApi';
 
 function extractLogsPayload(payload) {
     if (Array.isArray(payload)) return { items: payload, meta: {} };

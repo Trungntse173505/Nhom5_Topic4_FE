@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const DEFAULT_BASE_URL = 'https://swp-be-efc9d4and2d9fda3.japaneast-01.azurewebsites.net';
+// Ưu tiên lấy từ biến môi trường nếu có
 const RAW_BASE_URL = import.meta?.env?.VITE_API_BASE_URL || DEFAULT_BASE_URL;
 const BASE_URL = String(RAW_BASE_URL).replace(/\/+$/, '');
 
@@ -12,7 +13,7 @@ const axiosClient = axios.create({
   timeout: 30000,
 });
 
-
+// Interceptor cho Request: Tự động đính kèm Token
 axiosClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -24,13 +25,12 @@ axiosClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-
+// Interceptor cho Response: Xử lý data và lỗi tập trung
 axiosClient.interceptors.response.use(
-  (response) => {
-    return response.data;
-  },
+  (response) => response.data,
   (error) => {
     const isSilent = Boolean(error?.config?.silent || error?.config?.meta?.silent);
+    
     if (error.response) {
       const { status, data } = error.response;
 
@@ -41,6 +41,7 @@ axiosClient.interceptors.response.use(
       if (status === 401) {
         if (!isSilent) console.warn("Phiên làm việc hết hạn, đang đăng xuất...");
         localStorage.removeItem('token');
+        // Có thể thêm logic chuyển hướng về trang login ở đây nếu cần
       }
     } else {
       if (!isSilent) console.error("Lỗi kết nối: Server Azure có thể đang khởi động lại.");
