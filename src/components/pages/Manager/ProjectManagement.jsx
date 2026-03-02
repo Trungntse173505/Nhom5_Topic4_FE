@@ -5,6 +5,18 @@ export default function ProjectManagement() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState("All");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // State lưu thông tin form
+  const [formData, setFormData] = useState({
+    name: "",
+    type: "Image",
+    description: "",
+    guideline: "",
+  });
+
+  // State lưu file người dùng chọn
+  const [datasetFiles, setDatasetFiles] = useState([]);
 
   const handleLogout = () => navigate("/login");
 
@@ -37,6 +49,80 @@ export default function ProjectManagement() {
 
   const filteredProjects =
     filter === "All" ? projects : projects.filter((p) => p.status === filter);
+
+  // --- HÀM XỬ LÝ UPLOAD CLOUDINARY & CALL API BE ---
+  const handleCreateProject = async () => {
+    if (!formData.name || datasetFiles.length === 0) {
+      alert("Vui lòng nhập tên dự án và chọn ít nhất 1 file dataset!");
+      return;
+    }
+
+    const UPLOAD_PRESET = "react_upload";
+    const CLOUD_NAME = "dlgsidnr2";
+
+    try {
+      setIsUploading(true);
+      const uploadedUrls = [];
+
+      // Dùng Promise.all để upload HÀNG LOẠT file cùng lúc lên Cloudinary
+      const uploadPromises = Array.from(datasetFiles).map(async (file) => {
+        const data = new FormData();
+        data.append("file", file);
+        data.append("upload_preset", UPLOAD_PRESET);
+
+        // --- THÊM PHÂN LOẠI THƯ MỤC Ở ĐÂY ---
+        // Phân loại vào folder tương ứng: Datasets/Image, Datasets/Mixed...
+        const folderName = `Datasets/${formData.type}`;
+        data.append("folder", folderName);
+        // ------------------------------------
+
+        // Đẩy thẳng lên API của Cloudinary (dùng auto để tự động nhận dạng mọi file)
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
+          {
+            method: "POST",
+            body: data,
+          },
+        );
+
+        const result = await response.json();
+
+        if (result.secure_url) {
+          uploadedUrls.push(result.secure_url);
+        } else {
+          console.error("Lỗi upload từ Cloudinary:", result);
+        }
+      });
+
+      await Promise.all(uploadPromises);
+
+      // SAU KHI CÓ LINK CLOUDINARY -> TẠO PAYLOAD GỬI BACKEND
+      const payloadToBackend = {
+        projectName: formData.name,
+        projectType: formData.type,
+        description: formData.description,
+        guideline: formData.guideline,
+        datasetUrls: uploadedUrls, // Mảng chứa các link Cloudinary
+      };
+
+      console.log("DỮ LIỆU GỬI CHO BE LÀ:", payloadToBackend);
+
+      // Nối các link lại với nhau để hiển thị cho ông xem tận mắt
+      const links = uploadedUrls.join("\n\n");
+      alert(`Upload thành công lên Cloudinary!\n\nLink của ông đây:\n${links}`);
+
+      setIsModalOpen(false);
+
+      // Reset form
+      setFormData({ name: "", type: "Image", description: "", guideline: "" });
+      setDatasetFiles([]);
+    } catch (error) {
+      console.error("Lỗi khi upload Cloudinary:", error);
+      alert("Có lỗi xảy ra khi upload file!");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-[#0B1120] text-white font-sans relative">
@@ -85,7 +171,6 @@ export default function ProjectManagement() {
               Manage all labeling projects in the system
             </p>
 
-            {/* Bộ lọc (Filters) */}
             <div className="flex gap-2 mt-4">
               {["All", "Active", "Closed"].map((f) => (
                 <button
@@ -99,7 +184,6 @@ export default function ProjectManagement() {
             </div>
           </div>
 
-          {/* Nút mở Modal */}
           <button
             onClick={() => setIsModalOpen(true)}
             className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg font-medium shadow-lg shadow-blue-500/20 transition-all"
@@ -150,20 +234,24 @@ export default function ProjectManagement() {
         </div>
       </main>
 
-      {/* Modal Tạo Dự Án */}
+      {/* MODAL TẠO DỰ ÁN */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="bg-[#151D2F] border border-white/10 rounded-xl w-full max-w-md p-6 shadow-2xl">
+          <div className="bg-[#151D2F] border border-white/10 rounded-xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-white mb-4">
               Create New Project
             </h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-400 mb-1">
-                  Project Name
+                  Project Name <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
                   placeholder="Enter project name..."
                 />
@@ -172,10 +260,19 @@ export default function ProjectManagement() {
                 <label className="block text-sm text-gray-400 mb-1">
                   Data Type
                 </label>
-                <select className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500">
-                  <option>Image</option>
-                  <option>Text</option>
-                  <option>Audio</option>
+                <select
+                  value={formData.type}
+                  onChange={(e) =>
+                    setFormData({ ...formData, type: e.target.value })
+                  }
+                  className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
+                >
+                  <option value="Image">Image</option>
+                  <option value="Text">Text</option>
+                  <option value="Audio">Audio</option>
+                  <option value="Video">Video</option>
+                  {/* --- THÊM TYPE MIXED Ở ĐÂY --- */}
+                  <option value="Mixed">Mixed (Hỗn hợp)</option>
                 </select>
               </div>
               <div>
@@ -183,23 +280,88 @@ export default function ProjectManagement() {
                   Description
                 </label>
                 <textarea
-                  className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500 h-24 resize-none"
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500 h-20 resize-none"
                   placeholder="Brief description..."
                 ></textarea>
               </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">
+                  Project Guidelines
+                </label>
+                <textarea
+                  value={formData.guideline}
+                  onChange={(e) =>
+                    setFormData({ ...formData, guideline: e.target.value })
+                  }
+                  className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500 h-20 resize-none"
+                  placeholder="Instructions for annotators..."
+                ></textarea>
+              </div>
+
+              {/* INPUT UPLOAD FILE */}
+              <div className="border border-dashed border-white/20 p-4 rounded-lg bg-[#0B1120]">
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Upload Dataset (Multiple Files){" "}
+                  <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="file"
+                  multiple
+                  onChange={(e) => setDatasetFiles(e.target.files)}
+                  className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-400 hover:file:bg-blue-500/20 cursor-pointer"
+                />
+                {datasetFiles.length > 0 && (
+                  <p className="mt-2 text-xs text-emerald-400">
+                    Đã chọn {datasetFiles.length} file.
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="flex justify-end gap-3 mt-6">
+
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-white/10">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                disabled={isUploading}
+                className="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
-                onClick={() => setIsModalOpen(false)}
-                className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium shadow-lg transition-all"
+                onClick={handleCreateProject}
+                disabled={isUploading}
+                className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                Save Project
+                {isUploading ? (
+                  <>
+                    <svg
+                      className="animate-spin h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Uploading...
+                  </>
+                ) : (
+                  "Save & Upload"
+                )}
               </button>
             </div>
           </div>
