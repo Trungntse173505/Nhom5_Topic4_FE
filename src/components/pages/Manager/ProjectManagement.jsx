@@ -1,132 +1,51 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useProjectManagement } from "../../../hooks/useProjectManagement";
 
 export default function ProjectManagement() {
   const navigate = useNavigate();
+
+  const { projects, isLoadingProjects, isCreating, createNewProject } =
+    useProjectManagement();
+
   const [filter, setFilter] = useState("All");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
 
-  // State lưu thông tin form
   const [formData, setFormData] = useState({
     name: "",
+    topic: "",
     type: "Image",
     description: "",
     guideline: "",
   });
 
-  // State lưu file người dùng chọn
-  const [datasetFiles, setDatasetFiles] = useState([]);
-
   const handleLogout = () => navigate("/login");
-
-  const projects = [
-    {
-      id: 1,
-      name: "Phân loại biển báo giao thông",
-      type: "Image",
-      status: "Active",
-      progress: 75,
-      totalTasks: 2000,
-    },
-    {
-      id: 2,
-      name: "Gán nhãn cảm xúc hội thoại",
-      type: "Text",
-      status: "Active",
-      progress: 40,
-      totalTasks: 1000,
-    },
-    {
-      id: 3,
-      name: "Phân tách âm thanh đường phố",
-      type: "Audio",
-      status: "Closed",
-      progress: 100,
-      totalTasks: 500,
-    },
-  ];
 
   const filteredProjects =
     filter === "All" ? projects : projects.filter((p) => p.status === filter);
 
-  // --- HÀM XỬ LÝ UPLOAD CLOUDINARY & CALL API BE ---
-  const handleCreateProject = async () => {
-    if (!formData.name || datasetFiles.length === 0) {
-      alert("Vui lòng nhập tên dự án và chọn ít nhất 1 file dataset!");
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.topic) {
+      alert("Vui lòng nhập Tên dự án và Chủ đề (Topic)!");
       return;
     }
 
-    const UPLOAD_PRESET = "react_upload";
-    const CLOUD_NAME = "dlgsidnr2";
-
-    try {
-      setIsUploading(true);
-      const uploadedUrls = [];
-
-      // Dùng Promise.all để upload HÀNG LOẠT file cùng lúc lên Cloudinary
-      const uploadPromises = Array.from(datasetFiles).map(async (file) => {
-        const data = new FormData();
-        data.append("file", file);
-        data.append("upload_preset", UPLOAD_PRESET);
-
-        // --- THÊM PHÂN LOẠI THƯ MỤC Ở ĐÂY ---
-        // Phân loại vào folder tương ứng: Datasets/Image, Datasets/Mixed...
-        const folderName = `Datasets/${formData.type}`;
-        data.append("folder", folderName);
-        // ------------------------------------
-
-        // Đẩy thẳng lên API của Cloudinary (dùng auto để tự động nhận dạng mọi file)
-        const response = await fetch(
-          `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
-          {
-            method: "POST",
-            body: data,
-          },
-        );
-
-        const result = await response.json();
-
-        if (result.secure_url) {
-          uploadedUrls.push(result.secure_url);
-        } else {
-          console.error("Lỗi upload từ Cloudinary:", result);
-        }
-      });
-
-      await Promise.all(uploadPromises);
-
-      // SAU KHI CÓ LINK CLOUDINARY -> TẠO PAYLOAD GỬI BACKEND
-      const payloadToBackend = {
-        projectName: formData.name,
-        projectType: formData.type,
-        description: formData.description,
-        guideline: formData.guideline,
-        datasetUrls: uploadedUrls, // Mảng chứa các link Cloudinary
-      };
-
-      console.log("DỮ LIỆU GỬI CHO BE LÀ:", payloadToBackend);
-
-      // Nối các link lại với nhau để hiển thị cho ông xem tận mắt
-      const links = uploadedUrls.join("\n\n");
-      alert(`Upload thành công lên Cloudinary!\n\nLink của ông đây:\n${links}`);
-
+    // Chỉ gửi formData lên Hook
+    const isSuccess = await createNewProject(formData);
+    if (isSuccess) {
       setIsModalOpen(false);
-
-      // Reset form
-      setFormData({ name: "", type: "Image", description: "", guideline: "" });
-      setDatasetFiles([]);
-    } catch (error) {
-      console.error("Lỗi khi upload Cloudinary:", error);
-      alert("Có lỗi xảy ra khi upload file!");
-    } finally {
-      setIsUploading(false);
+      setFormData({
+        name: "",
+        topic: "",
+        type: "Image",
+        description: "",
+        guideline: "",
+      });
     }
   };
 
   return (
     <div className="min-h-screen w-full bg-[#0B1120] text-white font-sans relative">
-      {/* Header */}
       <header className="flex items-center justify-between px-8 py-4 bg-[#0B1120] border-b border-white/5">
         <div className="flex items-center gap-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#A855F7] shadow-lg shadow-purple-500/20 text-white">
@@ -160,7 +79,6 @@ export default function ProjectManagement() {
         </button>
       </header>
 
-      {/* Main Content */}
       <main className="p-8 max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-end mb-8">
           <div>
@@ -192,46 +110,85 @@ export default function ProjectManagement() {
           </button>
         </div>
 
-        {/* Danh sách dự án */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {filteredProjects.map((proj) => (
-            <div
-              key={proj.id}
-              onClick={() => navigate(`/manager/projects/${proj.id}`)}
-              className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm hover:border-white/10 transition-colors cursor-pointer"
+        {isLoadingProjects ? (
+          <div className="flex justify-center items-center py-10">
+            <svg
+              className="animate-spin h-8 w-8 text-blue-500"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
             >
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-lg font-semibold text-white">
-                  {proj.name}
-                </h3>
-                <span
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium ${proj.status === "Active" ? "bg-emerald-500/10 text-emerald-400" : "bg-gray-500/10 text-gray-400"}`}
-                >
-                  {proj.status}
-                </span>
-              </div>
-              <div className="text-sm text-gray-400 mb-6">
-                Type: <span className="text-gray-200">{proj.type}</span>
-              </div>
-              <div>
-                <div className="flex justify-between text-xs mb-2 text-gray-400">
-                  <span>Progress</span>
-                  <span>
-                    {proj.progress}% (
-                    {Math.floor((proj.totalTasks * proj.progress) / 100)}/
-                    {proj.totalTasks})
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span className="ml-3 text-gray-400">Đang tải dữ liệu...</span>
+          </div>
+        ) : filteredProjects.length === 0 ? (
+          <div className="text-center py-10 text-gray-500 bg-[#151D2F] rounded-xl border border-white/5">
+            Chưa có dự án nào. Bấm "Create New Project" để bắt đầu!
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {filteredProjects.map((proj) => (
+              <div
+                // --- ĐÃ SỬA THÀNH projectID CHO CHUẨN BE ---
+                key={proj.projectID || Math.random()}
+                onClick={() => navigate(`/manager/projects/${proj.projectID}`)}
+                className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm hover:border-white/10 transition-colors cursor-pointer"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  {/* Đã sửa thành projectName */}
+                  <h3 className="text-lg font-semibold text-white">
+                    {proj.projectName || "Dự án không tên"}
+                  </h3>
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                      proj.status === "Open" || proj.status === "Active"
+                        ? "bg-emerald-500/10 text-emerald-400"
+                        : "bg-gray-500/10 text-gray-400"
+                    }`}
+                  >
+                    {proj.status || "Active"}
                   </span>
                 </div>
-                <div className="w-full bg-[#0B1120] h-2 rounded-full overflow-hidden">
-                  <div
-                    className={`h-2 rounded-full ${proj.status === "Active" ? "bg-blue-500" : "bg-gray-500"}`}
-                    style={{ width: `${proj.progress}%` }}
-                  ></div>
+                <div className="text-sm text-gray-400 mb-6">
+                  {/* Đã sửa thành projectType */}
+                  Type:{" "}
+                  <span className="text-gray-200">
+                    {proj.projectType || "Unknown"}
+                  </span>
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-2 text-gray-400">
+                    <span>Progress</span>
+                    <span>0% (0/0)</span>
+                  </div>
+                  <div className="w-full bg-[#0B1120] h-2 rounded-full overflow-hidden">
+                    <div
+                      className={`h-2 rounded-full ${
+                        proj.status === "Open" || proj.status === "Active"
+                          ? "bg-blue-500"
+                          : "bg-gray-500"
+                      }`}
+                      style={{ width: `0%` }}
+                    ></div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </main>
 
       {/* MODAL TẠO DỰ ÁN */}
@@ -242,20 +199,37 @@ export default function ProjectManagement() {
               Create New Project
             </h2>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">
-                  Project Name <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
-                  placeholder="Enter project name..."
-                />
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm text-gray-400 mb-1">
+                    Project Name <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
+                    placeholder="Enter project name..."
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm text-gray-400 mb-1">
+                    Topic <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.topic}
+                    onChange={(e) =>
+                      setFormData({ ...formData, topic: e.target.value })
+                    }
+                    className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
+                    placeholder="VD: car, animal..."
+                  />
+                </div>
               </div>
+
               <div>
                 <label className="block text-sm text-gray-400 mb-1">
                   Data Type
@@ -271,10 +245,10 @@ export default function ProjectManagement() {
                   <option value="Text">Text</option>
                   <option value="Audio">Audio</option>
                   <option value="Video">Video</option>
-                  {/* --- THÊM TYPE MIXED Ở ĐÂY --- */}
                   <option value="Mixed">Mixed (Hỗn hợp)</option>
                 </select>
               </div>
+
               <div>
                 <label className="block text-sm text-gray-400 mb-1">
                   Description
@@ -288,54 +262,37 @@ export default function ProjectManagement() {
                   placeholder="Brief description..."
                 ></textarea>
               </div>
+
               <div>
                 <label className="block text-sm text-gray-400 mb-1">
-                  Project Guidelines
+                  Guideline Link (Tùy chọn)
                 </label>
-                <textarea
+                <input
+                  type="text"
                   value={formData.guideline}
                   onChange={(e) =>
                     setFormData({ ...formData, guideline: e.target.value })
                   }
-                  className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500 h-20 resize-none"
-                  placeholder="Instructions for annotators..."
-                ></textarea>
-              </div>
-
-              {/* INPUT UPLOAD FILE */}
-              <div className="border border-dashed border-white/20 p-4 rounded-lg bg-[#0B1120]">
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Upload Dataset (Multiple Files){" "}
-                  <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="file"
-                  multiple
-                  onChange={(e) => setDatasetFiles(e.target.files)}
-                  className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-500/10 file:text-blue-400 hover:file:bg-blue-500/20 cursor-pointer"
+                  className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
+                  placeholder="Nhập đường dẫn tài liệu..."
                 />
-                {datasetFiles.length > 0 && (
-                  <p className="mt-2 text-xs text-emerald-400">
-                    Đã chọn {datasetFiles.length} file.
-                  </p>
-                )}
               </div>
             </div>
 
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-white/10">
               <button
                 onClick={() => setIsModalOpen(false)}
-                disabled={isUploading}
+                disabled={isCreating}
                 className="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
-                onClick={handleCreateProject}
-                disabled={isUploading}
+                onClick={handleSubmit}
+                disabled={isCreating}
                 className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                {isUploading ? (
+                {isCreating ? (
                   <>
                     <svg
                       className="animate-spin h-4 w-4 text-white"
@@ -357,10 +314,10 @@ export default function ProjectManagement() {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
                     </svg>
-                    Uploading...
+                    Creating...
                   </>
                 ) : (
-                  "Save & Upload"
+                  "Create Project"
                 )}
               </button>
             </div>
