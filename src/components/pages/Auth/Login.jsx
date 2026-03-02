@@ -21,6 +21,7 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [touched, setTouched] = useState({ username: false, password: false });
 
+  // 1. VALIDATION CƠ BẢN TRÊN FORM
   const errors = useMemo(() => {
     const e = {};
     if (!username.trim()) e.username = "Username is required.";
@@ -34,7 +35,7 @@ export default function Login() {
   async function onSubmit(e) {
     e.preventDefault();
     if (!canSubmit) return;
-
+git 
     const res = await login({ username, password });
 
     // Nếu res.success là true thì mới chạy tiếp, không là nó đứng im hiện chữ đỏ đó!
