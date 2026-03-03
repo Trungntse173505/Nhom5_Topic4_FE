@@ -4,12 +4,14 @@ import {
   updateTaskDeadline,
   assignTaskPersonnel,
   revokeTask,
-  getUsersList,
+  getAvailableAnnotators, // <-- Gọi API mới
+  getAvailableReviewers, // <-- Gọi API mới
 } from "../api/managerApi";
 
 export const useTaskTracking = (projectId) => {
   const [tasks, setTasks] = useState([]);
-  const [users, setUsers] = useState([]); // Chứa danh sách nhân sự để Reassign
+  const [annotators, setAnnotators] = useState([]); // Tách riêng list Annotator
+  const [reviewers, setReviewers] = useState([]); // Tách riêng list Reviewer
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
@@ -17,13 +19,16 @@ export const useTaskTracking = (projectId) => {
     if (!projectId) return;
     setIsLoading(true);
     try {
-      const [tasksRes, usersRes] = await Promise.all([
+      // Gọi song song 3 API: Lấy Task, lấy Annotator, lấy Reviewer
+      const [tasksRes, annRes, revRes] = await Promise.all([
         getProjectTasks(projectId).catch(() => []),
-        getUsersList().catch(() => []),
+        getAvailableAnnotators().catch(() => []),
+        getAvailableReviewers().catch(() => []),
       ]);
 
       const taskList = Array.isArray(tasksRes) ? tasksRes : tasksRes.data || [];
-      const userList = Array.isArray(usersRes) ? usersRes : usersRes.data || [];
+      const annList = Array.isArray(annRes) ? annRes : annRes.data || [];
+      const revList = Array.isArray(revRes) ? revRes : revRes.data || [];
 
       // Logic tính toán quá hạn (Overdue)
       const today = new Date();
@@ -35,7 +40,8 @@ export const useTaskTracking = (projectId) => {
       }));
 
       setTasks(processedTasks);
-      setUsers(userList);
+      setAnnotators(annList); // Gắn data vào state
+      setReviewers(revList); // Gắn data vào state
     } catch (error) {
       console.error("Lỗi lấy dữ liệu Task Tracking:", error);
     } finally {
@@ -47,12 +53,11 @@ export const useTaskTracking = (projectId) => {
     fetchData();
   }, [projectId]);
 
-  // Hành động gọi API
   const handleAction = async (actionFn, ...args) => {
     try {
       setIsActionLoading(true);
       await actionFn(...args);
-      await fetchData(); // Refresh lại danh sách sau khi làm xong
+      await fetchData();
       return true;
     } catch (error) {
       alert(error.message);
@@ -64,7 +69,8 @@ export const useTaskTracking = (projectId) => {
 
   return {
     tasks,
-    users, // Trả ra để UI đổ vào Dropdown Reassign
+    annotators,
+    reviewers,
     isLoading,
     isActionLoading,
     fetchTasks: fetchData,

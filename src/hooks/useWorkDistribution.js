@@ -1,31 +1,19 @@
 import { useState, useEffect } from "react";
-import {
-  getUsersList,
-  getUnassignedItems,
-  createBatchTask,
-  assignTaskPersonnel,
-  updateTaskDeadline,
-} from "../api/managerApi";
+import { getUnassignedItems, createBatchTask } from "../api/managerApi";
 
 export const useWorkDistribution = (projectId, onRefresh) => {
-  const [users, setUsers] = useState([]);
   const [unassignedItems, setUnassignedItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // 1. Kéo dữ liệu File chưa giao và Danh sách nhân viên
   const fetchData = async () => {
     if (!projectId) return;
     setIsLoading(true);
     try {
-      const [itemsRes, usersRes] = await Promise.all([
-        getUnassignedItems(projectId).catch(() => []),
-        getUsersList().catch(() => []),
-      ]);
+      const itemsRes = await getUnassignedItems(projectId);
       setUnassignedItems(
         Array.isArray(itemsRes) ? itemsRes : itemsRes.data || [],
       );
-      setUsers(Array.isArray(usersRes) ? usersRes : usersRes.data || []);
     } catch (error) {
       console.error("Lỗi lấy dữ liệu:", error);
     } finally {
@@ -37,36 +25,21 @@ export const useWorkDistribution = (projectId, onRefresh) => {
     fetchData();
   }, [projectId]);
 
-  // 2. Chạy liên hoàn 3 API: Gom lô -> Giao việc -> Deadline
-  const createBatchAndAssign = async (selectedIds, assignmentData) => {
-    if (!selectedIds || selectedIds.length === 0) return false;
+  // CHỈ TẠO TASK, KHÔNG GIAO NGƯỜI
+  const createBatch = async (selectedIds, taskName, deadline) => {
+    if (!selectedIds.length || !taskName || !deadline) return false;
     setIsProcessing(true);
     try {
-      // BƯỚC 1: Gom lô tạo Task
-      const taskRes = await createBatchTask(projectId, selectedIds);
-      const newTaskId =
-        taskRes.taskId || taskRes.id || (taskRes.data && taskRes.data.id);
+      // Chuẩn bị payload đúng Swagger
+      const payload = {
+        taskName: taskName,
+        dataIDs: selectedIds,
+        // Chuyển format ngày giờ sang chuẩn ISO theo yêu cầu BE
+        deadline: new Date(deadline).toISOString(),
+      };
 
-      if (!newTaskId)
-        throw new Error(
-          "Tạo lô thành công nhưng không lấy được Task ID từ Backend",
-        );
-
-      // BƯỚC 2: Giao Annotator & Reviewer
-      if (assignmentData.annotatorId) {
-        await assignTaskPersonnel(
-          newTaskId,
-          assignmentData.annotatorId,
-          assignmentData.reviewerId || null,
-        );
-      }
-
-      // BƯỚC 3: Đặt Deadline
-      if (assignmentData.deadline) {
-        await updateTaskDeadline(newTaskId, assignmentData.deadline);
-      }
-
-      await fetchData(); // Load lại list file chưa giao
+      await createBatchTask(projectId, payload);
+      await fetchData();
       if (onRefresh) onRefresh();
       return true;
     } catch (error) {
@@ -77,11 +50,5 @@ export const useWorkDistribution = (projectId, onRefresh) => {
     }
   };
 
-  return {
-    users,
-    unassignedItems,
-    isLoading,
-    isProcessing,
-    createBatchAndAssign,
-  };
+  return { unassignedItems, isLoading, isProcessing, createBatch };
 };

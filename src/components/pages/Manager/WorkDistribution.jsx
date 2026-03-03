@@ -2,26 +2,14 @@ import React, { useState } from "react";
 import { useWorkDistribution } from "../../../hooks/useWorkDistribution";
 
 export default function WorkDistribution({ project, onRefresh }) {
-  // Lấy ID dự án an toàn
   const projectId = project?.projectID || project?.id;
 
-  // Sử dụng Hook mới
-  const {
-    users,
-    unassignedItems,
-    isLoading,
-    isProcessing,
-    createBatchAndAssign,
-  } = useWorkDistribution(projectId, onRefresh);
+  const { unassignedItems, isLoading, isProcessing, createBatch } =
+    useWorkDistribution(projectId, onRefresh);
 
   const [selectedIds, setSelectedIds] = useState([]);
-  const [assignment, setAssignment] = useState({
-    annotatorId: "",
-    reviewerId: "",
-    deadline: "",
-  });
+  const [taskData, setTaskData] = useState({ taskName: "", deadline: "" });
 
-  // Toggle chọn file
   const toggleSelection = (id) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
@@ -29,22 +17,28 @@ export default function WorkDistribution({ project, onRefresh }) {
   };
 
   const handleSubmit = async () => {
-    if (!assignment.annotatorId || !assignment.deadline) {
-      alert("Vui lòng chọn người làm và hạn chót!");
+    if (!taskData.taskName || !taskData.deadline) {
+      alert("Vui lòng nhập Tên Task và Hạn chót!");
       return;
     }
 
-    const success = await createBatchAndAssign(selectedIds, assignment);
+    const success = await createBatch(
+      selectedIds,
+      taskData.taskName,
+      taskData.deadline,
+    );
     if (success) {
-      alert("Gom lô và giao việc thành công!");
+      alert(
+        "Tạo Task thành công! Vui lòng sang tab Task Tracking để giao việc.",
+      );
       setSelectedIds([]);
-      setAssignment({ annotatorId: "", reviewerId: "", deadline: "" });
+      setTaskData({ taskName: "", deadline: "" });
     }
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* CỘT 1: CHỌN FILE CHƯA GÁN NHÃN */}
+      {/* CỘT 1: CHỌN FILE */}
       <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col h-[500px]">
         <div className="mb-4 flex justify-between items-center">
           <div>
@@ -67,39 +61,28 @@ export default function WorkDistribution({ project, onRefresh }) {
             </div>
           ) : unassignedItems.length === 0 ? (
             <div className="text-center py-20 text-gray-500 text-sm">
-              Tất cả file đã được giao hoặc chưa có dữ liệu.
+              Kho trống.
             </div>
           ) : (
             unassignedItems.map((item, idx) => {
-              // BỌC LÓT TÊN BIẾN TỪ BACKEND
               const targetId = item.dataItemId || item.id || item.dataID;
               const targetName =
                 item.fileName || item.name || `File #${targetId || idx}`;
-              const targetPath = item.filePath || item.url || "";
 
               return (
                 <label
                   key={targetId || idx}
-                  className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition-colors ${
-                    selectedIds.includes(targetId)
-                      ? "border-blue-500 bg-blue-500/10"
-                      : "border-white/5 bg-[#0B1120] hover:border-white/20"
-                  }`}
+                  className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition-colors ${selectedIds.includes(targetId) ? "border-blue-500 bg-blue-500/10" : "border-white/5 bg-[#0B1120] hover:border-white/20"}`}
                 >
                   <input
                     type="checkbox"
-                    className="w-4 h-4 rounded bg-[#0B1120] border-white/20 text-blue-500"
+                    className="w-4 h-4 rounded"
                     checked={selectedIds.includes(targetId)}
                     onChange={() => toggleSelection(targetId)}
                   />
-                  <div className="flex flex-col">
-                    <span className="text-gray-300 text-sm font-medium">
-                      {targetName}
-                    </span>
-                    <span className="text-[10px] text-gray-500 truncate max-w-[200px]">
-                      {targetPath}
-                    </span>
-                  </div>
+                  <span className="text-gray-300 text-sm font-medium">
+                    {targetName}
+                  </span>
                 </label>
               );
             })
@@ -107,67 +90,26 @@ export default function WorkDistribution({ project, onRefresh }) {
         </div>
       </div>
 
-      {/* CỘT 2: FORM GÁN VIỆC */}
+      {/* CỘT 2: FORM TẠO TASK */}
       <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm h-fit">
         <h2 className="text-lg font-semibold text-white mb-6">
-          Task Assignment
+          Create New Task
         </h2>
 
         <div className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">
-              Assign to Annotator
+              Task Name
             </label>
-            <select
-              value={assignment.annotatorId}
+            <input
+              type="text"
+              placeholder="Ví dụ: Lô ảnh xe cộ đợt 1"
+              value={taskData.taskName}
               onChange={(e) =>
-                setAssignment({ ...assignment, annotatorId: e.target.value })
+                setTaskData({ ...taskData, taskName: e.target.value })
               }
               className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-3 text-sm text-white outline-none focus:border-blue-500"
-            >
-              <option value="">-- Select Annotator --</option>
-              {users
-                .filter(
-                  (u) => u.role === "Annotator" || u.roleName === "Annotator",
-                )
-                .map((u) => {
-                  const targetUserId = u.userId || u.id;
-                  const targetUserName = u.fullName || u.userName || "User";
-                  return (
-                    <option key={targetUserId} value={targetUserId}>
-                      {targetUserName} (Score: {u.score || 100})
-                    </option>
-                  );
-                })}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2">
-              Assign to Reviewer (Optional)
-            </label>
-            <select
-              value={assignment.reviewerId}
-              onChange={(e) =>
-                setAssignment({ ...assignment, reviewerId: e.target.value })
-              }
-              className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-3 text-sm text-white outline-none focus:border-blue-500"
-            >
-              <option value="">-- Select Reviewer --</option>
-              {users
-                .filter(
-                  (u) => u.role === "Reviewer" || u.roleName === "Reviewer",
-                )
-                .map((u) => {
-                  const targetUserId = u.userId || u.id;
-                  const targetUserName = u.fullName || u.userName || "User";
-                  return (
-                    <option key={targetUserId} value={targetUserId}>
-                      {targetUserName}
-                    </option>
-                  );
-                })}
-            </select>
+            />
           </div>
 
           <div>
@@ -176,9 +118,9 @@ export default function WorkDistribution({ project, onRefresh }) {
             </label>
             <input
               type="date"
-              value={assignment.deadline}
+              value={taskData.deadline}
               onChange={(e) =>
-                setAssignment({ ...assignment, deadline: e.target.value })
+                setTaskData({ ...taskData, deadline: e.target.value })
               }
               className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-3 text-sm text-white outline-none focus:border-blue-500 [color-scheme:dark]"
             />
@@ -190,8 +132,8 @@ export default function WorkDistribution({ project, onRefresh }) {
             className="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-600 disabled:text-gray-400 text-white py-3 rounded-lg font-medium transition-colors shadow-lg"
           >
             {isProcessing
-              ? "Processing..."
-              : `Create Task Batch (${selectedIds.length})`}
+              ? "Đang tạo..."
+              : `Create Task (${selectedIds.length} files)`}
           </button>
         </div>
       </div>

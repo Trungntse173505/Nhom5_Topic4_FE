@@ -3,13 +3,13 @@ import { useParams } from "react-router-dom";
 import { useTaskTracking } from "../../../hooks/useTaskTracking";
 
 export default function TaskTracking({ project }) {
-  // Lấy ID dự án an toàn từ URL hoặc từ prop
   const { projectId: paramId } = useParams();
   const projectId = paramId || project?.projectID || project?.id;
 
   const {
     tasks,
-    users,
+    annotators,
+    reviewers,
     isLoading,
     isActionLoading,
     extendDeadline,
@@ -19,17 +19,18 @@ export default function TaskTracking({ project }) {
 
   const [searchTerm, setSearchTerm] = useState("");
 
-  // State quản lý Modal Giao lại (Reassign)
   const [reassignModal, setReassignModal] = useState({
     show: false,
     taskId: null,
     annotatorId: "",
     reviewerId: "",
+    isFirstAssign: false,
   });
 
   const getStatusColor = (status) => {
     const s = (status || "").toLowerCase();
-    if (s.includes("progress")) return "bg-amber-500/10 text-amber-400";
+    if (s === "0" || s.includes("progress"))
+      return "bg-amber-500/10 text-amber-400";
     if (s.includes("pending") || s.includes("review"))
       return "bg-purple-500/10 text-purple-400";
     if (s.includes("reject")) return "bg-rose-500/10 text-rose-400";
@@ -38,35 +39,30 @@ export default function TaskTracking({ project }) {
     return "bg-gray-500/10 text-gray-400";
   };
 
-  // Lọc Task theo Search
   const filteredTasks = tasks.filter((t) => {
-    const targetId = t.taskId || t.id || "";
-    return targetId.toString().toLowerCase().includes(searchTerm.toLowerCase());
+    const searchString = `${t.taskID} ${t.taskName}`.toLowerCase();
+    return searchString.includes(searchTerm.toLowerCase());
   });
 
-  // Tách role nhân sự cho Modal Reassign
-  const annotators = users.filter(
-    (u) => u.role === "Annotator" || u.roleName === "Annotator",
-  );
-  const reviewers = users.filter(
-    (u) => u.role === "Reviewer" || u.roleName === "Reviewer",
-  );
-
   const submitReassign = async () => {
-    if (!reassignModal.annotatorId)
-      return alert("Vui lòng chọn Annotator mới!");
+    if (!reassignModal.annotatorId) return alert("Vui lòng chọn Annotator!");
     const success = await reassignTask(
       reassignModal.taskId,
       reassignModal.annotatorId,
       reassignModal.reviewerId || null,
     );
     if (success) {
-      alert("Đã giao lại công việc thành công!");
+      alert(
+        reassignModal.isFirstAssign
+          ? "Đã giao việc thành công!"
+          : "Đã đổi nhân sự thành công!",
+      );
       setReassignModal({
         show: false,
         taskId: null,
         annotatorId: "",
         reviewerId: "",
+        isFirstAssign: false,
       });
     }
   };
@@ -77,13 +73,13 @@ export default function TaskTracking({ project }) {
         <div>
           <h2 className="text-lg font-semibold text-white">Task Tracking</h2>
           <p className="text-sm text-gray-400 mt-1">
-            Giám sát tiến độ, gia hạn hoặc giao lại công việc.
+            Giám sát tiến độ, gia hạn hoặc giao việc cho nhân sự.
           </p>
         </div>
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="Tìm theo Task ID..."
+            placeholder="Tìm theo Task Name hoặc ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-sm text-white outline-none focus:border-blue-500 w-[250px]"
@@ -100,9 +96,11 @@ export default function TaskTracking({ project }) {
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-[#0B1120] text-gray-400 border-b border-white/5">
               <tr>
-                <th className="px-4 py-3 rounded-tl-lg font-medium">Task ID</th>
+                <th className="px-4 py-3 rounded-tl-lg font-medium">
+                  Task Info
+                </th>
+                <th className="px-4 py-3 font-medium">Tiến độ</th>
                 <th className="px-4 py-3 font-medium">Nhân sự (Ann / Rev)</th>
-                <th className="px-4 py-3 font-medium">Trạng thái</th>
                 <th className="px-4 py-3 font-medium">Hạn chót</th>
                 <th className="px-4 py-3 rounded-tr-lg font-medium text-right">
                   Thao tác
@@ -118,36 +116,79 @@ export default function TaskTracking({ project }) {
                 </tr>
               ) : (
                 filteredTasks.map((task, idx) => {
-                  // BỌC LÓT TÊN BIẾN
-                  const targetId = task.taskId || task.id;
-                  const annName =
-                    task.annotatorName ||
-                    task.annotator?.fullName ||
-                    "Chưa giao";
-                  const revName =
-                    task.reviewerName || task.reviewer?.fullName || "---";
-                  const status = task.status || task.taskStatus || "Unknown";
+                  const targetId = task.taskID || task.taskId || task.id;
+                  const taskName = task.taskName || `Task #${targetId}`;
+                  const rateComplete = task.rateComplete || 0;
+                  const totalItems = task.totalItems || 0;
+
+                  const isUnassigned = !task.annotatorID;
+
+                  // TỰ ĐỘNG DÒ TÊN TỪ DANH SÁCH CÓ SẴN (Phòng hờ BE quên trả tên)
+                  const matchedAnn = annotators.find(
+                    (a) => a.userID === task.annotatorID,
+                  );
+                  const matchedRev = reviewers.find(
+                    (r) => r.userID === task.reviewerID,
+                  );
+
+                  // Bọc lót 3 lớp để đảm bảo không bao giờ hiện lỗi
+                  const annName = isUnassigned
+                    ? "Chưa giao"
+                    : task.annotatorName ||
+                      matchedAnn?.fullName ||
+                      `User ID: ${task.annotatorID.substring(0, 8)}...`;
+
+                  const revName = !task.reviewerID
+                    ? "---"
+                    : task.reviewerName ||
+                      matchedRev?.fullName ||
+                      `User ID: ${task.reviewerID.substring(0, 8)}...`;
+
+                  const status = task.status || "Unknown";
 
                   return (
                     <tr key={targetId || idx} className="hover:bg-white/[0.02]">
-                      <td className="px-4 py-4 font-medium text-gray-200">
-                        {targetId ? `TSK-${targetId}` : "N/A"}
-                      </td>
                       <td className="px-4 py-4">
-                        <div className="text-gray-300 font-medium">
+                        <div className="font-medium text-gray-200">
+                          {taskName}
+                        </div>
+                        <div className="text-[10px] text-gray-500 mt-0.5">
+                          ID: {targetId}
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 h-2 bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-blue-500 rounded-full"
+                              style={{ width: `${rateComplete}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-xs text-gray-400">
+                            {rateComplete}% ({totalItems} items)
+                          </span>
+                        </div>
+                        <div className="mt-1">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider ${getStatusColor(status)}`}
+                          >
+                            {status === "0" ? "In Progress" : status}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-4">
+                        <div
+                          className={`font-medium ${isUnassigned ? "text-amber-500" : "text-gray-300"}`}
+                        >
                           {annName}
                         </div>
                         <div className="text-xs text-gray-500 mt-0.5">
                           Rev: {revName}
                         </div>
                       </td>
-                      <td className="px-4 py-4">
-                        <span
-                          className={`px-2 py-1 rounded text-[11px] font-medium uppercase tracking-wider ${getStatusColor(status)}`}
-                        >
-                          {status}
-                        </span>
-                      </td>
+
                       <td className="px-4 py-4">
                         <div
                           className={`text-sm ${task.isOverdue ? "text-rose-400 font-bold" : "text-gray-300"}`}
@@ -164,36 +205,58 @@ export default function TaskTracking({ project }) {
                           </div>
                         )}
                       </td>
+
                       <td className="px-4 py-4 text-right space-x-2">
                         <button
                           onClick={() => {
+                            if (!targetId)
+                              return alert(
+                                "Task này chưa có ID, không thể thao tác!",
+                              );
                             const newDate = prompt(
                               "Nhập ngày gia hạn mới (YYYY-MM-DD):",
                               task.deadline ? task.deadline.split("T")[0] : "",
                             );
-                            if (newDate) extendDeadline(targetId, newDate);
+                            if (newDate) {
+                              try {
+                                const isoString = new Date(
+                                  newDate,
+                                ).toISOString();
+                                extendDeadline(targetId, isoString);
+                              } catch (err) {
+                                alert("Định dạng ngày không hợp lệ!");
+                              }
+                            }
                           }}
-                          disabled={isActionLoading}
+                          disabled={isActionLoading || !targetId}
                           className="text-xs px-3 py-1.5 rounded bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-colors disabled:opacity-50"
                         >
                           Extend
                         </button>
+
                         <button
-                          onClick={() =>
+                          onClick={() => {
+                            if (!targetId)
+                              return alert(
+                                "Task này chưa có ID, không thể thao tác!",
+                              );
                             setReassignModal({
                               show: true,
                               taskId: targetId,
-                              annotatorId: task.annotatorId || "",
-                              reviewerId: task.reviewerId || "",
-                            })
-                          }
-                          disabled={isActionLoading}
-                          className="text-xs px-3 py-1.5 rounded bg-white/5 hover:bg-white/10 text-gray-300 transition-colors disabled:opacity-50"
+                              annotatorId: task.annotatorID || "",
+                              reviewerId: task.reviewerID || "",
+                              isFirstAssign: isUnassigned,
+                            });
+                          }}
+                          disabled={isActionLoading || !targetId}
+                          className={`text-xs px-3 py-1.5 rounded transition-colors disabled:opacity-50 ${isUnassigned ? "bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-bold" : "bg-white/5 hover:bg-white/10 text-gray-300"}`}
                         >
-                          Reassign
+                          {isUnassigned ? "Assign" : "Reassign"}
                         </button>
+
                         <button
                           onClick={() => {
+                            if (!targetId) return;
                             if (
                               window.confirm(
                                 "Bạn có chắc chắn muốn thu hồi (Revoke) task này về kho không?",
@@ -201,7 +264,7 @@ export default function TaskTracking({ project }) {
                             )
                               revoke(targetId);
                           }}
-                          disabled={isActionLoading}
+                          disabled={isActionLoading || !targetId}
                           className="text-xs px-3 py-1.5 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors disabled:opacity-50"
                         >
                           Revoke
@@ -216,18 +279,19 @@ export default function TaskTracking({ project }) {
         )}
       </div>
 
-      {/* MODAL GIAO LẠI VIỆC (REASSIGN) */}
       {reassignModal.show && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#0B1120]/80 backdrop-blur-sm rounded-xl">
           <div className="bg-[#151D2F] border border-white/10 p-6 rounded-xl shadow-2xl w-[400px]">
             <h3 className="text-lg font-semibold text-white mb-4">
-              Giao lại Task #{reassignModal.taskId}
+              {reassignModal.isFirstAssign
+                ? "Giao việc cho Task"
+                : "Giao lại Task"}
             </h3>
 
             <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">
-                  Chọn Annotator mới
+                  Chọn Annotator
                 </label>
                 <select
                   value={reassignModal.annotatorId}
@@ -241,15 +305,16 @@ export default function TaskTracking({ project }) {
                 >
                   <option value="">-- Chọn Annotator --</option>
                   {annotators.map((u) => (
-                    <option key={u.id || u.userId} value={u.id || u.userId}>
-                      {u.fullName || u.userName}
+                    <option key={u.userID} value={u.userID}>
+                      {u.fullName} {u.score ? `(Score: ${u.score})` : ""} -{" "}
+                      {u.expertise || "Cơ bản"}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">
-                  Chọn Reviewer mới
+                  Chọn Reviewer
                 </label>
                 <select
                   value={reassignModal.reviewerId}
@@ -263,8 +328,8 @@ export default function TaskTracking({ project }) {
                 >
                   <option value="">-- Bỏ qua nếu không cần --</option>
                   {reviewers.map((u) => (
-                    <option key={u.id || u.userId} value={u.id || u.userId}>
-                      {u.fullName || u.userName}
+                    <option key={u.userID} value={u.userID}>
+                      {u.fullName} {u.score ? `(Score: ${u.score})` : ""}
                     </option>
                   ))}
                 </select>
@@ -279,6 +344,7 @@ export default function TaskTracking({ project }) {
                     taskId: null,
                     annotatorId: "",
                     reviewerId: "",
+                    isFirstAssign: false,
                   })
                 }
                 className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"

@@ -125,12 +125,12 @@ export const getUnassignedItems = async (projectId) => {
   return data;
 };
 
-// Gom lô dữ liệu và tạo Task mới
-export const createBatchTask = async (projectId, dataItemIds) => {
+// Gom lô dữ liệu và tạo Task mới (ĐÃ SỬA THEO SWAGGER MỚI)
+export const createBatchTask = async (projectId, payload) => {
   const response = await fetch(`${BASE_URL}/projects/${projectId}/tasks`, {
     method: "POST",
     headers: getAuthHeaders(),
-    body: JSON.stringify({ dataItemIds }),
+    body: JSON.stringify(payload), // Truyền thẳng payload { taskName, dataIDs, deadline }
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.message || "Lỗi gom lô dữ liệu");
@@ -149,12 +149,12 @@ export const getProjectTasks = async (projectId) => {
   return data;
 };
 
-// Cập nhật/Giao nhân sự cho một Task cụ thể (Assign / Reassign)
-export const assignTaskPersonnel = async (taskId, annotatorId, reviewerId) => {
+// Cập nhật/Giao nhân sự cho một Task cụ thể (ĐÃ SỬA CHỮ IN HOA THEO SWAGGER)
+export const assignTaskPersonnel = async (taskId, annotatorID, reviewerID) => {
   const response = await fetch(`${BASE_URL}/tasks/${taskId}/assign`, {
     method: "PATCH",
     headers: getAuthHeaders(),
-    body: JSON.stringify({ annotatorId, reviewerId }),
+    body: JSON.stringify({ annotatorID, reviewerID }),
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.message || "Lỗi giao nhân sự");
@@ -311,4 +311,28 @@ export const deleteProjectLabel = async (projectLabelId) => {
     throw new Error(data.message || "Lỗi xóa nhãn");
   }
   return { message: "Xóa thành công" };
+};
+
+// Lấy danh sách Annotator khả dụng
+export const getAvailableAnnotators = async () => {
+  const response = await fetch(`${BASE_URL}/tasks/available-annotators`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok)
+    throw new Error(data.message || "Lỗi lấy danh sách Annotator");
+  return data;
+};
+
+// Lấy danh sách Reviewer khả dụng
+export const getAvailableReviewers = async () => {
+  const response = await fetch(`${BASE_URL}/tasks/available-reviewers`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok)
+    throw new Error(data.message || "Lỗi lấy danh sách Reviewer");
+  return data;
 };

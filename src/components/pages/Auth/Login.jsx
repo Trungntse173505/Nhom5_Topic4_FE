@@ -6,8 +6,19 @@ import { updateUserPresence } from "../../../services/firebase";
 function ShieldIcon() {
   return (
     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600/20 ring-1 ring-blue-500/30">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="text-blue-500">
-        <path d="M12 2l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V6l7-4z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        className="text-blue-500"
+      >
+        <path
+          d="M12 2l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V6l7-4z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
       </svg>
     </div>
   );
@@ -26,7 +37,8 @@ export default function Login() {
     const e = {};
     if (!username.trim()) e.username = "Username is required.";
     if (!password) e.password = "Password is required.";
-    else if (password.length < 5) e.password = "Password must be at least 5 chars.";
+    else if (password.length < 5)
+      e.password = "Password must be at least 5 chars.";
     return e;
   }, [username, password]);
 
@@ -35,7 +47,6 @@ export default function Login() {
   async function onSubmit(e) {
     e.preventDefault();
     if (!canSubmit) return;
-git 
     const res = await login({ username, password });
 
     // Nếu res.success là true thì mới chạy tiếp, không là nó đứng im hiện chữ đỏ đó!
@@ -54,7 +65,7 @@ git
         admin: "/admin",
         manager: "/manager",
         annotator: "/annotator",
-        reviewer: "/reviewer"
+        reviewer: "/reviewer",
       };
 
       navigate(roleToPath[roleName.toLowerCase()] || "/admin");
@@ -73,8 +84,12 @@ git
         <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-10 shadow-2xl backdrop-blur-2xl">
           <div className="flex flex-col items-center text-center mb-8">
             <ShieldIcon />
-            <h1 className="mt-6 text-2xl font-bold tracking-tight text-white">Data Labeling System</h1>
-            <p className="mt-2 text-sm text-white/40 font-medium">Please sign in to your account</p>
+            <h1 className="mt-6 text-2xl font-bold tracking-tight text-white">
+              Data Labeling System
+            </h1>
+            <p className="mt-2 text-sm text-white/40 font-medium">
+              Please sign in to your account
+            </p>
           </div>
 
           <form onSubmit={onSubmit} className="space-y-6">
@@ -82,11 +97,11 @@ git
               <input
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                onBlur={() => setTouched(t => ({ ...t, username: true }))}
+                onBlur={() => setTouched((t) => ({ ...t, username: true }))}
                 type="text"
                 placeholder="Username"
                 className={`w-full rounded-xl border bg-white/[0.03] px-4 py-3.5 text-sm text-white outline-none transition-all placeholder:text-white/20 
-                  ${touched.username && errors.username ? 'border-rose-500/50 focus:ring-rose-500/10' : 'border-white/10 focus:border-blue-500/50 focus:ring-blue-500/10 focus:ring-4'}`}
+                  ${touched.username && errors.username ? "border-rose-500/50 focus:ring-rose-500/10" : "border-white/10 focus:border-blue-500/50 focus:ring-blue-500/10 focus:ring-4"}`}
               />
             </div>
 
@@ -94,13 +109,17 @@ git
               <input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                onBlur={() => setTouched(t => ({ ...t, password: true }))}
+                onBlur={() => setTouched((t) => ({ ...t, password: true }))}
                 type={showPw ? "text" : "password"}
                 placeholder="Password"
                 className={`w-full rounded-xl border bg-white/[0.03] px-4 py-3.5 text-sm text-white outline-none transition-all placeholder:text-white/20
-                  ${touched.password && errors.password ? 'border-rose-500/50' : 'border-white/10 focus:border-blue-500/50'}`}
+                  ${touched.password && errors.password ? "border-rose-500/50" : "border-white/10 focus:border-blue-500/50"}`}
               />
-              <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-white/30 hover:text-white/60">
+              <button
+                type="button"
+                onClick={() => setShowPw(!showPw)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-white/30 hover:text-white/60"
+              >
                 {showPw ? "HIDE" : "SHOW"}
               </button>
             </div>
@@ -113,7 +132,11 @@ git
               {authLoading ? "Authenticating..." : "Sign In"}
             </button>
 
-            {authError && <p className="text-center text-xs font-medium text-rose-400 mt-4 bg-rose-400/10 py-2 rounded-lg">{authError}</p>}
+            {authError && (
+              <p className="text-center text-xs font-medium text-rose-400 mt-4 bg-rose-400/10 py-2 rounded-lg">
+                {authError}
+              </p>
+            )}
           </form>
         </div>
       </div>
