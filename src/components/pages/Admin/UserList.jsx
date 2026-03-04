@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAdminUsers } from '../../../hooks/useAdminUsers';
+import { useAdminRoles } from '../../../hooks/useAdminRoles';
 
 export default function UserList() {
     const {
@@ -21,6 +22,20 @@ export default function UserList() {
         assignRole,
         assigningRoleId,
     } = useAdminUsers();
+    const {
+        roles,
+        rolesLoading,
+        rolesError,
+        refreshRoles,
+        selectedRoles,
+        setSelectedRoles,
+        appliedRoles,
+        filterResult,
+        filterLoading,
+        filterError,
+        filterByRoles,
+        clearFilter,
+    } = useAdminRoles();
     const loading = creating;
     const userList = users;
 
@@ -292,6 +307,103 @@ export default function UserList() {
                     {usersError}
                 </div>
             )}
+
+            <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.02] p-4 shadow-2xl">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <div>
+                        <div className="text-sm font-bold text-white/80">Roles</div>
+
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => refreshRoles()}
+                            disabled={rolesLoading}
+                            className="bg-sky-600 hover:bg-sky-500 px-3 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            {rolesLoading ? 'Đang tải roles...' : 'Tải roles'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                (async () => {
+                                    const res = await filterByRoles(selectedRoles);
+                                    if (res?.success) {
+                                        setUsers(res.users || []);
+                                    }
+                                })();
+                            }}
+                            disabled={filterLoading || selectedRoles.length === 0}
+                            className="bg-violet-600 hover:bg-violet-500 px-3 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            {filterLoading ? 'Đang lọc...' : 'Lọc theo roles'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                (async () => {
+                                    clearFilter();
+                                    await refresh();
+                                })();
+                            }}
+                            disabled={!filterResult && !filterError}
+                            className="bg-white/5 hover:bg-white/10 px-3 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            Clear
+                        </button>
+                    </div>
+                </div>
+
+                {(rolesError || filterError) && (
+                    <div className="mb-3 grid grid-cols-1 gap-2">
+                        {rolesError && <div className="text-xs text-rose-400">Roles error: {rolesError}</div>}
+                        {filterError && <div className="text-xs text-rose-400">Filter error: {filterError}</div>}
+                    </div>
+                )}
+
+                {roles?.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                        {roles.map((r) => {
+                            const checked = selectedRoles.includes(r);
+                            return (
+                                <label
+                                    key={r}
+                                    className={`cursor-pointer select-none text-xs font-semibold px-3 py-1 rounded-full border transition-all ${checked
+                                        ? 'text-emerald-200 bg-emerald-500/10 border-emerald-500/30'
+                                        : 'text-white/70 bg-white/5 border-white/10 hover:border-white/20'
+                                        }`}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        className="mr-2 accent-emerald-500"
+                                        checked={checked}
+                                        onChange={(e) => {
+                                            const next = e.target.checked
+                                                ? Array.from(new Set([...selectedRoles, r]))
+                                                : selectedRoles.filter((x) => x !== r);
+                                            setSelectedRoles(next);
+                                        }}
+                                    />
+                                    {r}
+                                </label>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="text-xs text-white/40 mb-4">Chưa có roles. Bấm "Tải roles" để lấy dữ liệu.</div>
+                )}
+
+                {Array.isArray(appliedRoles) && appliedRoles.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="text-xs text-white/40">Đang lọc theo:</div>
+                        {appliedRoles.map((r) => (
+                            <span key={r} className="text-xs font-semibold px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-200">
+                                {r}
+                            </span>
+                        ))}
+                    </div>
+                )}
+            </div>
 
             {/* BẢNG DANH SÁCH */}
             <div className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden shadow-2xl">
