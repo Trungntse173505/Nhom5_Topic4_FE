@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { Route, Routes, Navigate } from "react-router-dom"; 
-import { updateUserPresence } from "./services/firebase"; 
+import { Route, Routes, Navigate } from "react-router-dom";
+import { updateUserPresence } from "./services/firebase";
 import ProtectedRoute from "./components/ProtectedRoute"; // Import cổng bảo vệ vừa tạo
 
 // Auth
@@ -27,6 +27,9 @@ import ExportData from "./components/pages/Manager/ExportData";
 import QualityScore from "./components/pages/Manager/QualityScore";
 import ManagerDashboard from "./components/pages/Manager/ManagerDashboard";
 
+// TÍCH HỢP TRANG LABEL LIBRARY VÀO ĐÂY
+import LabelLibrary from "./components/pages/Manager/LabelLibrary";
+
 // ================= REVIEWER =================
 import ReviewerDashboard from "./components/pages/Reviewer/ReviewerDashboard";
 
@@ -37,14 +40,16 @@ const AnalyticsTracker = () => {
       try {
         const user = JSON.parse(savedUserStr);
         updateUserPresence(user.id, user.role, true);
-        console.log(`[Firebase] Khôi phục trạng thái cho: ${user.fullName || 'User'}`);
+        console.log(
+          `[Firebase] Khôi phục trạng thái cho: ${user.fullName || "User"}`,
+        );
       } catch (e) {
         console.error("Lỗi parse user từ localStorage:", e);
       }
     }
 
     const handleBeforeUnload = () => {
-      const currentUserStr = localStorage.getItem("user"); 
+      const currentUserStr = localStorage.getItem("user");
       if (currentUserStr) {
         const user = JSON.parse(currentUserStr);
         updateUserPresence(user.id, user.role, false);
@@ -70,7 +75,7 @@ function App() {
         <Route path="/" element={<Login />} />
 
         {/* ================= ADMIN PROTECTED ================= */}
-        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+        <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
           <Route path="/admin" element={<AdminGlobalLayout />}>
             <Route index element={<AdminOverview />} />
             <Route path="users" element={<UserList />} />
@@ -81,14 +86,20 @@ function App() {
         </Route>
 
         {/* ================= MANAGER PROTECTED ================= */}
-        <Route element={<ProtectedRoute allowedRoles={['manager']} />}>
+        <Route element={<ProtectedRoute allowedRoles={["manager"]} />}>
+          {/* CÁC TRANG CÓ SIDEBAR CHUNG */}
           <Route path="/manager" element={<ManagerGlobalLayout />}>
             <Route index element={<ProjectManagement />} />
+
+            {/* THÊM ROUTE CHO LABEL LIBRARY */}
+            <Route path="labels" element={<LabelLibrary />} />
+
             <Route path="disputes" element={<DisputeResolution />} />
             <Route path="quality" element={<QualityScore />} />
             <Route path="export" element={<ExportData />} />
           </Route>
-          {/* Manager Full Screen Project Detail */}
+
+          {/* Manager Full Screen Project Detail (KHÔNG CÓ SIDEBAR) */}
           <Route
             path="/manager/projects/:projectId"
             element={<ManagerDashboard />}
@@ -96,7 +107,7 @@ function App() {
         </Route>
 
         {/* ================= ANNOTATOR PROTECTED ================= */}
-        <Route element={<ProtectedRoute allowedRoles={['annotator']} />}>
+        <Route element={<ProtectedRoute allowedRoles={["annotator"]} />}>
           <Route path="/annotator" element={<AnnotatorDashboard />} />
           <Route
             path="/annotator/workspace/:taskId"
@@ -106,7 +117,7 @@ function App() {
         </Route>
 
         {/* ================= REVIEWER PROTECTED ================= */}
-        <Route element={<ProtectedRoute allowedRoles={['reviewer']} />}>
+        <Route element={<ProtectedRoute allowedRoles={["reviewer"]} />}>
           <Route path="/reviewer" element={<ReviewerDashboard />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />

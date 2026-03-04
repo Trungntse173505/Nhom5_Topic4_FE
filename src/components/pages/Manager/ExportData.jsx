@@ -1,7 +1,30 @@
 import React, { useState } from "react";
+import { useExportData } from "../../../hooks/useExportData";
 
 export default function ExportData() {
-  const [format, setFormat] = useState("YOLO");
+  const [format, setFormat] = useState("JSON"); // Mặc định để JSON đi vì API xuất json thường phổ biến nhất
+
+  // Lấy toàn bộ data và hàm từ Hook
+  const {
+    projects,
+    selectedProjectId,
+    setSelectedProjectId,
+    histories,
+    isLoadingProjects,
+    isLoadingHistory,
+    isExporting,
+    handleExport,
+  } = useExportData();
+
+  // Hàm render màu cho trạng thái export
+  const getStatusColor = (status) => {
+    const s = (status || "").toLowerCase();
+    if (s.includes("success") || s.includes("done") || s.includes("completed"))
+      return "bg-emerald-500/10 text-emerald-400";
+    if (s.includes("fail") || s.includes("error"))
+      return "bg-rose-500/10 text-rose-400";
+    return "bg-amber-500/10 text-amber-400"; // Processing, Pending...
+  };
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
@@ -12,76 +35,248 @@ export default function ExportData() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-white/5 bg-[#151D2F] p-8 shadow-sm max-w-2xl">
-        <div className="space-y-6">
-          {/* Chọn dự án */}
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2">
-              Select Project
-            </label>
-            <select className="w-full rounded-lg border border-white/10 bg-[#0B1120] px-4 py-3 text-sm text-white outline-none focus:border-blue-500/50">
-              <option>Phân loại biển báo giao thông</option>
-              <option>Gán nhãn cảm xúc hội thoại</option>
-            </select>
-          </div>
-
-          {/* Chọn định dạng */}
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-3">
-              Export Format
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {["YOLO", "VOC", "JSON", "CSV"].map((fmt) => (
-                <button
-                  key={fmt}
-                  onClick={() => setFormat(fmt)}
-                  className={`py-3 px-4 rounded-lg border text-sm font-medium transition-all ${format === fmt ? "border-blue-500 bg-blue-500/10 text-blue-400" : "border-white/10 bg-[#0B1120] text-gray-400 hover:border-white/20"}`}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* CỘT TRÁI: FORM XUẤT DỮ LIỆU CỦA ÔNG */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm">
+            <div className="space-y-6">
+              {/* Chọn dự án */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Select Project
+                </label>
+                <select
+                  value={selectedProjectId}
+                  onChange={(e) => setSelectedProjectId(e.target.value)}
+                  disabled={isLoadingProjects}
+                  className="w-full rounded-lg border border-white/10 bg-[#0B1120] px-4 py-3 text-sm text-white outline-none focus:border-blue-500/50"
                 >
-                  {fmt}
-                </button>
-              ))}
-            </div>
-          </div>
+                  <option value="">-- Choose a project --</option>
+                  {projects.map((p) => {
+                    const pid = p.projectID || p.id;
+                    return (
+                      <option key={pid} value={pid}>
+                        {p.projectName || "Dự án không tên"}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
 
-          {/* Thông tin Export */}
-          <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-            <div className="flex items-center gap-2 text-emerald-400 mb-1">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="2"
+              {/* Chọn định dạng (Chỉ làm màu UI vì API POST /exports chưa nhận params này) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-3">
+                  Export Format
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {["YOLO", "VOC", "JSON", "CSV"].map((fmt) => (
+                    <button
+                      key={fmt}
+                      onClick={() => setFormat(fmt)}
+                      className={`py-2 px-4 rounded-lg border text-sm font-medium transition-all ${
+                        format === fmt
+                          ? "border-blue-500 bg-blue-500/10 text-blue-400"
+                          : "border-white/10 bg-[#0B1120] text-gray-400 hover:border-white/20"
+                      }`}
+                    >
+                      {fmt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Thông tin Export */}
+              <div
+                className={`p-4 rounded-lg border transition-colors ${selectedProjectId ? "bg-emerald-500/10 border-emerald-500/20" : "bg-gray-500/10 border-gray-500/20"}`}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 13l4 4L19 7"
-                ></path>
-              </svg>
-              <span className="text-sm font-medium">Ready to Export</span>
-            </div>
-            <p className="text-xs text-emerald-500/70">
-              275 Approved tasks will be compiled into a .zip file.
-            </p>
-          </div>
+                <div
+                  className={`flex items-center gap-2 mb-1 ${selectedProjectId ? "text-emerald-400" : "text-gray-400"}`}
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 13l4 4L19 7"
+                    ></path>
+                  </svg>
+                  <span className="text-sm font-medium">
+                    {selectedProjectId
+                      ? "Ready to Export"
+                      : "Waiting for project selection..."}
+                  </span>
+                </div>
+                <p
+                  className={`text-xs ${selectedProjectId ? "text-emerald-500/70" : "text-gray-500"}`}
+                >
+                  {selectedProjectId
+                    ? `Approved tasks will be compiled into a ${format} file.`
+                    : "Please select a project to proceed."}
+                </p>
+              </div>
 
-          <button className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-medium transition-colors flex justify-center items-center gap-2">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              ></path>
-            </svg>
-            Download Dataset
-          </button>
+              <button
+                onClick={handleExport}
+                disabled={!selectedProjectId || isExporting}
+                className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed text-white py-3 rounded-lg font-medium transition-colors flex justify-center items-center gap-2"
+              >
+                {isExporting ? (
+                  <>
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                      ></path>
+                    </svg>
+                    Download Dataset
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* CỘT PHẢI: BẢNG LỊCH SỬ EXPORT */}
+        <div className="lg:col-span-2">
+          <div className="bg-[#151D2F] border border-white/5 rounded-xl shadow-sm overflow-hidden h-full min-h-[500px] flex flex-col">
+            <div className="p-6 border-b border-white/5">
+              <h2 className="text-lg font-semibold text-white">
+                Export History
+              </h2>
+              <p className="text-sm text-gray-400 mt-1">
+                Lịch sử xuất dữ liệu của dự án được chọn
+              </p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {!selectedProjectId ? (
+                <div className="flex flex-col items-center justify-center h-full py-20 text-gray-500">
+                  <span className="text-4xl mb-3 opacity-50">📂</span>
+                  <p>Vui lòng chọn một dự án ở bên trái để xem lịch sử.</p>
+                </div>
+              ) : isLoadingHistory ? (
+                <div className="text-center py-20 text-gray-500 animate-pulse">
+                  Đang tải lịch sử...
+                </div>
+              ) : histories.length === 0 ? (
+                <div className="text-center py-20 text-gray-500">
+                  Dự án này chưa từng được xuất dữ liệu. Bấm nút bên trái để
+                  tạo!
+                </div>
+              ) : (
+                <div className="overflow-x-auto w-full">
+                  <table className="w-full text-left text-sm whitespace-nowrap">
+                    <thead className="bg-[#0B1120] text-gray-400 sticky top-0 z-10">
+                      <tr>
+                        <th className="px-6 py-4 font-medium border-b border-white/5">
+                          Export ID
+                        </th>
+                        <th className="px-6 py-4 font-medium border-b border-white/5">
+                          Ngày tạo
+                        </th>
+                        <th className="px-6 py-4 font-medium border-b border-white/5">
+                          Trạng thái
+                        </th>
+                        <th className="px-6 py-4 font-medium text-right border-b border-white/5">
+                          Hành động
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {histories.map((hist, idx) => {
+                        const id =
+                          hist.exportId ||
+                          hist.id ||
+                          hist.exportID ||
+                          `EXP-${idx}`;
+                        const date =
+                          hist.exportDate || hist.createdAt || hist.date;
+                        const status =
+                          hist.status || hist.exportStatus || "Processing";
+                        const fileUrl =
+                          hist.fileUrl || hist.downloadUrl || hist.url;
+
+                        return (
+                          <tr
+                            key={idx}
+                            className="hover:bg-white/[0.02] transition-colors"
+                          >
+                            <td className="px-6 py-4 text-gray-300 font-medium">
+                              #{id?.toString().substring(0, 8) || id}
+                            </td>
+                            <td className="px-6 py-4 text-gray-400">
+                              {date
+                                ? new Date(date).toLocaleString("vi-VN")
+                                : "N/A"}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span
+                                className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider ${getStatusColor(status)}`}
+                              >
+                                {status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              {fileUrl ? (
+                                <a
+                                  href={fileUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded transition-colors text-xs font-bold"
+                                >
+                                  Tải File {format}
+                                </a>
+                              ) : (
+                                <span className="text-gray-500 text-xs italic">
+                                  Đang xử lý...
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

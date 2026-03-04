@@ -3,14 +3,16 @@ import { useNavigate, useLocation, Outlet } from "react-router-dom";
 
 export default function ManagerGlobalLayout() {
   const navigate = useNavigate();
-  const location = useLocation(); // Để biết đang ở trang nào mà highlight menu
+  const location = useLocation();
 
   const handleLogout = () => {
     navigate("/login");
   };
 
+  // ĐÃ THÊM LABEL LIBRARY VÀO MENU
   const menuItems = [
     { path: "/manager", label: "Projects", icon: "📁" },
+    { path: "/manager/labels", label: "Label Library", icon: "🏷️" }, // <-- Dòng mới
     { path: "/manager/disputes", label: "Disputes", icon: "⚖️" },
     { path: "/manager/quality", label: "Quality Score", icon: "⭐" },
     { path: "/manager/export", label: "Export Data", icon: "📥" },
@@ -81,10 +83,9 @@ export default function ManagerGlobalLayout() {
         </div>
       </aside>
 
-      {/* Main Content Area (Nơi render 4 file kia) */}
+      {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto">
-        <Outlet />{" "}
-        {/* React Router sẽ tự động ném nội dung các trang vào đây */}
+        <Outlet />
       </main>
     </div>
   );
