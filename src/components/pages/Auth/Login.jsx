@@ -32,7 +32,6 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [touched, setTouched] = useState({ username: false, password: false });
 
-  // 1. VALIDATION CƠ BẢN TRÊN FORM
   const errors = useMemo(() => {
     const e = {};
     if (!username.trim()) e.username = "Username is required.";
@@ -48,15 +47,13 @@ export default function Login() {
     e.preventDefault();
     if (!canSubmit) return;
     const res = await login({ username, password });
-
-    // Nếu res.success là true thì mới chạy tiếp, không là nó đứng im hiện chữ đỏ đó!
     if (res.success && res.user) {
-      const { userId, roleName, fullName } = res.user; //
+      const { userId, roleName, fullName } = res.user;
 
       try {
-        // TRUYỀN ĐÚNG userId (GUID) VÀ roleName ("Admin")
+        // Chỉ set online ngay — heartbeat sẽ do App.js xử lý khi navigate xong
         await updateUserPresence(userId, roleName, true);
-        console.log("Đã báo danh Firestore thành công!");
+        console.log("Đã báo online thành công!");
       } catch (err) {
         console.error("Lỗi Firebase:", err);
       }
@@ -74,7 +71,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen w-full bg-[#050B1A] relative flex items-center justify-center px-4">
-      {/* Background decoration */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-blue-600/10 blur-3xl" />
         <div className="absolute -right-40 bottom-0 h-[520px] w-[520px] rounded-full bg-indigo-600/10 blur-3xl" />
@@ -101,7 +97,11 @@ export default function Login() {
                 type="text"
                 placeholder="Username"
                 className={`w-full rounded-xl border bg-white/[0.03] px-4 py-3.5 text-sm text-white outline-none transition-all placeholder:text-white/20 
-                  ${touched.username && errors.username ? "border-rose-500/50 focus:ring-rose-500/10" : "border-white/10 focus:border-blue-500/50 focus:ring-blue-500/10 focus:ring-4"}`}
+                  ${
+                    touched.username && errors.username
+                      ? "border-rose-500/50 focus:ring-rose-500/10"
+                      : "border-white/10 focus:border-blue-500/50 focus:ring-blue-500/10 focus:ring-4"
+                  }`}
               />
             </div>
 
@@ -113,7 +113,11 @@ export default function Login() {
                 type={showPw ? "text" : "password"}
                 placeholder="Password"
                 className={`w-full rounded-xl border bg-white/[0.03] px-4 py-3.5 text-sm text-white outline-none transition-all placeholder:text-white/20
-                  ${touched.password && errors.password ? "border-rose-500/50" : "border-white/10 focus:border-blue-500/50"}`}
+                  ${
+                    touched.password && errors.password
+                      ? "border-rose-500/50"
+                      : "border-white/10 focus:border-blue-500/50"
+                  }`}
               />
               <button
                 type="button"

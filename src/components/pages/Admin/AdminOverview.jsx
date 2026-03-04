@@ -1,67 +1,100 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { db } from "../../../services/firebase";
 import { collection, onSnapshot } from "firebase/firestore";
+
+// Nếu lastActive quá 45s → coi là offline
+const OFFLINE_THRESHOLD_MS = 45 * 1000;
 
 export default function AdminOverview() {
   const [onlineNowData, setOnlineNowData] = useState({
     total: 0,
-    byRole: { admins: 0, annotators: 0, managers: 0, reviewers: 0 } 
+    byRole: { admins: 0, annotators: 0, managers: 0, reviewers: 0 },
   });
 
   const [onlineTodayData, setOnlineTodayData] = useState({
     total: 0,
-    byRole: { admins: 0, annotators: 0, managers: 0, reviewers: 0 } 
+    byRole: { admins: 0, annotators: 0, managers: 0, reviewers: 0 },
   });
+
+  // Lưu raw docs để interval có thể re-evaluate timeout
+  const rawDocsRef = useRef([]);
+
+  // Hàm tính toán lại từ raw docs với thời gian hiện tại
+  const recalculate = useCallback(() => {
+    const docs = rawDocsRef.current;
+
+    let nowTotal = 0, nowAdmins = 0, nowAnnotators = 0, nowManagers = 0, nowReviewers = 0;
+    let todayTotal = 0, todayAdmins = 0, todayAnnotators = 0, todayManagers = 0, todayReviewers = 0;
+
+    const now = new Date();
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const offlineCutoff = new Date(now.getTime() - OFFLINE_THRESHOLD_MS);
+
+    docs.forEach((data) => {
+      const role = data.role?.toLowerCase() || "";
+      const status = data.status?.toLowerCase() || "";
+      const lastActiveDate = data.lastActive ? data.lastActive.toDate() : new Date(0);
+
+      // ĐANG ONLINE = status "online" VÀ lastActive trong vòng 1 phút
+      // Tắt browser → heartbeat dừng → lastActive cũ quá 1 phút → tự offline
+      const isReallyOnline = status === "online" && lastActiveDate >= offlineCutoff;
+
+      if (isReallyOnline) {
+        nowTotal++;
+        if (role === "admin") nowAdmins++;
+        else if (role === "manager") nowManagers++;
+        else if (role === "reviewer") nowReviewers++;
+        else if (role === "annotator") nowAnnotators++;
+      }
+
+      // HOẠT ĐỘNG HÔM NAY
+      if (lastActiveDate >= startOfToday) {
+        todayTotal++;
+        if (role === "admin") todayAdmins++;
+        else if (role === "manager") todayManagers++;
+        else if (role === "reviewer") todayReviewers++;
+        else if (role === "annotator") todayAnnotators++;
+      }
+    });
+
+    setOnlineNowData({
+      total: nowTotal,
+      byRole: { admins: nowAdmins, annotators: nowAnnotators, managers: nowManagers, reviewers: nowReviewers },
+    });
+
+    setOnlineTodayData({
+      total: todayTotal,
+      byRole: { admins: todayAdmins, annotators: todayAnnotators, managers: todayManagers, reviewers: todayReviewers },
+    });
+  }, []);
 
   useEffect(() => {
     const presenceRef = collection(db, "presence");
-    
-    const unsubscribe = onSnapshot(presenceRef, (snapshot) => {
-      let nowTotal = 0, nowAdmins = 0, nowAnnotators = 0, nowManagers = 0, nowReviewers = 0;
-      let todayTotal = 0, todayAdmins = 0, todayAnnotators = 0, todayManagers = 0, todayReviewers = 0;
 
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0);
+    // Real-time listener: khi Firestore data thay đổi
+    const unsubscribe = onSnapshot(
+      presenceRef,
+      (snapshot) => {
+        const docs = [];
+        snapshot.forEach((doc) => docs.push(doc.data()));
+        rawDocsRef.current = docs;
+        recalculate();
+      },
+      (error) => console.error("Lỗi Real-time:", error)
+    );
 
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const role = data.role?.toLowerCase() || ""; 
-        const status = data.status?.toLowerCase() || "";
-        const lastActiveDate = data.lastActive ? data.lastActive.toDate() : new Date(0);
+    // RE-CHECK mỗi 15 giây để phát hiện timeout
+    // onSnapshot chỉ fire khi data thay đổi, nhưng timeout phải tính theo thời gian hiện tại
+    const recheckInterval = setInterval(() => {
+      recalculate();
+    }, 15000);
 
-        // --- 1. ĐẾM ĐANG ONLINE ---
-        if (status === "online") {
-          nowTotal++;
-          if (role === "admin") nowAdmins++; 
-          else if (role === "manager") nowManagers++;
-          else if (role === "reviewer") nowReviewers++;
-          else if (role === "annotator") nowAnnotators++;
-        }
-
-        // --- 2. ĐẾM HOẠT ĐỘNG HÔM NAY ---
-        if (lastActiveDate >= startOfToday) {
-          todayTotal++;
-          if (role === "admin") todayAdmins++; 
-          else if (role === "manager") todayManagers++;
-          else if (role === "reviewer") todayReviewers++;
-          else if (role === "annotator") todayAnnotators++;
-        }
-      });
-
-      setOnlineNowData({
-        total: nowTotal,
-        byRole: { admins: nowAdmins, annotators: nowAnnotators, managers: nowManagers, reviewers: nowReviewers }
-      });
-
-      setOnlineTodayData({
-        total: todayTotal,
-        byRole: { admins: todayAdmins, annotators: todayAnnotators, managers: todayManagers, reviewers: todayReviewers }
-      });
-
-    }, (error) => console.error("Lỗi lấy dữ liệu Real-time: ", error));
-
-    return () => unsubscribe();
-  }, []);
+    return () => {
+      unsubscribe();
+      clearInterval(recheckInterval);
+    };
+  }, [recalculate]);
 
   const renderRoleRow = (label, count, dotColor) => {
     return (
@@ -94,7 +127,6 @@ export default function AdminOverview() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        
         {/* CARD 1: CURRENTLY ACTIVE */}
         <div className="rounded-3xl border border-white/5 bg-[#0F172A] p-8 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 p-8 opacity-5">
@@ -102,16 +134,13 @@ export default function AdminOverview() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
-
           <div className="relative z-10">
             <h3 className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Currently Active</h3>
             <div className="flex items-baseline gap-3 mb-10">
               <p className="text-7xl font-black text-white tracking-tighter">{onlineNowData.total}</p>
               <span className="text-emerald-500 font-black text-xs uppercase tracking-widest">Users Online</span>
             </div>
-
             <div className="grid grid-cols-1 gap-3">
-              {/* ĐÃ CẬP NHẬT TÊN ROLE VÀ FIX MÀU REVIEWER */}
               {renderRoleRow("Administrators", onlineNowData.byRole.admins, "bg-emerald-500")}
               {renderRoleRow("Managers", onlineNowData.byRole.managers, "bg-teal-400")}
               {renderRoleRow("Reviewers", onlineNowData.byRole.reviewers, "bg-cyan-400")}
@@ -127,14 +156,12 @@ export default function AdminOverview() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-
           <div className="relative z-10">
             <h3 className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Total Active Today</h3>
             <div className="flex items-baseline gap-3 mb-10">
               <p className="text-7xl font-black text-white tracking-tighter">{onlineTodayData.total}</p>
               <span className="text-blue-500 font-black text-xs uppercase tracking-widest">Unique Users</span>
             </div>
-
             <div className="grid grid-cols-1 gap-3">
               {renderRoleRow("Administrators", onlineTodayData.byRole.admins, "bg-blue-600")}
               {renderRoleRow("Managers", onlineTodayData.byRole.managers, "bg-blue-500")}
@@ -143,7 +170,6 @@ export default function AdminOverview() {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

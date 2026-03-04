@@ -1,7 +1,11 @@
 import { useEffect } from "react";
-import { Route, Routes, Navigate } from "react-router-dom"; 
-import { updateUserPresence } from "./services/firebase"; 
-import ProtectedRoute from "./components/ProtectedRoute"; // Import cổng bảo vệ vừa tạo
+import { Route, Routes, Navigate } from "react-router-dom";
+import {
+  updateUserPresence,
+  startPresenceTracking,
+  stopPresenceTracking,
+} from "./services/firebase";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Auth
 import Login from "./components/pages/Auth/Login";
@@ -33,27 +37,26 @@ import ReviewerDashboard from "./components/pages/Reviewer/ReviewerDashboard";
 const AnalyticsTracker = () => {
   useEffect(() => {
     const savedUserStr = localStorage.getItem("user");
-    if (savedUserStr) {
-      try {
-        const user = JSON.parse(savedUserStr);
-        updateUserPresence(user.id, user.role, true);
-        console.log(`[Firebase] Khôi phục trạng thái cho: ${user.fullName || 'User'}`);
-      } catch (e) {
-        console.error("Lỗi parse user từ localStorage:", e);
-      }
+    if (!savedUserStr) return;
+
+    let user;
+    try {
+      user = JSON.parse(savedUserStr);
+    } catch (e) {
+      console.error("Lỗi parse user từ localStorage:", e);
+      return;
     }
 
-    const handleBeforeUnload = () => {
-      const currentUserStr = localStorage.getItem("user"); 
-      if (currentUserStr) {
-        const user = JSON.parse(currentUserStr);
-        updateUserPresence(user.id, user.role, false);
-      }
-    };
+    if (!user?.id || !user?.role) return;
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
+    // Set online + bắt đầu heartbeat cho TẤT CẢ role
+    updateUserPresence(user.id, user.role, true);
+    startPresenceTracking(user.id, user.role);
+
+    console.log(`[Firebase] Tracking started: ${user.fullName || "User"} (${user.role})`);
+
     return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
+      stopPresenceTracking(user.id, user.role);
     };
   }, []);
 
@@ -70,7 +73,7 @@ function App() {
         <Route path="/" element={<Login />} />
 
         {/* ================= ADMIN PROTECTED ================= */}
-        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+        <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
           <Route path="/admin" element={<AdminGlobalLayout />}>
             <Route index element={<AdminOverview />} />
             <Route path="users" element={<UserList />} />
@@ -81,14 +84,13 @@ function App() {
         </Route>
 
         {/* ================= MANAGER PROTECTED ================= */}
-        <Route element={<ProtectedRoute allowedRoles={['manager']} />}>
+        <Route element={<ProtectedRoute allowedRoles={["manager"]} />}>
           <Route path="/manager" element={<ManagerGlobalLayout />}>
             <Route index element={<ProjectManagement />} />
             <Route path="disputes" element={<DisputeResolution />} />
             <Route path="quality" element={<QualityScore />} />
             <Route path="export" element={<ExportData />} />
           </Route>
-          {/* Manager Full Screen Project Detail */}
           <Route
             path="/manager/projects/:projectId"
             element={<ManagerDashboard />}
@@ -96,7 +98,7 @@ function App() {
         </Route>
 
         {/* ================= ANNOTATOR PROTECTED ================= */}
-        <Route element={<ProtectedRoute allowedRoles={['annotator']} />}>
+        <Route element={<ProtectedRoute allowedRoles={["annotator"]} />}>
           <Route path="/annotator" element={<AnnotatorDashboard />} />
           <Route
             path="/annotator/workspace/:taskId"
@@ -106,7 +108,7 @@ function App() {
         </Route>
 
         {/* ================= REVIEWER PROTECTED ================= */}
-        <Route element={<ProtectedRoute allowedRoles={['reviewer']} />}>
+        <Route element={<ProtectedRoute allowedRoles={["reviewer"]} />}>
           <Route path="/reviewer" element={<ReviewerDashboard />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
