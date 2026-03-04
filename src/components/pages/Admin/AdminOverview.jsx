@@ -18,7 +18,6 @@ export default function AdminOverview() {
 
   // Lưu raw docs để interval có thể re-evaluate timeout
   const rawDocsRef = useRef([]);
-
   // Hàm tính toán lại từ raw docs với thời gian hiện tại
   const recalculate = useCallback(() => {
     const docs = rawDocsRef.current;
@@ -35,7 +34,6 @@ export default function AdminOverview() {
       const role = data.role?.toLowerCase() || "";
       const status = data.status?.toLowerCase() || "";
       const lastActiveDate = data.lastActive ? data.lastActive.toDate() : new Date(0);
-
       // ĐANG ONLINE = status "online" VÀ lastActive trong vòng 1 phút
       // Tắt browser → heartbeat dừng → lastActive cũ quá 1 phút → tự offline
       const isReallyOnline = status === "online" && lastActiveDate >= offlineCutoff;
@@ -71,7 +69,6 @@ export default function AdminOverview() {
 
   useEffect(() => {
     const presenceRef = collection(db, "presence");
-
     // Real-time listener: khi Firestore data thay đổi
     const unsubscribe = onSnapshot(
       presenceRef,
@@ -83,7 +80,6 @@ export default function AdminOverview() {
       },
       (error) => console.error("Lỗi Real-time:", error)
     );
-
     // RE-CHECK mỗi 15 giây để phát hiện timeout
     // onSnapshot chỉ fire khi data thay đổi, nhưng timeout phải tính theo thời gian hiện tại
     const recheckInterval = setInterval(() => {
@@ -115,14 +111,14 @@ export default function AdminOverview() {
     <div className="p-8 max-w-7xl mx-auto min-h-screen">
       <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight italic uppercase">System Analytics</h1>
+          <h1 className="text-3xl font-black text-white tracking-tight italic uppercase">THỐNG KÊ TRUY CẬP</h1>
         </div>
         <div className="flex items-center gap-3 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
           </span>
-          <span className="text-emerald-400 text-xs font-black uppercase tracking-widest">Live System</span>
+          <span className="text-emerald-400 text-xs font-black uppercase tracking-widest">Live</span>
         </div>
       </div>
 
@@ -135,16 +131,16 @@ export default function AdminOverview() {
             </svg>
           </div>
           <div className="relative z-10">
-            <h3 className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Currently Active</h3>
+            <h3 className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Hiện đang hoạt động</h3>
             <div className="flex items-baseline gap-3 mb-10">
               <p className="text-7xl font-black text-white tracking-tighter">{onlineNowData.total}</p>
-              <span className="text-emerald-500 font-black text-xs uppercase tracking-widest">Users Online</span>
+              <span className="text-emerald-500 font-black text-xs uppercase tracking-widest">Users</span>
             </div>
             <div className="grid grid-cols-1 gap-3">
-              {renderRoleRow("Administrators", onlineNowData.byRole.admins, "bg-emerald-500")}
-              {renderRoleRow("Managers", onlineNowData.byRole.managers, "bg-teal-400")}
-              {renderRoleRow("Reviewers", onlineNowData.byRole.reviewers, "bg-cyan-400")}
-              {renderRoleRow("Annotators", onlineNowData.byRole.annotators, "bg-sky-400")}
+              {renderRoleRow("Admin", onlineNowData.byRole.admins, "bg-emerald-500")}
+              {renderRoleRow("Manager", onlineNowData.byRole.managers, "bg-teal-400")}
+              {renderRoleRow("Reviewer", onlineNowData.byRole.reviewers, "bg-cyan-400")}
+              {renderRoleRow("Annotator", onlineNowData.byRole.annotators, "bg-sky-400")}
             </div>
           </div>
         </div>
@@ -157,16 +153,16 @@ export default function AdminOverview() {
             </svg>
           </div>
           <div className="relative z-10">
-            <h3 className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Total Active Today</h3>
+            <h3 className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Hoạt động hôm nay</h3>
             <div className="flex items-baseline gap-3 mb-10">
               <p className="text-7xl font-black text-white tracking-tighter">{onlineTodayData.total}</p>
-              <span className="text-blue-500 font-black text-xs uppercase tracking-widest">Unique Users</span>
+              <span className="text-blue-500 font-black text-xs uppercase tracking-widest">Users</span>
             </div>
             <div className="grid grid-cols-1 gap-3">
-              {renderRoleRow("Administrators", onlineTodayData.byRole.admins, "bg-blue-600")}
-              {renderRoleRow("Managers", onlineTodayData.byRole.managers, "bg-blue-500")}
-              {renderRoleRow("Reviewers", onlineTodayData.byRole.reviewers, "bg-blue-400")}
-              {renderRoleRow("Annotators", onlineTodayData.byRole.annotators, "bg-blue-300")}
+              {renderRoleRow("Admin", onlineTodayData.byRole.admins, "bg-blue-600")}
+              {renderRoleRow("Manager", onlineTodayData.byRole.managers, "bg-blue-500")}
+              {renderRoleRow("Reviewer", onlineTodayData.byRole.reviewers, "bg-blue-400")}
+              {renderRoleRow("Annotator", onlineTodayData.byRole.annotators, "bg-blue-300")}
             </div>
           </div>
         </div>

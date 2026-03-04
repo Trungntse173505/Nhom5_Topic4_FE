@@ -11,6 +11,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./components/pages/Auth/Login";
 
 // ================= ANNOTATOR =================
+import AnnotatorLayout from "./components/pages/Annotator/AnnotatorLayout";
 import AnnotatorDashboard from "./components/pages/Annotator/AnnotatorDashboard";
 import AnnotatorWorkspace from "./components/pages/Annotator/Workspace/AnnotatorWorkspace";
 import CreditScorePage from "./components/pages/Annotator/Workspace/CreditScorePage";
@@ -30,12 +31,11 @@ import DisputeResolution from "./components/pages/Manager/DisputeResolution";
 import ExportData from "./components/pages/Manager/ExportData";
 import QualityScore from "./components/pages/Manager/QualityScore";
 import ManagerDashboard from "./components/pages/Manager/ManagerDashboard";
-
-// TÍCH HỢP TRANG LABEL LIBRARY VÀO ĐÂY
 import LabelLibrary from "./components/pages/Manager/LabelLibrary";
 
 // ================= REVIEWER =================
 import ReviewerDashboard from "./components/pages/Reviewer/ReviewerDashboard";
+import ReviewerLayout from "./components/pages/Reviewer/ReviewerLayout";
 
 const AnalyticsTracker = () => {
   useEffect(() => {
@@ -52,7 +52,6 @@ const AnalyticsTracker = () => {
 
     if (!user?.id || !user?.role) return;
 
-    // Set online + bắt đầu heartbeat cho TẤT CẢ role
     updateUserPresence(user.id, user.role, true);
     startPresenceTracking(user.id, user.role);
 
@@ -90,34 +89,30 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={["manager"]} />}>
           <Route path="/manager" element={<ManagerGlobalLayout />}>
             <Route index element={<ProjectManagement />} />
-
-            {/* THÊM ROUTE CHO LABEL LIBRARY */}
             <Route path="labels" element={<LabelLibrary />} />
-
             <Route path="disputes" element={<DisputeResolution />} />
             <Route path="quality" element={<QualityScore />} />
             <Route path="export" element={<ExportData />} />
           </Route>
-          <Route
-            path="/manager/projects/:projectId"
-            element={<ManagerDashboard />}
-          />
+          <Route path="/manager/projects/:projectId" element={<ManagerDashboard />} />
         </Route>
 
         {/* ================= ANNOTATOR PROTECTED ================= */}
         <Route element={<ProtectedRoute allowedRoles={["annotator"]} />}>
-          <Route path="/annotator" element={<AnnotatorDashboard />} />
-          <Route
-            path="/annotator/workspace/:taskId"
-            element={<AnnotatorWorkspace />}
-          />
-          <Route path="/annotator/score" element={<CreditScorePage />} />
+          <Route path="/annotator" element={<AnnotatorLayout />}>
+            <Route index element={<AnnotatorDashboard />} />
+            <Route path="workspace/:taskId" element={<AnnotatorWorkspace />} />
+            <Route path="score" element={<CreditScorePage />} />
+          </Route>
         </Route>
 
         {/* ================= REVIEWER PROTECTED ================= */}
         <Route element={<ProtectedRoute allowedRoles={["reviewer"]} />}>
-          <Route path="/reviewer" element={<ReviewerDashboard />} />
+          <Route path="/reviewer" element={<ReviewerLayout />}>
+            <Route index element={<ReviewerDashboard />} />
+          </Route>
         </Route>
+
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </>
