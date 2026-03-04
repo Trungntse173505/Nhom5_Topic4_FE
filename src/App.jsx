@@ -31,6 +31,9 @@ import ExportData from "./components/pages/Manager/ExportData";
 import QualityScore from "./components/pages/Manager/QualityScore";
 import ManagerDashboard from "./components/pages/Manager/ManagerDashboard";
 
+// TÍCH HỢP TRANG LABEL LIBRARY VÀO ĐÂY
+import LabelLibrary from "./components/pages/Manager/LabelLibrary";
+
 // ================= REVIEWER =================
 import ReviewerDashboard from "./components/pages/Reviewer/ReviewerDashboard";
 
@@ -87,6 +90,10 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={["manager"]} />}>
           <Route path="/manager" element={<ManagerGlobalLayout />}>
             <Route index element={<ProjectManagement />} />
+
+            {/* THÊM ROUTE CHO LABEL LIBRARY */}
+            <Route path="labels" element={<LabelLibrary />} />
+
             <Route path="disputes" element={<DisputeResolution />} />
             <Route path="quality" element={<QualityScore />} />
             <Route path="export" element={<ExportData />} />
