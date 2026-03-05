@@ -1,0 +1,38 @@
+import { useState } from 'react';
+import annotatorApi from '../../api/annotatorApi';
+
+export const useSubmitTask = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  /**
+   * Hàm nộp bài lần đầu lên Azure
+   * @param {string} taskId - ID của Task cần nộp
+   */
+  const submit = async (taskId) => {
+    if (!taskId) return;
+
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      // Gọi API POST /api/tasks/{taskId}/submit
+      const response = await annotatorApi.submitTask(taskId);
+      
+      // Trả về thông báo thành công (ví dụ: "Nộp bài thành công.")
+      return response;
+    } catch (err) {
+      // Xử lý lỗi từ server (ví dụ: "Bạn chưa hoàn thành tất cả các file trong Task.")
+      const errorMsg = err?.response?.data || "Nộp bài thất bại. Vui lòng kiểm tra lại các ảnh.";
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return { 
+    submit,       // Hàm thực hiện nộp bài
+    isSubmitting, // Trạng thái đang gửi yêu cầu lên server
+    error         // Thông báo lỗi nếu nộp không thành công
+  };
+};

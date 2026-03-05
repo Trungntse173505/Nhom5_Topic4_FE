@@ -1,45 +1,32 @@
 import React from 'react';
 
-const SidebarRight = ({ selectedLabel, setSelectedLabel, dataType }) => {
-  const getLabels = () => {
-    if (dataType === 'text') {
-      return [
-        { name: 'Tích cực', color: 'bg-green-500' },
-        { name: 'Tiêu cực', color: 'bg-red-500' },
-        { name: 'Trung tính', color: 'bg-slate-400' },
-        { name: 'Spam', color: 'bg-yellow-500' }
-      ];
-    }
-    return [
-      { name: 'Vehicle', color: 'bg-blue-500' },
-      { name: 'Pedestrian', color: 'bg-green-500' },
-      { name: 'Traffic Sign', color: 'bg-yellow-500' },
-    ];
-  };
-
-  const labels = getLabels();
-
-  return (
-    <aside className="w-64 border-l border-slate-800 bg-[#0f172a] p-4 flex flex-col shrink-0">
-      <h3 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Bộ Nhãn (Labels)</h3>
+const SidebarRight = ({ availableLabels = [], selectedLabel, setSelectedLabel }) => (
+  <aside className="w-64 border-l border-slate-800 bg-[#0f172a] p-4 flex flex-col shrink-0">
+    <h3 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Bộ Nhãn (Labels)</h3>
+    
+    {availableLabels.length === 0 ? (
+       <p className="text-sm text-slate-500 italic">Dự án chưa cấu hình nhãn.</p>
+    ) : (
       <div className="flex flex-col gap-2">
-        {labels.map(label => (
+        {availableLabels.map(({ name, color }) => (
           <button
-            key={label.name}
-            onClick={() => setSelectedLabel(label.name)} // CẬP NHẬT STATE Ở ĐÂY
+            key={name}
+            onClick={() => setSelectedLabel(name)}
             className={`flex items-center gap-3 p-3 rounded-xl border text-sm font-medium transition-all ${
-              selectedLabel === label.name 
-                ? 'border-blue-500 bg-blue-500/10 text-white shadow-[0_0_15px_rgba(59,130,246,0.2)]' 
-                : 'border-transparent text-slate-400 hover:bg-slate-800/50'
+              selectedLabel === name ? 'bg-[#1e293b] text-white shadow-lg' : 'border-transparent text-slate-400 hover:bg-slate-800/50'
             }`}
+            style={{ borderColor: selectedLabel === name ? color : 'transparent' }}
           >
-            <span className={`w-3 h-3 rounded-full ${label.color}`}></span>
-            {label.name}
+            <span 
+              className="w-3 h-3 rounded-full" 
+              style={{ backgroundColor: color, boxShadow: selectedLabel === name ? `0 0 12px ${color}99` : 'none' }}
+            ></span>
+            {name}
           </button>
         ))}
       </div>
-    </aside>
-  );
-};
+    )}
+  </aside>
+);
 
 export default SidebarRight;

@@ -2,291 +2,162 @@ import React, { useState } from 'react';
 import { useAdminUsers } from '../../../hooks/useAdminUsers';
 import { useAdminRoles } from '../../../hooks/useAdminRoles';
 
+// Component phụ giúp tái sử dụng cấu trúc HTML của các ô nhập liệu
+const FormField = ({ label, isSelect, wrapperClass = "", children, ...props }) => (
+    <div className={`bg-white/5 p-4 rounded-xl ${wrapperClass}`}>
+        <label className="text-white/40 block mb-1 text-sm">{label}</label>
+        {isSelect ? (
+            <select {...props} className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20">{children}</select>
+        ) : (
+            <input {...props} className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20" />
+        )}
+    </div>
+);
+
 export default function UserList() {
     const {
-        users,
-        setUsers,
-        usersLoading,
-        usersError,
-        refresh,
-        createUser,
-        creating,
-        deleteUser,
-        deletingId,
-        resetPassword,
-        resettingId,
-        toggleStatus,
-        togglingId,
-        updateUser,
-        updatingId,
-        assignRole,
-        assigningRoleId,
+        users, setUsers, usersLoading, usersError, refresh,
+        createUser, creating: loading, deleteUser, deletingId,
+        resetPassword, resettingId, toggleStatus, togglingId,
+        updateUser, updatingId, assignRole, assigningRoleId,
     } = useAdminUsers();
-    const {
-        roles,
-        rolesLoading,
-        rolesError,
-        refreshRoles,
-        selectedRoles,
-        setSelectedRoles,
-        appliedRoles,
-        filterResult,
-        filterLoading,
-        filterError,
-        filterByRoles,
-        clearFilter,
-    } = useAdminRoles();
-    const loading = creating;
-    const userList = users;
 
-    // State cho Modal chi tiết & Chỉnh sửa
+    const {
+        roles, rolesLoading, rolesError, refreshRoles,
+        selectedRoles, setSelectedRoles, appliedRoles,
+        filterResult, filterLoading, filterError, filterByRoles, clearFilter,
+    } = useAdminRoles();
+
+    // Biến cờ khóa toàn cục: Tránh user bấm lung tung nhiều nút khi đang gọi API
+    const isBusy = loading || usersLoading || deletingId || updatingId || resettingId || togglingId || assigningRoleId;
+
     const [selectedUser, setSelectedUser] = useState(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
-
-    // State cho Modal tạo mới
     const [isCreateOpen, setIsCreateOpen] = useState(false);
-    const [createForm, setCreateForm] = useState({
-        name: '',
-        username: '',
-        email: '',
-        role: 'ANNOTATOR',
-        password: '',
-    });
-
-    // State mới: Dữ liệu tạm thời khi đang sửa
     const [editForm, setEditForm] = useState(null);
+    const [createForm, setCreateForm] = useState({ name: '', username: '', email: '', role: 'ANNOTATOR', password: '' });
 
     // --- CÁC HÀM XỬ LÝ LOGIC ---
     const handleActionCreate = async () => {
         const res = await createUser(createForm);
-        if (res.success) {
-            alert("Tạo user thành công!");
-            const refreshRes = await refresh();
-            if (!refreshRes?.success) {
-                const created = res.data?.data ?? res.data;
-                const createdId =
-                    created?.id ??
-                    created?.userId ??
-                    created?.userID ??
-                    created?.accountId ??
-                    created?.accountID ??
-                    Date.now().toString();
-
-                setUsers((prev) => [
-                    {
-                        id: String(createdId),
-                        name: createForm.name,
-                        email: createForm.email,
-                        role: createForm.role,
-                        status: 'Active',
-                    },
-                    ...prev,
-                ]);
-            }
-            setIsCreateOpen(false);
-            // Reset form
-            setCreateForm({ name: '', username: '', email: '', role: 'ANNOTATOR', password: '' });
-        } else {
-            alert("Lỗi: " + res.error);
+        if (!res.success) return alert("Lỗi: " + res.error);
+        
+        alert("Tạo user thành công!");
+        const refreshRes = await refresh();
+        if (!refreshRes?.success) {
+            const c = res.data?.data ?? res.data;
+            const createdId = String(c?.id ?? c?.userId ?? c?.userID ?? c?.accountId ?? c?.accountID ?? Date.now());
+            setUsers(prev => [{ id: createdId, ...createForm, status: 'Active' }, ...prev]);
         }
+        setIsCreateOpen(false);
+        setCreateForm({ name: '', username: '', email: '', role: 'ANNOTATOR', password: '' });
     };
-    // 1. Bật/Tắt trạng thái (đặt ở dòng danh sách)
+
     const handleToggleStatus = async (user) => {
-        if (loading || usersLoading || deletingId || updatingId || resettingId || togglingId) return;
-        const intendedNextStatus = user.status === 'Active' ? 'Inactive' : 'Active';
-        if (!window.confirm(`Xác nhận ${intendedNextStatus === 'Inactive' ? 'vô hiệu hóa' : 'kích hoạt'} tài khoản ${user.name}?`)) return;
+        if (isBusy) return;
+        const nextStatus = user.status === 'Active' ? 'Inactive' : 'Active';
+        if (!window.confirm(`Xác nhận ${nextStatus === 'Inactive' ? 'vô hiệu hóa' : 'kích hoạt'} tài khoản ${user.name}?`)) return;
 
-        const res = await toggleStatus(user.id, {
-            status: intendedNextStatus,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-        });
-        if (res.success) {
-            const raw = res.data?.data ?? res.data;
-            const isActive = raw?.isActive;
-            const nextStatus =
-                typeof isActive === 'boolean'
-                    ? isActive
-                        ? 'Active'
-                        : 'Inactive'
-                    : intendedNextStatus;
+        const res = await toggleStatus(user.id, { ...user, status: nextStatus });
+        if (!res.success) return alert("Lỗi: " + res.error);
 
-            const updatedUser = { ...user, status: nextStatus };
+        const raw = res.data?.data ?? res.data;
+        const finalStatus = typeof raw?.isActive === 'boolean' ? (raw.isActive ? 'Active' : 'Inactive') : nextStatus;
 
-            // Optimistic update so user doesn't disappear immediately.
-            setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, status: nextStatus } : u)));
-
-            // Some backends may exclude inactive users from `all-users`. After refresh, ensure the toggled
-            // user still appears in the list with the correct status.
-            await refresh();
-            setUsers((prev) => {
-                const exists = prev.some((u) => u.id === user.id);
-                if (!exists) return [updatedUser, ...prev];
-                return prev.map((u) => (u.id === user.id ? { ...u, status: nextStatus } : u));
-            });
-        } else {
-            alert("Lỗi: " + res.error);
-        }
+        setUsers(prev => prev.map(u => (u.id === user.id ? { ...u, status: finalStatus } : u)));
+        await refresh();
+        setUsers(prev => prev.some(u => u.id === user.id) 
+            ? prev.map(u => (u.id === user.id ? { ...u, status: finalStatus } : u)) 
+            : [{ ...user, status: finalStatus }, ...prev]
+        );
     };
 
-    // 2. Reset mật khẩu (đặt ở dòng danh sách)
     const handleResetPassword = async (user) => {
-        if (loading || usersLoading || deletingId || updatingId || resettingId) return;
-
+        if (isBusy) return;
         const password = window.prompt(`Nhập mật khẩu mới cho ${user.name} (${user.email}):`);
         if (password === null) return;
-        if (String(password).trim() === '') {
-            alert('Password cannot be empty.');
-            return;
-        }
+        if (!password.trim()) return alert('Password cannot be empty.');
         if (!window.confirm(`Xác nhận reset mật khẩu cho ${user.name} (${user.email})?`)) return;
 
         const res = await resetPassword(user.id, password);
-        if (res.success) {
-            const msg =
-                res.data?.message ||
-                res.data?.data?.message ||
-                `Reset mật khẩu thành công cho ${user.email}`;
-            alert(msg);
-        } else {
-            alert("Lỗi: " + res.error);
-        }
+        alert(res.success ? (res.data?.message || res.data?.data?.message || `Reset mật khẩu thành công cho ${user.email}`) : "Lỗi: " + res.error);
     };
 
     const handleDeleteUser = async (user) => {
-        if (loading || deletingId || usersLoading) return;
+        if (isBusy) return;
         if (!window.confirm(`Xóa user "${user.name}" (${user.email})? Hành động này không thể hoàn tác.`)) return;
 
         const res = await deleteUser(user.id);
-        if (res.success) {
-            const deletedId = String(user.id);
-            setUsers((prev) => prev.filter((u) => String(u.id) !== deletedId));
-            await refresh();
-            setUsers((prev) => prev.filter((u) => String(u.id) !== deletedId));
-            if (selectedUser?.id === user.id) {
-                setIsDetailOpen(false);
-                setSelectedUser(null);
-                setEditForm(null);
-            }
-            alert("Xóa user thành công!");
-        } else {
-            alert("Lỗi: " + res.error);
+        if (!res.success) return alert("Lỗi: " + res.error);
+
+        setUsers(prev => prev.filter(u => String(u.id) !== String(user.id)));
+        await refresh();
+        setUsers(prev => prev.filter(u => String(u.id) !== String(user.id)));
+        
+        if (selectedUser?.id === user.id) {
+            setIsDetailOpen(false);
+            setSelectedUser(null);
+            setEditForm(null);
         }
+        alert("Xóa user thành công!");
     };
 
-    // 3. Mở modal và thiết lập dữ liệu form
     const openDetail = (user) => {
         setSelectedUser(user);
-        setEditForm(user); // Copy dữ liệu user vào form
+        setEditForm(user);
         setIsDetailOpen(true);
     };
 
     const handleAssignRole = async (user, nextRole) => {
-        if (loading || usersLoading || deletingId || updatingId || resettingId || togglingId || assigningRoleId) return;
-        const normalizedNextRole = String(nextRole || '').toUpperCase();
-        if (normalizedNextRole === String(user.role || '').toUpperCase()) return;
+        if (isBusy) return;
+        const normalizedRole = String(nextRole || '').toUpperCase();
+        if (normalizedRole === String(user.role || '').toUpperCase()) return;
+        if (!window.confirm(`Xác nhận đổi vai trò của ${user.name} thành ${normalizedRole}?`)) return;
 
-        if (!window.confirm(`Xác nhận đổi vai trò của ${user.name} thành ${normalizedNextRole}?`)) return;
-
-        const prevRole = user.role;
-        setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role: normalizedNextRole } : u)));
-
-        const res = await assignRole(user.id, normalizedNextRole);
+        setUsers(prev => prev.map(u => (u.id === user.id ? { ...u, role: normalizedRole } : u)));
+        const res = await assignRole(user.id, normalizedRole);
         if (res.success) {
             await refresh();
-            const ensured = { ...user, role: normalizedNextRole };
-            setUsers((prev) => {
-                const exists = prev.some((u) => u.id === user.id);
-                if (!exists) return [ensured, ...prev];
-                return prev.map((u) => (u.id === user.id ? { ...u, role: normalizedNextRole } : u));
-            });
+            setUsers(prev => prev.some(u => u.id === user.id) 
+                ? prev.map(u => (u.id === user.id ? { ...u, role: normalizedRole } : u)) 
+                : [{ ...user, role: normalizedRole }, ...prev]
+            );
         } else {
-            console.error('assign-role failed', { userId: user.id, nextRole: normalizedNextRole, details: res.details, status: res.status });
-            setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, role: prevRole } : u)));
+            console.error('assign-role failed', { userId: user.id, nextRole: normalizedRole, details: res.details, status: res.status });
+            setUsers(prev => prev.map(u => (u.id === user.id ? { ...u, role: user.role } : u)));
             alert("Lỗi: " + res.error);
         }
     };
 
-    // 4. Lưu thay đổi từ Modal
-    const handleSaveEdit = () => {
-        (async () => {
-            if (loading || usersLoading || deletingId || updatingId || assigningRoleId) return;
+    const handleSaveEdit = async () => {
+        if (isBusy) return;
+        const roleChanged = selectedUser && String(selectedUser.role || '').toUpperCase() !== String(editForm.role || '').toUpperCase();
 
-            const original = selectedUser;
-            const roleChanged =
-                original && String(original.role || '').toUpperCase() !== String(editForm.role || '').toUpperCase();
+        const updateRes = await updateUser(editForm.id, { name: editForm.name, email: editForm.email });
+        if (!updateRes.success) return alert("Lỗi: " + updateRes.error);
 
-            const updateRes = await updateUser(editForm.id, { name: editForm.name, email: editForm.email });
-            if (!updateRes.success) {
-                alert("Lỗi: " + updateRes.error);
-                return;
+        setUsers(prev => prev.map(u => u.id === editForm.id ? { ...u, name: editForm.name, email: editForm.email } : u));
+
+        if (roleChanged) {
+            const roleRes = await assignRole(editForm.id, editForm.role);
+            if (!roleRes.success) {
+                setUsers(prev => prev.map(u => u.id === editForm.id ? { ...u, role: selectedUser?.role } : u));
+                setEditForm(prev => ({ ...prev, role: selectedUser?.role }));
+                return alert("Lỗi: " + roleRes.error);
             }
+            setUsers(prev => prev.map(u => u.id === editForm.id ? { ...u, role: editForm.role } : u));
+        }
 
-            setUsers((prev) =>
-                prev.map((u) =>
-                    u.id === editForm.id ? { ...u, name: editForm.name, email: editForm.email } : u
-                )
-            );
+        const nextSelected = { ...(selectedUser || {}), ...editForm, role: roleChanged ? editForm.role : (selectedUser?.role ?? editForm.role) };
+        setSelectedUser(nextSelected);
+        setIsDetailOpen(false);
 
-            if (roleChanged) {
-                const roleRes = await assignRole(editForm.id, editForm.role);
-                if (!roleRes.success) {
-                    setUsers((prev) =>
-                        prev.map((u) =>
-                            u.id === editForm.id ? { ...u, role: original?.role } : u
-                        )
-                    );
-                    setEditForm((prev) => ({ ...prev, role: original?.role }));
-                    alert("Lỗi: " + roleRes.error);
-                    return;
-                }
-                setUsers((prev) => prev.map((u) => (u.id === editForm.id ? { ...u, role: editForm.role } : u)));
-            }
-
-            const nextSelected = {
-                ...(original || {}),
-                ...editForm,
-                name: editForm.name,
-                email: editForm.email,
-                role: roleChanged ? editForm.role : original?.role ?? editForm.role,
-            };
-
-            setSelectedUser(nextSelected);
-            setIsDetailOpen(false);
-
-            // Best-effort sync with backend
-            const refreshRes = await refresh();
-            if (refreshRes?.success) {
-                // Ensure UI keeps the edited fields even if backend list is stale.
-                const ensured = {
-                    id: editForm.id,
-                    name: editForm.name,
-                    email: editForm.email,
-                    role: nextSelected.role,
-                    status: original?.status || 'Active',
-                };
-                setUsers((prev) =>
-                    prev.some((u) => u.id === editForm.id)
-                        ? prev.map((u) =>
-                            u.id === editForm.id
-                                ? { ...u, name: editForm.name, email: editForm.email, role: nextSelected.role }
-                                : u
-                        )
-                        : [ensured, ...prev]
-                );
-            } else {
-                // Ensure UI still reflects the user's last edits.
-                setUsers((prev) =>
-                    prev.map((u) =>
-                        u.id === editForm.id
-                            ? { ...u, name: editForm.name, email: editForm.email, role: nextSelected.role }
-                            : u
-                    )
-                );
-            }
-            alert("Cập nhật thông tin thành công!");
-        })();
+        const refreshRes = await refresh();
+        setUsers(prev => prev.some(u => u.id === editForm.id)
+            ? prev.map(u => u.id === editForm.id ? { ...u, name: editForm.name, email: editForm.email, role: nextSelected.role } : u)
+            : [{ id: editForm.id, name: editForm.name, email: editForm.email, role: nextSelected.role, status: selectedUser?.status || 'Active' }, ...prev]
+        );
+        alert("Cập nhật thông tin thành công!");
     };
 
     return (
@@ -294,44 +165,27 @@ export default function UserList() {
             <div className="flex items-center justify-between gap-4 mb-8">
                 <h1 className="text-2xl font-bold">Quản lý nhân sự</h1>
                 <button
-                    onClick={() => setIsCreateOpen(true)}
+                    onClick={() => setIsCreateOpen(true)} disabled={loading || usersLoading}
                     className="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                    disabled={loading || usersLoading}
                 >
                     + Tạo user
                 </button>
             </div>
 
-            {usersError && (
-                <div className="mb-4 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-                    {usersError}
-                </div>
-            )}
+            {usersError && <div className="mb-4 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{usersError}</div>}
 
+            {/* BỘ LỌC ROLES */}
             <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.02] p-4 shadow-2xl">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                    <div>
-                        <div className="text-sm font-bold text-white/80">Roles</div>
-
-                    </div>
+                    <div className="text-sm font-bold text-white/80">Roles</div>
                     <div className="flex flex-wrap items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => refreshRoles()}
-                            disabled={rolesLoading}
-                            className="bg-sky-600 hover:bg-sky-500 px-3 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
+                        <button onClick={() => refreshRoles()} disabled={rolesLoading} className="bg-sky-600 hover:bg-sky-500 px-3 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed">
                             {rolesLoading ? 'Đang tải roles...' : 'Tải roles'}
                         </button>
                         <button
-                            type="button"
-                            onClick={() => {
-                                (async () => {
-                                    const res = await filterByRoles(selectedRoles);
-                                    if (res?.success) {
-                                        setUsers(res.users || []);
-                                    }
-                                })();
+                            onClick={async () => {
+                                const res = await filterByRoles(selectedRoles);
+                                if (res?.success) setUsers(res.users || []);
                             }}
                             disabled={filterLoading || selectedRoles.length === 0}
                             className="bg-violet-600 hover:bg-violet-500 px-3 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
@@ -339,13 +193,7 @@ export default function UserList() {
                             {filterLoading ? 'Đang lọc...' : 'Lọc theo roles'}
                         </button>
                         <button
-                            type="button"
-                            onClick={() => {
-                                (async () => {
-                                    clearFilter();
-                                    await refresh();
-                                })();
-                            }}
+                            onClick={async () => { clearFilter(); await refresh(); }}
                             disabled={!filterResult && !filterError}
                             className="bg-white/5 hover:bg-white/10 px-3 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         >
@@ -366,23 +214,10 @@ export default function UserList() {
                         {roles.map((r) => {
                             const checked = selectedRoles.includes(r);
                             return (
-                                <label
-                                    key={r}
-                                    className={`cursor-pointer select-none text-xs font-semibold px-3 py-1 rounded-full border transition-all ${checked
-                                        ? 'text-emerald-200 bg-emerald-500/10 border-emerald-500/30'
-                                        : 'text-white/70 bg-white/5 border-white/10 hover:border-white/20'
-                                        }`}
-                                >
+                                <label key={r} className={`cursor-pointer select-none text-xs font-semibold px-3 py-1 rounded-full border transition-all ${checked ? 'text-emerald-200 bg-emerald-500/10 border-emerald-500/30' : 'text-white/70 bg-white/5 border-white/10 hover:border-white/20'}`}>
                                     <input
-                                        type="checkbox"
-                                        className="mr-2 accent-emerald-500"
-                                        checked={checked}
-                                        onChange={(e) => {
-                                            const next = e.target.checked
-                                                ? Array.from(new Set([...selectedRoles, r]))
-                                                : selectedRoles.filter((x) => x !== r);
-                                            setSelectedRoles(next);
-                                        }}
+                                        type="checkbox" className="mr-2 accent-emerald-500" checked={checked}
+                                        onChange={(e) => setSelectedRoles(e.target.checked ? Array.from(new Set([...selectedRoles, r])) : selectedRoles.filter(x => x !== r))}
                                     />
                                     {r}
                                 </label>
@@ -396,11 +231,7 @@ export default function UserList() {
                 {Array.isArray(appliedRoles) && appliedRoles.length > 0 && (
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="text-xs text-white/40">Đang lọc theo:</div>
-                        {appliedRoles.map((r) => (
-                            <span key={r} className="text-xs font-semibold px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-200">
-                                {r}
-                            </span>
-                        ))}
+                        {appliedRoles.map(r => <span key={r} className="text-xs font-semibold px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-200">{r}</span>)}
                     </div>
                 )}
             </div>
@@ -411,7 +242,6 @@ export default function UserList() {
                     <thead className="bg-white/5 text-white/40 text-xs uppercase font-bold">
                         <tr>
                             <th className="px-6 py-4">Nhân sự</th>
-                            {/* --- BỔ SUNG CỘT VAI TRÒ --- */}
                             <th className="px-6 py-4 text-center">Vai trò</th>
                             <th className="px-6 py-4 text-center">Trạng thái</th>
                             <th className="px-6 py-4 text-right">Thao tác</th>
@@ -419,34 +249,24 @@ export default function UserList() {
                     </thead>
                     <tbody className="divide-y divide-white/5">
                         {usersLoading && (
-                            <tr>
-                                <td className="px-6 py-6 text-sm text-white/50" colSpan={4}>
-                                    Đang tải danh sách user...
-                                </td>
-                            </tr>
+                            <tr><td className="px-6 py-6 text-sm text-white/50" colSpan={4}>Đang tải danh sách user...</td></tr>
                         )}
-                        {userList.map((user) => (
+                        {users.map((user) => (
                             <tr key={user.id} className="hover:bg-white/[0.03] transition-all">
                                 <td className="px-6 py-4">
                                     <div className="text-sm font-bold">{user.name}</div>
                                     <div className="text-xs text-white/30">{user.email}</div>
                                 </td>
-                                {/* --- HIỂN THỊ VAI TRÒ --- */}
                                 <td className="px-6 py-4 text-center">
                                     <select
-                                        value={user.role}
-                                        onChange={(e) => handleAssignRole(user, e.target.value)}
-                                        disabled={loading || usersLoading || deletingId || updatingId || resettingId || togglingId || assigningRoleId === user.id}
+                                        value={user.role} onChange={(e) => handleAssignRole(user, e.target.value)} disabled={isBusy || assigningRoleId === user.id} title="Đổi vai trò"
                                         className="text-xs font-semibold text-blue-300 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20 hover:border-blue-500/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                                        title="Đổi vai trò"
                                     >
                                         <option value="ADMIN">ADMIN</option>
                                         <option value="MANAGER">MANAGER</option>
                                         <option value="ANNOTATOR">ANNOTATOR</option>
                                         <option value="REVIEWER">REVIEWER</option>
-                                        {!['ADMIN', 'MANAGER', 'ANNOTATOR', 'REVIEWER'].includes(String(user.role || '').toUpperCase()) && (
-                                            <option value={user.role}>{user.role}</option>
-                                        )}
+                                        {!['ADMIN', 'MANAGER', 'ANNOTATOR', 'REVIEWER'].includes(String(user.role || '').toUpperCase()) && <option value={user.role}>{user.role}</option>}
                                     </select>
                                 </td>
                                 <td className="px-6 py-4 text-center">
@@ -456,39 +276,14 @@ export default function UserList() {
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end gap-2">
-                                        <button
-                                            onClick={() => openDetail(user)}
-                                            className="text-xs bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded-lg"
-                                        >
-                                            Sửa
-                                        </button>
-
-                                        <button
-                                            onClick={() => handleResetPassword(user)}
-                                            className="text-xs bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 px-3 py-1.5 rounded-lg"
-                                            title="Reset Mật Khẩu"
-                                            disabled={loading || usersLoading || deletingId || updatingId || resettingId === user.id}
-                                        >
+                                        <button onClick={() => openDetail(user)} className="text-xs bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded-lg">Sửa</button>
+                                        <button onClick={() => handleResetPassword(user)} disabled={isBusy || resettingId === user.id} title="Reset Mật Khẩu" className="text-xs bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 px-3 py-1.5 rounded-lg">
                                             {resettingId === user.id ? '...' : '🔑'}
                                         </button>
-
-                                        <button
-                                            onClick={() => handleToggleStatus(user)}
-                                            className={`text-xs px-3 py-1.5 rounded-lg font-bold ${user.status === 'Active'
-                                                ? 'bg-rose-600/10 hover:bg-rose-600/20 text-rose-400'
-                                                : 'bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400'
-                                                }`}
-                                            disabled={loading || usersLoading || deletingId || updatingId || resettingId || togglingId === user.id}
-                                        >
+                                        <button onClick={() => handleToggleStatus(user)} disabled={isBusy || togglingId === user.id} className={`text-xs px-3 py-1.5 rounded-lg font-bold ${user.status === 'Active' ? 'bg-rose-600/10 hover:bg-rose-600/20 text-rose-400' : 'bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400'}`}>
                                             {togglingId === user.id ? '...' : user.status === 'Active' ? 'Vô hiệu' : 'Kích hoạt'}
                                         </button>
-
-                                        <button
-                                            onClick={() => handleDeleteUser(user)}
-                                            className="text-xs bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 px-3 py-1.5 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed"
-                                            disabled={loading || usersLoading || deletingId === user.id}
-                                            title="Xóa user"
-                                        >
+                                        <button onClick={() => handleDeleteUser(user)} disabled={isBusy || deletingId === user.id} title="Xóa user" className="text-xs bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 px-3 py-1.5 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed">
                                             {deletingId === user.id ? 'Đang xóa...' : 'Xóa'}
                                         </button>
                                     </div>
@@ -503,178 +298,66 @@ export default function UserList() {
             {isCreateOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => !loading && setIsCreateOpen(false)}></div>
-
                     <div className="relative bg-[#0A1225] border border-white/10 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in duration-200">
                         <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                             <h2 className="text-xl font-bold text-emerald-400">Tạo người dùng</h2>
-                            <button
-                                onClick={() => setIsCreateOpen(false)}
-                                className="text-white/40 hover:text-white text-2xl disabled:opacity-60 disabled:cursor-not-allowed"
-                                disabled={loading}
-                            >
-                                ✕
-                            </button>
+                            <button onClick={() => setIsCreateOpen(false)} disabled={loading} className="text-white/40 hover:text-white text-2xl disabled:opacity-60 disabled:cursor-not-allowed">✕</button>
                         </div>
-
                         <div className="p-8 space-y-4">
-                            <div className="bg-white/5 p-4 rounded-xl">
-                                <label className="text-white/40 block mb-1 text-sm">Họ và tên</label>
-                                <input
-                                    type="text"
-                                    value={createForm.name}
-                                    onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
-                                    className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20"
-                                    placeholder="Nguyễn Văn A"
-                                />
-                            </div>
-
-                            <div className="bg-white/5 p-4 rounded-xl">
-                                <label className="text-white/40 block mb-1 text-sm">Username</label>
-                                <input
-                                    type="text"
-                                    value={createForm.username}
-                                    onChange={(e) => setCreateForm((prev) => ({ ...prev, username: e.target.value }))}
-                                    className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20"
-                                    placeholder="vd: admin01"
-                                />
-                            </div>
-
-                            <div className="bg-white/5 p-4 rounded-xl">
-                                <label className="text-white/40 block mb-1 text-sm">Email</label>
-                                <input
-                                    type="email"
-                                    value={createForm.email}
-                                    onChange={(e) => setCreateForm((prev) => ({ ...prev, email: e.target.value }))}
-                                    className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20"
-                                    placeholder="user@email.com"
-                                />
-                            </div>
-
-                            <div className="bg-white/5 p-4 rounded-xl">
-                                <label className="text-white/40 block mb-1 text-sm">Vai trò</label>
-                                <select
-                                    value={createForm.role}
-                                    onChange={(e) => setCreateForm((prev) => ({ ...prev, role: e.target.value }))}
-                                    className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20"
-                                >
-                                    <option value="ADMIN">ADMIN</option>
-                                    <option value="MANAGER">MANAGER</option>
-                                    <option value="ANNOTATOR">ANNOTATOR</option>
-                                    <option value="REVIEWER">REVIEWER</option>
-                                </select>
-                            </div>
-
-                            <div className="bg-white/5 p-4 rounded-xl">
-                                <label className="text-white/40 block mb-1 text-sm">Mật khẩu</label>
-                                <input
-                                    type="password"
-                                    value={createForm.password}
-                                    onChange={(e) => setCreateForm((prev) => ({ ...prev, password: e.target.value }))}
-                                    className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20"
-                                    placeholder="••••••••"
-                                />
-                            </div>
+                            <FormField label="Họ và tên" value={createForm.name} onChange={e => setCreateForm(p => ({ ...p, name: e.target.value }))} placeholder="Nguyễn Văn A" />
+                            <FormField label="Username" value={createForm.username} onChange={e => setCreateForm(p => ({ ...p, username: e.target.value }))} placeholder="vd: admin01" />
+                            <FormField type="email" label="Email" value={createForm.email} onChange={e => setCreateForm(p => ({ ...p, email: e.target.value }))} placeholder="user@email.com" />
+                            <FormField isSelect label="Vai trò" value={createForm.role} onChange={e => setCreateForm(p => ({ ...p, role: e.target.value }))}>
+                                <option value="ADMIN">ADMIN</option>
+                                <option value="MANAGER">MANAGER</option>
+                                <option value="ANNOTATOR">ANNOTATOR</option>
+                                <option value="REVIEWER">REVIEWER</option>
+                            </FormField>
+                            <FormField type="password" label="Mật khẩu" value={createForm.password} onChange={e => setCreateForm(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" />
                         </div>
-
                         <div className="px-8 py-6 bg-white/[0.02] border-t border-white/5 flex gap-3">
-                            <button
-                                onClick={handleActionCreate}
-                                className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                                disabled={loading}
-                            >
+                            <button onClick={handleActionCreate} disabled={loading} className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed">
                                 {loading ? 'Đang tạo...' : 'Tạo user'}
                             </button>
-                            <button
-                                onClick={() => setIsCreateOpen(false)}
-                                className="flex-1 bg-white/5 hover:bg-white/10 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                                disabled={loading}
-                            >
-                                Hủy
-                            </button>
+                            <button onClick={() => setIsCreateOpen(false)} disabled={loading} className="flex-1 bg-white/5 hover:bg-white/10 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed">Hủy</button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* --- MODAL CHI TIẾT & CHỈNH SỬA (GIỮ NGUYÊN) --- */}
+            {/* --- MODAL CHI TIẾT & CHỈNH SỬA --- */}
             {isDetailOpen && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsDetailOpen(false)}></div>
-
                     <div className="relative bg-[#0A1225] border border-white/10 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in duration-200">
-                        {/* Header Modal */}
                         <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                             <h2 className="text-xl font-bold text-blue-400">Chỉnh sửa hồ sơ</h2>
                             <button onClick={() => setIsDetailOpen(false)} className="text-white/40 hover:text-white text-2xl">✕</button>
                         </div>
-
-                        {/* Body Modal - Dạng Form */}
                         <div className="p-8 space-y-6">
                             <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-3xl font-bold">
-                                    {editForm.name.charAt(0)}
-                                </div>
+                                <div className="w-16 h-16 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-3xl font-bold">{editForm.name.charAt(0)}</div>
                                 <div>
                                     <h3 className="text-xl font-bold">Chỉnh sửa ID: {editForm.id}</h3>
                                     <p className="text-sm text-white/50">Cập nhật thông tin nhân viên</p>
                                 </div>
                             </div>
-
                             <div className="grid grid-cols-2 gap-4 text-sm">
-                                {/* Sửa Tên */}
-                                <div className="bg-white/5 p-4 rounded-xl col-span-2">
-                                    <label className="text-white/40 block mb-1">Họ và tên</label>
-                                    <input
-                                        type="text"
-                                        value={editForm.name}
-                                        onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                                        className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20"
-                                    />
-                                </div>
-
-                                {/* Sửa Email */}
-                                <div className="bg-white/5 p-4 rounded-xl col-span-2">
-                                    <label className="text-white/40 block mb-1">Email</label>
-                                    <input
-                                        type="email"
-                                        value={editForm.email}
-                                        onChange={e => setEditForm({ ...editForm, email: e.target.value })}
-                                        className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20"
-                                    />
-                                </div>
-
-                                {/* Sửa Vai trò */}
-                                <div className="bg-white/5 p-4 rounded-xl col-span-2">
-                                    <label className="text-white/40 block mb-1">Vai trò</label>
-                                    <select
-                                        value={editForm.role}
-                                        onChange={e => setEditForm({ ...editForm, role: e.target.value })}
-                                        className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20"
-                                    >
-                                        <option value="ADMIN">ADMIN</option>
-                                        <option value="MANAGER">MANAGER</option>
-                                        <option value="ANNOTATOR">ANNOTATOR</option>
-                                        <option value="REVIEWER">REVIEWER</option>
-                                    </select>
-                                </div>
+                                <FormField wrapperClass="col-span-2" label="Họ và tên" value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} />
+                                <FormField wrapperClass="col-span-2" type="email" label="Email" value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} />
+                                <FormField wrapperClass="col-span-2" isSelect label="Vai trò" value={editForm.role} onChange={e => setEditForm(p => ({ ...p, role: e.target.value }))}>
+                                    <option value="ADMIN">ADMIN</option>
+                                    <option value="MANAGER">MANAGER</option>
+                                    <option value="ANNOTATOR">ANNOTATOR</option>
+                                    <option value="REVIEWER">REVIEWER</option>
+                                </FormField>
                             </div>
                         </div>
-
-                        {/* Footer Modal - Nút Lưu */}
                         <div className="px-8 py-6 bg-white/[0.02] border-t border-white/5 flex gap-3">
-                            <button
-                                onClick={handleSaveEdit}
-                                className="flex-1 bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                                disabled={loading || usersLoading || deletingId || updatingId === editForm.id || assigningRoleId === editForm.id}
-                            >
+                            <button onClick={handleSaveEdit} disabled={isBusy} className="flex-1 bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed">
                                 {updatingId === editForm.id || assigningRoleId === editForm.id ? 'Đang lưu...' : 'Lưu thay đổi'}
                             </button>
-                            <button
-                                onClick={() => setIsDetailOpen(false)}
-                                className="flex-1 bg-white/5 hover:bg-white/10 py-3 rounded-xl text-sm font-bold transition-all"
-                            >
-                                Hủy
-                            </button>
+                            <button onClick={() => setIsDetailOpen(false)} className="flex-1 bg-white/5 hover:bg-white/10 py-3 rounded-xl text-sm font-bold transition-all">Hủy</button>
                         </div>
                     </div>
                 </div>

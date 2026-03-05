@@ -1,4 +1,5 @@
 import React from 'react';
+import { Image as ImageIcon, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const SidebarLeft = ({ files = [], currentItemId, onSelectItem }) => {
   return (
@@ -16,12 +17,17 @@ const SidebarLeft = ({ files = [], currentItemId, onSelectItem }) => {
               onClick={() => onSelectItem && onSelectItem(item.id)}
               className={`p-3 rounded-xl border cursor-pointer transition-all ${isActive ? 'border-blue-500 bg-[#1e293b]' : 'border-slate-800 hover:border-slate-600'}`}
             >
-              <div className="flex justify-between items-center">
-                <span className={`text-sm font-medium truncate pr-2 ${isActive ? 'text-white' : 'text-slate-300'}`}>{item.id}{item.ext}</span>
-                {item.status === 'Done' && <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 font-medium shrink-0">Done</span>}
-                {item.status === 'Rejected' && <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 font-medium shrink-0">Rejected</span>}
+              <div className="flex justify-between items-center gap-2">
+                <ImageIcon size={14} className={isActive ? "text-blue-400" : "text-slate-500"} />
+                {/* HIỂN THỊ TÊN FILE LẤY TỪ AZURE */}
+                <span className={`text-sm font-medium truncate flex-1 ${isActive ? 'text-white' : 'text-slate-300'}`} title={item.name}>
+                  {item.name}
+                </span>
+                
+                {/* BADGE TRẠNG THÁI */}
+                {item.status === 'Done' && <CheckCircle size={14} className="text-green-500 shrink-0" />}
+                {item.status === 'Rejected' && <AlertTriangle size={14} className="text-red-500 shrink-0" title="Bị báo lỗi" />}
               </div>
-              {item.status === 'Rejected' && item.note && <p className="text-xs text-red-400 mt-2">✕ {item.note}</p>}
             </div>
           );
         })}

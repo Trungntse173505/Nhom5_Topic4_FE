@@ -1,17 +1,30 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, TrendingUp, TrendingDown, ShieldAlert, History, ArrowLeft } from 'lucide-react';
+import { Trophy, TrendingUp, TrendingDown, ShieldAlert, History, ArrowLeft, Loader2 } from 'lucide-react';
+
+import { useReputation } from '../../../../hooks/Annotator/useReputation';
 
 const CreditScorePage = () => {
   const navigate = useNavigate();
-  const currentScore = 85; // Điểm giả lập
   
-  const scoreHistory = [
-    { id: 1, date: '2026-02-25 14:30', action: 'Gán nhãn đúng ngay từ đầu (Task IMG_001)', points: '+10', type: 'up' },
-    { id: 2, date: '2026-02-24 09:15', action: 'Tỷ lệ nộp lần 1 đạt >95%', points: '+2', type: 'up' },
-    { id: 3, date: '2026-02-22 16:00', action: 'Sửa lỗi đến lần 2 (Task IMG_042)', points: '-5', type: 'down' },
-    { id: 4, date: '2026-02-20 10:20', action: 'Khiếu nại sai (Spam hệ thống)', points: '-5', type: 'down' },
-  ];
+  const { currentScore, logs, loading, error } = useReputation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white">
+        <Loader2 className="animate-spin w-8 h-8 mr-3" /> Đang tải dữ liệu điểm số...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center text-white">
+        <p className="text-red-500 mb-4">{error}</p>
+        <button onClick={() => navigate('/annotator')} className="text-blue-400 underline">Quay lại Dashboard</button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200 p-8">
@@ -32,7 +45,6 @@ const CreditScorePage = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Box Điểm hiện tại */}
           <div className="col-span-1 bg-[#1e293b] border border-slate-700 p-8 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden h-fit">
             <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl ${currentScore >= 50 ? 'bg-blue-500/20' : 'bg-red-500/20'}`}></div>
             
@@ -54,24 +66,31 @@ const CreditScorePage = () => {
             </div>
           </div>
 
-          {/* Box Lịch sử biến động */}
           <div className="col-span-2 bg-[#1e293b] border border-slate-700 rounded-2xl p-6">
             <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-6">
               <History size={20} className="text-slate-400" /> Lịch sử biến động điểm
             </h2>
             <div className="space-y-3">
-              {scoreHistory.map(item => (
-                <div key={item.id} className="flex items-center justify-between p-4 bg-[#0f172a] border border-slate-800 rounded-xl hover:border-slate-600 transition-colors">
-                  <div>
-                    <p className="text-sm font-semibold text-white">{item.action}</p>
-                    <p className="text-xs text-slate-500 mt-1">{item.date}</p>
+              {logs && logs.length > 0 ? (
+                logs.map((log, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 bg-[#0f172a] border border-slate-800 rounded-xl hover:border-slate-600 transition-colors">
+                    <div>
+                      <p className="text-sm font-semibold text-white">{log.reason}</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {new Date(log.createdAt).toLocaleString('vi-VN')}
+                      </p>
+                    </div>
+                    <div className={`flex items-center gap-1.5 font-bold text-lg ${log.scoreChange > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {log.scoreChange > 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                      {log.scoreChange > 0 ? `+${log.scoreChange}` : log.scoreChange}
+                    </div>
                   </div>
-                  <div className={`flex items-center gap-1.5 font-bold text-lg ${item.type === 'up' ? 'text-green-500' : 'text-red-500'}`}>
-                    {item.type === 'up' ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-                    {item.points}
-                  </div>
+                ))
+              ) : (
+                <div className="text-center p-8 text-slate-500 bg-[#0f172a] rounded-xl border border-slate-800 border-dashed">
+                  Bạn chưa có lịch sử biến động điểm nào.
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
