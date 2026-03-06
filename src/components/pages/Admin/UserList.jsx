@@ -249,7 +249,7 @@ export default function UserList() {
                     </thead>
                     <tbody className="divide-y divide-white/5">
                         {usersLoading && (
-                            <tr><td className="px-6 py-6 text-sm text-white/50" colSpan={4}>Đang tải danh sách user...</td></tr>
+                            <tr><td className="px-6 py-6 text-sm text-white/50" colSpan={4}>Đang tải danh sách người dùng...</td></tr>
                         )}
                         {users.map((user) => (
                             <tr key={user.id} className="hover:bg-white/[0.03] transition-all">
@@ -277,13 +277,13 @@ export default function UserList() {
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end gap-2">
                                         <button onClick={() => openDetail(user)} className="text-xs bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded-lg">Sửa</button>
-                                        <button onClick={() => handleResetPassword(user)} disabled={isBusy || resettingId === user.id} title="Reset Mật Khẩu" className="text-xs bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 px-3 py-1.5 rounded-lg">
+                                        <button onClick={() => handleResetPassword(user)} disabled={isBusy || resettingId === user.id} title="Đặt lại Mật Khẩu" className="text-xs bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 px-3 py-1.5 rounded-lg">
                                             {resettingId === user.id ? '...' : '🔑'}
                                         </button>
                                         <button onClick={() => handleToggleStatus(user)} disabled={isBusy || togglingId === user.id} className={`text-xs px-3 py-1.5 rounded-lg font-bold ${user.status === 'Active' ? 'bg-rose-600/10 hover:bg-rose-600/20 text-rose-400' : 'bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400'}`}>
                                             {togglingId === user.id ? '...' : user.status === 'Active' ? 'Vô hiệu' : 'Kích hoạt'}
                                         </button>
-                                        <button onClick={() => handleDeleteUser(user)} disabled={isBusy || deletingId === user.id} title="Xóa user" className="text-xs bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 px-3 py-1.5 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed">
+                                        <button onClick={() => handleDeleteUser(user)} disabled={isBusy || deletingId === user.id} title="Xóa người dùng" className="text-xs bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 px-3 py-1.5 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed">
                                             {deletingId === user.id ? 'Đang xóa...' : 'Xóa'}
                                         </button>
                                     </div>
