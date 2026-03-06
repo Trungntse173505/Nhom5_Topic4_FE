@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import adminApi from '../api/adminApi';
+import adminApi from '../../api/adminApi';
 
 const roleToId = {
   ADMIN: 1,
@@ -31,7 +31,7 @@ const buildErrorMessage = (err) => {
 
   return status ? `HTTP ${status}: ${message}` : message;
 };
-
+// Change role
 const coerceRoleInt = (rawRole) => {
   if (rawRole === null || rawRole === undefined) return null;
   if (typeof rawRole === 'number' && Number.isFinite(rawRole)) return rawRole;
@@ -57,7 +57,7 @@ const coerceRoleName = (role) => {
   }
   return String(role);
 };
-
+// Normalize user object from various possible backend shapes to a consistent frontend shape.
 const normalizeUser = (u) => {
   const id = u?.id ?? u?.userId ?? u?.userID ?? u?.accountId ?? u?.accountID;
   const name = u?.fullName ?? u?.name ?? u?.username ?? '';
