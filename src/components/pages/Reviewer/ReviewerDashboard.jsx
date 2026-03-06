@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Clock, FolderOpen, Filter, FileText, Headphones, Image as ImageIcon, Loader2, Trophy, XCircle } from 'lucide-react';
-import { useReviewerDashboard } from '../../../hooks/useReviewerDashboard';
+import { useTasks } from '../../../hooks/Reviewer/useTasks';
 
 const TYPE_ICONS = {
   text: <FileText size={16} className="text-blue-400" />,
@@ -10,13 +10,15 @@ const TYPE_ICONS = {
 };
 
 const STATUS_STYLES = {
-  Pending: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  Done: 'bg-green-500/20 text-green-400 border-green-500/30',
+  PendingReview: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+  Approved: 'bg-green-500/20 text-green-400 border-green-500/30',
+  InProgress: 'bg-red-500/20 text-red-400 border-red-500/30', 
 };
 
 const ACTION_STYLES = {
-  Pending: { label: 'Kiểm duyệt', cls: 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20' },
-  Done: { label: 'Xem lại', cls: 'bg-slate-700 hover:bg-slate-600 border border-slate-600' },
+  PendingReview: { label: 'Kiểm duyệt', cls: 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20' },
+  Approved: { label: 'Xem lại', cls: 'bg-slate-700 hover:bg-slate-600 border border-slate-600 cursor-not-allowed opacity-50' },
+  InProgress: { label: 'Đang làm lại', cls: 'bg-slate-700 hover:bg-slate-600 border border-slate-600 cursor-not-allowed opacity-50' },
 };
 
 const STAT_CARDS = [
@@ -29,13 +31,39 @@ const FILTERS = ['All', 'Pending', 'Done'];
 
 const ReviewerDashboard = () => {
   const navigate = useNavigate();
-  const { filteredTasks, isLoading, filter, setFilter, stats } = useReviewerDashboard();
+  const [filter, setFilter] = useState('All');
+  
+  // Dùng hook thật gọi API lấy data
+  const { tasks, isLoading, error, refetch } = useTasks();
 
   if (isLoading) return (
     <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white">
       <Loader2 className="animate-spin w-8 h-8 mr-3" /> Đang tải dữ liệu...
     </div>
   );
+
+  if (error) return (
+    <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center text-white">
+      <XCircle className="text-red-500 w-12 h-12 mb-4" />
+      <p>Lỗi tải dữ liệu: {error}</p>
+      <button onClick={refetch} className="mt-4 bg-blue-600 px-4 py-2 rounded">Thử lại</button>
+    </div>
+  );
+
+  // Tính toán thống kê từ data thật
+  const stats = {
+    totalTasks: tasks?.length || 0,
+    pendingTasks: tasks?.filter(t => t.status === 'PendingReview').length || 0,
+    doneTasks: tasks?.filter(t => t.status === 'Approved').length || 0,
+  };
+
+  // Lọc data theo tab UI
+  const filteredTasks = tasks?.filter(task => {
+    if (filter === 'All') return true;
+    if (filter === 'Pending') return task.status === 'PendingReview';
+    if (filter === 'Done') return task.status === 'Approved';
+    return true;
+  }) || [];
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200 p-8">
@@ -97,46 +125,60 @@ const ReviewerDashboard = () => {
         <table className="w-full text-left border-collapse">
           <thead className="bg-[#0f172a]/50 text-slate-400 text-sm">
             <tr>
-              {['Mã / Tên Task', 'Annotator', 'Trạng thái', 'Deadline', ''].map((h, i) => (
+              {['Tên Task', 'Annotator', 'Trạng thái', 'Deadline', ''].map((h, i) => (
                 <th key={i} className={`p-4 font-medium ${i === 4 ? 'text-right w-px' : ''}`}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filteredTasks.length > 0 ? filteredTasks.map(task => {
-              const action = ACTION_STYLES[task.status] ?? ACTION_STYLES.Pending;
+              // Map trạng thái BE với Config UI
+              const action = ACTION_STYLES[task.status] ?? ACTION_STYLES.PendingReview;
+              const statusStyle = STATUS_STYLES[task.status] ?? 'bg-gray-500/20 text-gray-400';
+              
+              // Custom Text Trạng thái
+              let statusText = 'Chưa rõ';
+              if (task.status === 'PendingReview') statusText = 'Chờ duyệt';
+              if (task.status === 'Approved') statusText = 'Đã duyệt';
+              if (task.status === 'InProgress') statusText = 'Đang làm lại';
+
               return (
-                <tr key={task.id} className="border-t border-slate-700 hover:bg-slate-800/50 transition-colors">
+                <tr key={task.taskID} className="border-t border-slate-700 hover:bg-slate-800/50 transition-colors">
                   <td className="p-4">
+                    {/* Bỏ class ml-4 ở đây để canh lề đều với tiêu đề cột */}
                     <div className="flex items-center gap-2 font-bold text-white mb-1">
-                      {TYPE_ICONS[task.type] ?? TYPE_ICONS.image}
-                      {task.name}
+                      {TYPE_ICONS.image}
+                      {task.taskName}
                     </div>
-                    <p className="text-xs text-slate-400 pl-6">{task.id} • {task.project}</p>
+                    <p className="text-xs text-slate-400 ml-6">
+                      {task.taskID.substring(0, 8)}... • Vòng {task.currentRound || 0}
+                    </p>
                   </td>
 
                   <td className="p-4">
-                    <p className="text-sm text-slate-300 font-medium">{task.annotator}</p>
-                    <p className="text-xs text-slate-500">{task.submittedAt}</p>
+                    <p className="text-sm text-slate-300 font-medium">Ẩn danh</p> 
                   </td>
 
                   <td className="p-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold inline-block border ${STATUS_STYLES[task.status]}`}>
-                      {task.status === 'Pending' ? 'Chờ duyệt' : 'Đã duyệt'}
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold inline-block border ${statusStyle}`}>
+                      {statusText}
                     </span>
-                    {task.note && <p className="text-xs text-red-400 mt-2 font-medium">⚠️ {task.note}</p>}
+                    {task.rejectCount > 0 && (
+                      <p className="text-xs text-red-400 mt-2 font-medium">⚠️ Đã từ chối {task.rejectCount} lần</p>
+                    )}
                   </td>
 
                   <td className="p-4">
                     <div className="flex items-center gap-1.5 text-sm text-slate-300">
                       <Clock size={14} className="text-slate-500" />
-                      {task.deadline}
+                      {new Date(task.deadline).toLocaleDateString('vi-VN')}
                     </div>
                   </td>
 
                   <td className="p-4 text-right">
                     <button
-                      onClick={() => navigate(`/reviewer/workspace/${task.id}`)}
+                      onClick={() => task.status === 'PendingReview' && navigate(`/reviewer/workspace/${task.taskID}`)}
+                      disabled={task.status !== 'PendingReview'}
                       className={`px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-all shadow-lg ${action.cls}`}
                     >
                       {action.label}

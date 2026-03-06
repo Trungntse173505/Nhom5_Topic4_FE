@@ -5,7 +5,6 @@ const menuItems = [
   { path: "/admin/users", label: "Users", icon: "👥" },
   { path: "/admin/logs", label: "Activity Logs", icon: "📋" },
   { path: "/admin/config", label: "System Config", icon: "⚙️" },
-  { path: "/admin/storage", label: "Storage Control", icon: "💾" },
 ];
 
 export default function AdminGlobalLayout() {
