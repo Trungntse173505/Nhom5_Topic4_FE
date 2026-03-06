@@ -1,11 +1,11 @@
 import SidebarLayout from "../../common/SidebarLayout";
 
 const menuItems = [
-  { path: "/manager", label: "Projects", icon: "📁" },
-  { path: "/manager/labels", label: "Label Library", icon: "🏷️" },
-  { path: "/manager/disputes", label: "Disputes", icon: "⚖️" },
-  { path: "/manager/quality", label: "Quality Score", icon: "⭐" },
-  { path: "/manager/export", label: "Export Data", icon: "📥" },
+  { path: "/manager", label: "Dự án", icon: "📁" },
+  { path: "/manager/labels", label: "Thư viện Nhãn", icon: "🏷️" },
+  { path: "/manager/disputes", label: "Khiếu nại & Tranh chấp", icon: "⚖️" },
+  { path: "/manager/quality", label: "Điểm Chất lượng", icon: "⭐" },
+  { path: "/manager/export", label: "Xuất Dữ liệu", icon: "📥" },
 ];
 
 export default function ManagerGlobalLayout() {
@@ -13,9 +13,14 @@ export default function ManagerGlobalLayout() {
     <SidebarLayout
       menuItems={menuItems}
       title="LabelMaster"
-      menuLabel="Menu"
+      menuLabel="Danh mục Quản lý"
       basePath="/manager"
-      userInfo={{ name: "Manager User", email: "test@gmail.com", avatar: "M", color: "bg-purple-500" }}
+      userInfo={{
+        name: "Quản lý",
+        email: "test@gmail.com",
+        avatar: "Q", // Chữ cái đầu của tên (Q trong Quản lý)
+        color: "bg-purple-500",
+      }}
     />
   );
 }
