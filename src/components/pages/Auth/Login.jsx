@@ -1,12 +1,7 @@
-// src/pages/Auth/Login.jsx
 import { useMemo, useState } from "react";
-
-const ROLES = [
-  { value: "admin", label: "Administrator" },
-  { value: "manager", label: "Manager" },
-  { value: "annotator", label: "Annotator" },
-  { value: "reviewer", label: "Reviewer" },
-];
+import { useNavigate } from "react-router-dom";
+import { useLogin } from "../../../hooks/useLogin";
+import { updateUserPresence } from "../../../services/firebase";
 
 function ShieldIcon() {
   return (
@@ -17,7 +12,6 @@ function ShieldIcon() {
         viewBox="0 0 24 24"
         fill="none"
         className="text-blue-500"
-        aria-hidden="true"
       >
         <path
           d="M12 2l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V6l7-4z"
@@ -31,179 +25,123 @@ function ShieldIcon() {
 }
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const navigate = useNavigate();
+  const { login, loading: authLoading, error: authError } = useLogin();
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("admin");
   const [showPw, setShowPw] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [touched, setTouched] = useState({ email: false, password: false });
+  const [touched, setTouched] = useState({ username: false, password: false });
 
   const errors = useMemo(() => {
     const e = {};
-    if (!email.trim()) e.email = "Email is required.";
-    else if (!/^\S+@\S+\.\S+$/.test(email)) e.email = "Email is invalid.";
-
+    if (!username.trim()) e.username = "Username is required.";
     if (!password) e.password = "Password is required.";
-    else if (password.length < 6) e.password = "Password must be at least 6 characters.";
+    else if (password.length < 5)
+      e.password = "Password must be at least 5 chars.";
     return e;
-  }, [email, password]);
+  }, [username, password]);
 
-  const canSubmit = Object.keys(errors).length === 0 && !loading;
+  const canSubmit = Object.keys(errors).length === 0 && !authLoading;
 
   async function onSubmit(e) {
     e.preventDefault();
-    setTouched({ email: true, password: true });
     if (!canSubmit) return;
+    const res = await login({ username, password });
+    if (res.success && res.user) {
+      const { userId, roleName, fullName } = res.user;
 
-    try {
-      setLoading(true);
+      try {
+        // Chỉ set online ngay — heartbeat sẽ do App.js xử lý khi navigate xong
+        await updateUserPresence(userId, roleName, true);
+        console.log("Đã báo online thành công!");
+      } catch (err) {
+        console.error("Lỗi Firebase:", err);
+      }
 
-      // TODO: Replace with your API call
-      // await authApi.login({ email, password, role });
+      const roleToPath = {
+        admin: "/admin",
+        manager: "/manager",
+        annotator: "/annotator",
+        reviewer: "/reviewer",
+      };
 
-      // Demo: simulate request
-      await new Promise((r) => setTimeout(r, 700));
-
-      console.log("LOGIN:", { email, password, role });
-      // TODO: navigate to workspace based on role
-      // navigate(`/${role}`);
-    } finally {
-      setLoading(false);
+      navigate(roleToPath[roleName.toLowerCase()] || "/admin");
     }
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#050B1A]">
-      {/* background glow */}
-      <div className="pointer-events-none fixed inset-0">
-        <div className="absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-blue-600/20 blur-3xl" />
-        <div className="absolute -right-40 top-20 h-[520px] w-[520px] rounded-full bg-indigo-600/10 blur-3xl" />
-        <div className="absolute bottom-0 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-sky-500/10 blur-3xl" />
-        {/* changed here */}
-        <div className="absolute inset-0 bg-linear-to-b from-white/[0.03] to-transparent" />
+    <div className="min-h-screen w-full bg-[#050B1A] relative flex items-center justify-center px-4">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-blue-600/10 blur-3xl" />
+        <div className="absolute -right-40 bottom-0 h-[520px] w-[520px] rounded-full bg-indigo-600/10 blur-3xl" />
       </div>
 
-      <div className="relative flex min-h-screen items-center justify-center px-4 py-10">
-        <div className="w-full max-w-lg">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-8 shadow-2xl shadow-black/40 backdrop-blur-xl">
-            <div className="flex flex-col items-center text-center">
-              <ShieldIcon />
-              <h1 className="mt-5 text-2xl font-semibold tracking-tight text-white">
-                Data Labeling System
-              </h1>
-              <p className="mt-2 text-sm text-white/60">Sign in</p>
-            </div>
-
-            <form onSubmit={onSubmit} className="mt-7 space-y-5">
-              {/* Email */}
-              <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">Email</label>
-                <div className="relative">
-                  <input
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onBlur={() => setTouched((t) => ({ ...t, email: true }))}
-                    type="email"
-                    placeholder="user@company.com"
-                    className={[
-                      "w-full rounded-xl border bg-white/[0.04] px-4 py-3 text-sm text-white outline-none",
-                      "placeholder:text-white/30",
-                      "border-white/10 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10",
-                      touched.email && errors.email
-                        ? "border-rose-500/60 focus:border-rose-500/70 focus:ring-rose-500/10"
-                        : "",
-                    ].join(" ")}
-                  />
-                </div>
-                {touched.email && errors.email && (
-                  <p className="mt-2 text-xs text-rose-400">{errors.email}</p>
-                )}
-              </div>
-
-              {/* Password */}
-              <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">Password</label>
-                <div className="relative">
-                  <input
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-                    type={showPw ? "text" : "password"}
-                    placeholder="••••••••"
-                    className={[
-                      "w-full rounded-xl border bg-white/[0.04] px-4 py-3 pr-12 text-sm text-white outline-none",
-                      "placeholder:text-white/30",
-                      "border-white/10 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10",
-                      touched.password && errors.password
-                        ? "border-rose-500/60 focus:border-rose-500/70 focus:ring-rose-500/10"
-                        : "",
-                    ].join(" ")}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPw((s) => !s)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-3 py-2 text-xs font-medium text-white/60 hover:bg-white/5 hover:text-white/80"
-                  >
-                    {showPw ? "Hide" : "Show"}
-                  </button>
-                </div>
-                {touched.password && errors.password && (
-                  <p className="mt-2 text-xs text-rose-400">{errors.password}</p>
-                )}
-              </div>
-
-              {/* Role */}
-              <div>
-                <label className="mb-2 block text-sm font-medium text-white/80">
-                  Role
-                </label>
-                <div className="relative">
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    className="w-full appearance-none rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10"
-                  >
-                    {ROLES.map((r) => (
-                      <option key={r.value} value={r.value} className="bg-[#0B1224]">
-                        {r.label}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* caret */}
-                  <svg
-                    className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={!canSubmit}
-                className={[
-                  "mt-2 w-full rounded-xl py-3 text-sm font-semibold text-white shadow-lg",
-                  "bg-blue-600 hover:bg-blue-500 active:bg-blue-600",
-                  "shadow-blue-600/20",
-                  "disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-blue-600",
-                ].join(" ")}
-              >
-                {loading ? "Signing In..." : "Sign In"}
-              </button>
-            </form>
+      <div className="w-full max-w-md relative">
+        <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-10 shadow-2xl backdrop-blur-2xl">
+          <div className="flex flex-col items-center text-center mb-8">
+            <ShieldIcon />
+            <h1 className="mt-6 text-2xl font-bold tracking-tight text-white">
+              Data Labeling System
+            </h1>
+            <p className="mt-2 text-sm text-white/40 font-medium">
+              Please sign in to your account
+            </p>
           </div>
 
-          <p className="mt-6 text-center text-xs text-white/30">
-            © {new Date().getFullYear()} Data Labeling System
-          </p>
+          <form onSubmit={onSubmit} className="space-y-6">
+            <div>
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                onBlur={() => setTouched((t) => ({ ...t, username: true }))}
+                type="text"
+                placeholder="Username"
+                className={`w-full rounded-xl border bg-white/[0.03] px-4 py-3.5 text-sm text-white outline-none transition-all placeholder:text-white/20 
+                  ${
+                    touched.username && errors.username
+                      ? "border-rose-500/50 focus:ring-rose-500/10"
+                      : "border-white/10 focus:border-blue-500/50 focus:ring-blue-500/10 focus:ring-4"
+                  }`}
+              />
+            </div>
+
+            <div className="relative">
+              <input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+                type={showPw ? "text" : "password"}
+                placeholder="Password"
+                className={`w-full rounded-xl border bg-white/[0.03] px-4 py-3.5 text-sm text-white outline-none transition-all placeholder:text-white/20
+                  ${
+                    touched.password && errors.password
+                      ? "border-rose-500/50"
+                      : "border-white/10 focus:border-blue-500/50"
+                  }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw(!showPw)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-white/30 hover:text-white/60"
+              >
+                {showPw ? "HIDE" : "SHOW"}
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              disabled={!canSubmit}
+              className="w-full rounded-xl bg-blue-600 py-4 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-500 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+            >
+              {authLoading ? "Authenticating..." : "Sign In"}
+            </button>
+
+            {authError && (
+              <p className="text-center text-xs font-medium text-rose-400 mt-4 bg-rose-400/10 py-2 rounded-lg">
+                {authError}
+              </p>
+            )}
+          </form>
         </div>
       </div>
     </div>
