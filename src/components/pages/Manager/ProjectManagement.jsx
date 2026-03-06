@@ -21,8 +21,13 @@ export default function ProjectManagement() {
 
   const handleLogout = () => navigate("/login");
 
-  const filteredProjects =
-    filter === "All" ? projects : projects.filter((p) => p.status === filter);
+  // LOGIC LỌC ĐÃ ĐƯỢC FIX BỌC LÓT (Bắt cả Open lẫn Active)
+  const filteredProjects = projects.filter((p) => {
+    if (filter === "All") return true;
+    if (filter === "Open") return p.status === "Open" || p.status === "Active";
+    if (filter === "Closed") return p.status === "Closed";
+    return p.status === filter;
+  });
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.topic) {
@@ -30,7 +35,6 @@ export default function ProjectManagement() {
       return;
     }
 
-    // Chỉ gửi formData lên Hook
     const isSuccess = await createNewProject(formData);
     if (isSuccess) {
       setIsModalOpen(false);
@@ -90,7 +94,8 @@ export default function ProjectManagement() {
             </p>
 
             <div className="flex gap-2 mt-4">
-              {["All", "Active", "Closed"].map((f) => (
+              {/* ĐÃ FIX LABEL BỘ LỌC */}
+              {["All", "Open", "Closed"].map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
@@ -136,19 +141,17 @@ export default function ProjectManagement() {
           </div>
         ) : filteredProjects.length === 0 ? (
           <div className="text-center py-10 text-gray-500 bg-[#151D2F] rounded-xl border border-white/5">
-            Chưa có dự án nào. Bấm "Create New Project" để bắt đầu!
+            Chưa có dự án nào khớp với bộ lọc này.
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {filteredProjects.map((proj) => (
               <div
-                // --- ĐÃ SỬA THÀNH projectID CHO CHUẨN BE ---
                 key={proj.projectID || Math.random()}
                 onClick={() => navigate(`/manager/projects/${proj.projectID}`)}
                 className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm hover:border-white/10 transition-colors cursor-pointer"
               >
                 <div className="flex justify-between items-start mb-4">
-                  {/* Đã sửa thành projectName */}
                   <h3 className="text-lg font-semibold text-white">
                     {proj.projectName || "Dự án không tên"}
                   </h3>
@@ -163,7 +166,6 @@ export default function ProjectManagement() {
                   </span>
                 </div>
                 <div className="text-sm text-gray-400 mb-6">
-                  {/* Đã sửa thành projectType */}
                   Type:{" "}
                   <span className="text-gray-200">
                     {proj.projectType || "Unknown"}

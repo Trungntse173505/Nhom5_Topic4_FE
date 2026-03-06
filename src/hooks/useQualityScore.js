@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
-import { getUsersList, getUserReputationLogs } from "../api/managerApi";
+import {
+  getAvailableAnnotators,
+  getAvailableReviewers,
+  getUserReputationLogs,
+} from "../api/managerApi";
 
 export const useQualityScore = () => {
   const [users, setUsers] = useState([]);
@@ -9,29 +13,46 @@ export const useQualityScore = () => {
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [activeUserId, setActiveUserId] = useState(null);
 
-  // 1. Lấy danh sách toàn bộ User khi vào trang
+  // 1. KÉO DANH SÁCH TỪ 2 API AVAILABLE
   useEffect(() => {
-    const fetchAllUsers = async () => {
+    const fetchPersonnel = async () => {
       setIsLoadingUsers(true);
       try {
-        const res = await getUsersList();
-        const allUsers = Array.isArray(res) ? res : res.data || [];
-        // Chỉ lấy Annotator và Reviewer
-        const filtered = allUsers.filter(
-          (u) =>
-            u.role === "annotator" ||
-            u.role === "reviewer" ||
-            u.roleName === "Annotator" ||
-            u.roleName === "Reviewer",
-        );
-        setUsers(filtered);
+        // Chạy song song 2 API cho nhanh
+        const [annRes, revRes] = await Promise.all([
+          getAvailableAnnotators().catch(() => []),
+          getAvailableReviewers().catch(() => []),
+        ]);
+
+        // Trích xuất mảng data
+        const annotatorsList = Array.isArray(annRes)
+          ? annRes
+          : annRes?.data || [];
+        const reviewersList = Array.isArray(revRes)
+          ? revRes
+          : revRes?.data || [];
+
+        // Ép cứng cái Role vào để giao diện (QualityScore.jsx) biết ai làm chức vụ gì
+        const formattedAnnotators = annotatorsList.map((u) => ({
+          ...u,
+          roleName: "Annotator",
+        }));
+
+        const formattedReviewers = reviewersList.map((u) => ({
+          ...u,
+          roleName: "Reviewer",
+        }));
+
+        // Gộp chung 2 danh sách lại
+        setUsers([...formattedAnnotators, ...formattedReviewers]);
       } catch (error) {
-        console.error("Lỗi lấy danh sách user:", error);
+        console.error("Lỗi lấy danh sách nhân sự:", error);
       } finally {
         setIsLoadingUsers(false);
       }
     };
-    fetchAllUsers();
+
+    fetchPersonnel();
   }, []);
 
   // 2. Kéo lịch sử điểm khi bấm vào một User
