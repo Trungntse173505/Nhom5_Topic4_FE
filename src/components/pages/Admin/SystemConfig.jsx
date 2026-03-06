@@ -1,5 +1,5 @@
 import React, { useMemo, useRef } from 'react';
-import { useSystemConfig } from '../../../hooks/useSystemConfig';
+import { useSystemConfig } from '../../../hooks/Admin/useSystemConfig';
 
 export default function SystemConfig() {
     // Đổi tên biến (alias) cho ngắn gọn dễ gọi ở dưới
@@ -17,8 +17,8 @@ export default function SystemConfig() {
 
     const formats = useMemo(() => {
         const apiFormats = cfg?.allowedFormats;
-        return Array.isArray(apiFormats) && apiFormats.length 
-            ? apiFormats 
+        return Array.isArray(apiFormats) && apiFormats.length
+            ? apiFormats
             : ['.jpg, .png', '.mp3, .wav', '.txt, .csv', 'YOLO, VOC, JSON'];
     }, [cfg?.allowedFormats]);
 
@@ -30,10 +30,10 @@ export default function SystemConfig() {
 
         // Rút gọn xử lý form data
         const fd = formRef.current ? new FormData(formRef.current) : new FormData();
-        
+
         const parsedStorage = Number(fd.get('storageLimitGb'));
         const storage = Number.isFinite(parsedStorage) ? parsedStorage : limitDefault;
-        
+
         const checkedFormats = fd.getAll('allowedFormats');
         const allowed = checkedFormats.length ? checkedFormats : formats;
 
