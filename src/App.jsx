@@ -22,7 +22,6 @@ import AdminOverview from "./components/pages/Admin/AdminOverview";
 import UserList from "./components/pages/Admin/UserList";
 import ActivityLogs from "./components/pages/Admin/ActivityLogs";
 import SystemConfig from "./components/pages/Admin/SystemConfig";
-import StorageMonitor from "./components/pages/Admin/StorageControl";
 
 // ================= MANAGER =================
 import ManagerGlobalLayout from "./components/pages/Manager/ManagerGlobalLayout";
@@ -34,8 +33,10 @@ import ManagerDashboard from "./components/pages/Manager/ManagerDashboard";
 import LabelLibrary from "./components/pages/Manager/LabelLibrary";
 
 // ================= REVIEWER =================
-import ReviewerDashboard from "./components/pages/Reviewer/ReviewerDashboard";
 import ReviewerLayout from "./components/pages/Reviewer/ReviewerLayout";
+import ReviewerDashboard from "./components/pages/Reviewer/ReviewerDashboard";
+// THÊM DÒNG NÀY: Import ReviewerWorkspace
+import ReviewerWorkspace from "./components/pages/Reviewer/Workspace/ReviewerWorkspace"; 
 
 const AnalyticsTracker = () => {
   useEffect(() => {
@@ -81,7 +82,6 @@ function App() {
             <Route path="users" element={<UserList />} />
             <Route path="logs" element={<ActivityLogs />} />
             <Route path="config" element={<SystemConfig />} />
-            <Route path="storage" element={<StorageMonitor />} />
           </Route>
         </Route>
 
@@ -101,16 +101,22 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={["annotator"]} />}>
           <Route path="/annotator" element={<AnnotatorLayout />}>
             <Route index element={<AnnotatorDashboard />} />
+            {/* Chú ý: path này tương đương /annotator/workspace/:taskId do nằm trong layout */}
             <Route path="workspace/:taskId" element={<AnnotatorWorkspace />} />
             <Route path="score" element={<CreditScorePage />} />
           </Route>
         </Route>
 
         {/* ================= REVIEWER PROTECTED ================= */}
-        <Route element={<ProtectedRoute allowedRoles={["reviewer"]} />}>
+        <Route element={<ProtectedRoute allowedRoles={["reviewer"]} />}>        
+          {/* Những trang cần Sidebar Layout */}
           <Route path="/reviewer" element={<ReviewerLayout />}>
             <Route index element={<ReviewerDashboard />} />
+            {/* Nếu bạn có trang điểm tín nhiệm cho Reviewer thì thêm ở đây */}
           </Route>
+          {/* THÊM DÒNG NÀY: Trang Workspace Full màn hình (nằm ngoài Layout, nhưng vẫn trong ProtectedRoute) */}
+          <Route path="/reviewer/workspace/:taskId" element={<ReviewerWorkspace />} />
+
         </Route>
 
         <Route path="*" element={<Navigate to="/login" replace />} />

@@ -16,6 +16,7 @@ const TYPE_ICONS = {
   text: <FileText size={16} className="text-blue-400" />,
   audio: <Headphones size={16} className="text-amber-400" />,
   image: <ImageIcon size={16} className="text-green-400" />,
+  video: <ImageIcon size={16} className="text-purple-400" />, // Có thể đổi icon video nếu muốn
 };
 
 const STATUS_STYLES = {
@@ -70,15 +71,20 @@ const AnnotatorDashboard = () => {
 
   // --- XỬ LÝ CLICK NÚT CHÍNH ---
   const handleActionClick = async (task) => {
+    // Lấy type từ API, nếu không có mặc định là 'image'
+    const taskType = task.type || 'image'; 
+
     if (task.status === 'New') {
       try {
         await start(task.taskID);
-        navigate(`/annotator/workspace/${task.taskID}?type=image`);
+        // Chuyển hướng kèm theo type trên URL
+        navigate(`/annotator/workspace/${task.taskID}?type=${taskType}`);
       } catch (err) {
         alert("Không thể bắt đầu Task này. Vui lòng thử lại!");
       }
     } else {
-      navigate(`/annotator/workspace/${task.taskID}?type=image`);
+      // Chuyển hướng kèm theo type trên URL
+      navigate(`/annotator/workspace/${task.taskID}?type=${taskType}`);
     }
   };
 
@@ -119,7 +125,7 @@ const AnnotatorDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200 p-8 relative">
-      {/* Núng Modal Khiếu nại vào đây */}
+      {/* Nhúng Modal Khiếu nại vào đây */}
       <DisputeModal 
         isOpen={!!disputeTaskData} 
         onClose={() => setDisputeTaskData(null)}
@@ -191,12 +197,14 @@ const AnnotatorDashboard = () => {
           <tbody>
             {filteredTasks.length > 0 ? filteredTasks.map(task => {
               const action = ACTION_STYLES[task.status] ?? ACTION_STYLES.default;
+              // Lấy icon theo loại task động
+              const IconType = TYPE_ICONS[task.type] || TYPE_ICONS.image;
 
               return (
                 <tr key={task.taskID} className="border-t border-slate-700 hover:bg-slate-800/50 transition-colors">
                   <td className="p-4">
                     <div className="flex items-center gap-2 font-bold text-white mb-1">
-                      {TYPE_ICONS.image}
+                      {IconType}
                       {task.taskName}
                     </div>
                     <p className="text-xs text-slate-400 pl-6 text-ellipsis overflow-hidden w-48">{task.taskID}</p>

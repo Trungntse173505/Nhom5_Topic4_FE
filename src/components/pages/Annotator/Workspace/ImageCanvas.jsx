@@ -4,19 +4,31 @@ import useImage from 'use-image';
 import { Trash2, RotateCcw } from 'lucide-react';
 
 const ImageCanvas = ({ selectedTool, selectedLabel, availableLabels = [], annotations, setAnnotations, imageUrl }) => {
-  const [image] = useImage(imageUrl);
+  const [image] = useImage(imageUrl, 'anonymous');
   const [isDrawing, setIsDrawing] = useState(false);
   const [newAnnotation, setNewAnnotation] = useState(null);
   const stageRef = useRef(null);
 
   // LOGIC SO KHỚP MÀU: Tra cứu màu từ "cuốn sổ cái" availableLabels
   const getLabelColor = (labelName) => {
-    // Tìm nhãn có name trùng với label của khung hình
     const matched = availableLabels.find(l => l.name === labelName);
-    // Trả về đúng mã hex color từ Backend, nếu không thấy thì mặc định trắng
     return matched ? matched.color : '#ffffff'; 
   };
 
+  // --- HÀM HỖ TRỢ (THÊM MỚI) ---
+  const handleUndo = () => {
+    if (annotations.length > 0) {
+      setAnnotations(annotations.slice(0, -1));
+    }
+  };
+
+  const handleClearAll = () => {
+    if (window.confirm("Bạn có chắc muốn xóa TOÀN BỘ khung đã vẽ trên ảnh này?")) {
+      setAnnotations([]);
+    }
+  };
+
+  // --- LOGIC VẼ ---
   const handleMouseDown = (e) => {
     if (e.target !== e.target.getStage() && e.target.className !== 'Image') return;
     if (selectedTool !== 'Bounding Box' || !selectedLabel) return;
@@ -42,39 +54,70 @@ const ImageCanvas = ({ selectedTool, selectedLabel, availableLabels = [], annota
   };
 
   return (
-    <div className="w-full h-full bg-[#1e293b] flex items-center justify-center relative">
-      <Stage 
-        width={800} height={600} 
-        onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}
-        ref={stageRef}
-        style={{ cursor: selectedTool === 'Bounding Box' ? 'crosshair' : 'default' }}
-      >
-        <Layer>
-          {image && <KonvaImage image={image} width={800} height={600} />}
-          
-          {/* VẼ CÁC KHUNG CŨ & MỚI VỚI MÀU TRA CỨU ĐƯỢC */}
-          {annotations.map((ann) => {
-            const color = getLabelColor(ann.label); // Tra cứu màu ở đây
-            return (
-              <Rect
-                key={ann.id}
-                x={ann.x} y={ann.y} width={ann.width} height={ann.height}
-                stroke={color} // Màu viền chuẩn
-                strokeWidth={3}
-                fill={`${color}33`} // Màu nền trong suốt cùng tông màu
-                onClick={() => setAnnotations(annotations.filter(a => a.id !== ann.id))}
-              />
-            );
-          })}
+    <div className="w-full h-full bg-[#1e293b] flex items-center justify-center relative group">
+      
+      {/* THANH CÔNG CỤ NỘI BỘ (UNDO / DELETE) - TỰ HIỆN KHI HOVER */}
+      <div className="absolute top-4 right-4 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button 
+          onClick={handleUndo}
+          title="Hoàn tác (Ctrl+Z)"
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-300 bg-[#0f172a]/80 backdrop-blur-md rounded-lg border border-slate-700 hover:text-white hover:bg-slate-800 transition-all shadow-xl"
+        >
+          <RotateCcw size={14} /> Hoàn tác
+        </button>
+        <button 
+          onClick={handleClearAll}
+          title="Xóa sạch khung hình"
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-400 bg-[#0f172a]/80 backdrop-blur-md rounded-lg border border-red-500/20 hover:bg-red-500/20 transition-all shadow-xl"
+        >
+          <Trash2 size={14} /> Xóa sạch
+        </button>
+      </div>
 
-          {newAnnotation && (
-            <Rect 
-              x={newAnnotation.x} y={newAnnotation.y} width={newAnnotation.width} height={newAnnotation.height} 
-              stroke={getLabelColor(newAnnotation.label)} strokeWidth={2} dash={[5, 5]} 
-            />
-          )}
-        </Layer>
-      </Stage>
+      {/* CANVAS VẼ */}
+      <div className="shadow-2xl border border-slate-700 rounded-lg overflow-hidden bg-black">
+        <Stage 
+          width={800} height={600} 
+          onMouseDown={handleMouseDown} 
+          onMouseMove={handleMouseMove} 
+          onMouseUp={handleMouseUp}
+          ref={stageRef}
+          style={{ cursor: selectedTool === 'Bounding Box' ? 'crosshair' : 'default' }}
+        >
+          <Layer>
+            {image && <KonvaImage image={image} width={800} height={600} />}
+            
+            {annotations.map((ann) => {
+              const color = getLabelColor(ann.label);
+              return (
+                <Rect
+                  key={ann.id}
+                  x={ann.x} y={ann.y} width={ann.width} height={ann.height}
+                  stroke={color} 
+                  strokeWidth={3}
+                  fill={`${color}33`} 
+                  // Vẫn giữ tính năng click vào khung để xóa lẻ
+                  onClick={() => setAnnotations(annotations.filter(a => a.id !== ann.id))}
+                  onMouseEnter={(e) => { e.target.getStage().container().style.cursor = 'pointer' }}
+                  onMouseLeave={(e) => { e.target.getStage().container().style.cursor = 'crosshair' }}
+                />
+              );
+            })}
+
+            {newAnnotation && (
+              <Rect 
+                x={newAnnotation.x} y={newAnnotation.y} width={newAnnotation.width} height={newAnnotation.height} 
+                stroke={getLabelColor(newAnnotation.label)} strokeWidth={2} dash={[5, 5]} 
+              />
+            )}
+          </Layer>
+        </Stage>
+      </div>
+
+      {/* HƯỚNG DẪN NHANH */}
+      <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-slate-500 font-medium bg-[#0f172a]/50 px-3 py-1 rounded-full backdrop-blur-sm">
+        Mẹo: Click vào khung hình để xóa nhanh khung đó.
+      </p>
     </div>
   );
 };

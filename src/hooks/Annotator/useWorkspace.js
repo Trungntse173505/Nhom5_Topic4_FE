@@ -15,7 +15,7 @@ export const useWorkspace = (taskId) => {
   const [annotations, setAnnotations] = useState([]);
 
   const isLoading = loadingTask || loadingItem;
-  const toolbarConfig = ['Bounding Box', 'Polygon', 'Point'];
+ const toolbarConfig = ['Vẽ Khung Nhãn'];
 
   useEffect(() => {
     if (taskItems.length > 0 && !currentFileId) setCurrentFileId(taskItems[0].itemID);
