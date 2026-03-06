@@ -70,7 +70,7 @@ export default function ProjectManagement() {
           </div>
           <div>
             <h1 className="text-lg font-semibold tracking-wide text-white">
-              Manager Dashboard
+              Bảng Điều Khiển
             </h1>
             <p className="text-sm text-gray-400">test@gmail.com</p>
           </div>
@@ -79,31 +79,41 @@ export default function ProjectManagement() {
           onClick={handleLogout}
           className="rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10 transition-colors"
         >
-          Logout
+          Đăng xuất
         </button>
       </header>
 
       <main className="p-8 max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-end mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-white">
-              Project Management
-            </h1>
+            <h1 className="text-2xl font-bold text-white">Quản Lý Dự Án</h1>
             <p className="text-sm text-gray-400 mt-1">
-              Manage all labeling projects in the system
+              Quản lý tất cả các dự án dán nhãn trong hệ thống
             </p>
 
             <div className="flex gap-2 mt-4">
-              {/* ĐÃ FIX LABEL BỘ LỌC */}
-              {["All", "Open", "Closed"].map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${filter === f ? "bg-blue-600 text-white" : "bg-[#151D2F] text-gray-400 border border-white/5 hover:bg-white/5"}`}
-                >
-                  {f}
-                </button>
-              ))}
+              {/* ĐÃ FIX LABEL BỘ LỌC ĐỂ HIỆN TIẾNG VIỆT NHƯNG GIỮ LOGIC EN */}
+              {["All", "Open", "Closed"].map((f) => {
+                const labelVN =
+                  f === "All"
+                    ? "Tất cả"
+                    : f === "Open"
+                      ? "Đang hoạt động"
+                      : "Đã đóng";
+                return (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      filter === f
+                        ? "bg-blue-600 text-white"
+                        : "bg-[#151D2F] text-gray-400 border border-white/5 hover:bg-white/5"
+                    }`}
+                  >
+                    {labelVN}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -111,7 +121,7 @@ export default function ProjectManagement() {
             onClick={() => setIsModalOpen(true)}
             className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg font-medium shadow-lg shadow-blue-500/20 transition-all"
           >
-            + Create New Project
+            + Tạo Dự Án Mới
           </button>
         </div>
 
@@ -162,18 +172,20 @@ export default function ProjectManagement() {
                         : "bg-gray-500/10 text-gray-400"
                     }`}
                   >
-                    {proj.status || "Active"}
+                    {proj.status === "Open" || proj.status === "Active"
+                      ? "Đang mở"
+                      : "Đã đóng"}
                   </span>
                 </div>
                 <div className="text-sm text-gray-400 mb-6">
-                  Type:{" "}
+                  Loại:{" "}
                   <span className="text-gray-200">
-                    {proj.projectType || "Unknown"}
+                    {proj.projectType || "Không xác định"}
                   </span>
                 </div>
                 <div>
                   <div className="flex justify-between text-xs mb-2 text-gray-400">
-                    <span>Progress</span>
+                    <span>Tiến độ</span>
                     <span>0% (0/0)</span>
                   </div>
                   <div className="w-full bg-[#0B1120] h-2 rounded-full overflow-hidden">
@@ -197,14 +209,12 @@ export default function ProjectManagement() {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
           <div className="bg-[#151D2F] border border-white/10 rounded-xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold text-white mb-4">
-              Create New Project
-            </h2>
+            <h2 className="text-xl font-bold text-white mb-4">Tạo Dự Án Mới</h2>
             <div className="space-y-4">
               <div className="flex gap-4">
                 <div className="flex-1">
                   <label className="block text-sm text-gray-400 mb-1">
-                    Project Name <span className="text-rose-500">*</span>
+                    Tên Dự Án <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -213,12 +223,12 @@ export default function ProjectManagement() {
                       setFormData({ ...formData, name: e.target.value })
                     }
                     className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
-                    placeholder="Enter project name..."
+                    placeholder="Nhập tên dự án..."
                   />
                 </div>
                 <div className="flex-1">
                   <label className="block text-sm text-gray-400 mb-1">
-                    Topic <span className="text-rose-500">*</span>
+                    Chủ đề <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -227,14 +237,14 @@ export default function ProjectManagement() {
                       setFormData({ ...formData, topic: e.target.value })
                     }
                     className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
-                    placeholder="VD: car, animal..."
+                    placeholder="VD: Xe cộ, động vật..."
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm text-gray-400 mb-1">
-                  Data Type
+                  Loại Dữ Liệu
                 </label>
                 <select
                   value={formData.type}
@@ -243,17 +253,17 @@ export default function ProjectManagement() {
                   }
                   className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
                 >
-                  <option value="Image">Image</option>
-                  <option value="Text">Text</option>
-                  <option value="Audio">Audio</option>
+                  <option value="Image">Ảnh (Image)</option>
+                  <option value="Text">Văn bản (Text)</option>
+                  <option value="Audio">Âm thanh (Audio)</option>
                   <option value="Video">Video</option>
-                  <option value="Mixed">Mixed (Hỗn hợp)</option>
+                  <option value="Mixed">Hỗn hợp (Mixed)</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm text-gray-400 mb-1">
-                  Description
+                  Mô tả
                 </label>
                 <textarea
                   value={formData.description}
@@ -261,13 +271,13 @@ export default function ProjectManagement() {
                     setFormData({ ...formData, description: e.target.value })
                   }
                   className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500 h-20 resize-none"
-                  placeholder="Brief description..."
+                  placeholder="Mô tả ngắn gọn về dự án..."
                 ></textarea>
               </div>
 
               <div>
                 <label className="block text-sm text-gray-400 mb-1">
-                  Guideline Link (Tùy chọn)
+                  Đường dẫn Hướng dẫn (Tùy chọn)
                 </label>
                 <input
                   type="text"
@@ -287,7 +297,7 @@ export default function ProjectManagement() {
                 disabled={isCreating}
                 className="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
               >
-                Cancel
+                Hủy bỏ
               </button>
               <button
                 onClick={handleSubmit}
@@ -316,10 +326,10 @@ export default function ProjectManagement() {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
                     </svg>
-                    Creating...
+                    Đang tạo...
                   </>
                 ) : (
-                  "Create Project"
+                  "Tạo Dự Án"
                 )}
               </button>
             </div>
