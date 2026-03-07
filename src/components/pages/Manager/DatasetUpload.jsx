@@ -4,6 +4,8 @@ import { useDatasetUpload } from "../../../hooks/useDatasetUpload";
 
 // Import cái card 3D ảo ma vào đây (Đã căn chuẩn đường dẫn)
 import { CardContainer, CardBody, CardItem } from "../../common/3d-card";
+// Bổ sung import cái nút Animated cực mượt mới tạo
+import { AnimatedButton } from "../../common/AnimatedButton";
 
 export default function DatasetUpload() {
   const { projectId: paramProjectId } = useParams();
@@ -39,7 +41,6 @@ export default function DatasetUpload() {
 
   return (
     <div className="space-y-8">
-      {" "}
       {/* Tăng khoảng cách ra xíu cho form dễ lắc */}
       {/* ========================================== */}
       {/* KHỐI 1: HEADER & UPLOAD ZONE (3D)            */}
@@ -145,43 +146,16 @@ export default function DatasetUpload() {
           </CardBody>
         </CardContainer>
 
+        {/* ĐÃ SỬA: Dùng AnimatedButton thay thế */}
         {selectedFiles.length > 0 && (
           <div className="mt-4 flex justify-end">
-            <button
-              onClick={handleStartUpload}
-              disabled={isUploading}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-lg font-medium shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
-            >
-              {isUploading ? (
-                <>
-                  <svg
-                    className="animate-spin h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      className="opacity-25"
-                    ></circle>
-                    <path
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      className="opacity-75"
-                    ></path>
-                  </svg>
-                  Đang xử lý Cloudinary...
-                </>
-              ) : (
-                "🚀 Bắt đầu Upload lên Server"
-              )}
-            </button>
+            <AnimatedButton onClick={handleStartUpload} disabled={isUploading}>
+              🚀 Bắt đầu Upload lên Server
+            </AnimatedButton>
           </div>
         )}
       </div>
+
       {/* ========================================== */}
       {/* KHỐI 2: BẢNG DATA MANAGEMENT (CŨNG 3D)       */}
       {/* ========================================== */}
