@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjectManagement } from "../../../hooks/useProjectManagement";
 
+// IMPORT HIỆU ỨNG TỪ THƯ MỤC COMMON CỦA ÔNG
+import { CardSpotlight } from "../../common/card-spotlight";
+
 export default function ProjectManagement() {
   const navigate = useNavigate();
 
@@ -92,7 +95,6 @@ export default function ProjectManagement() {
             </p>
 
             <div className="flex gap-2 mt-4">
-              {/* ĐÃ FIX LABEL BỘ LỌC ĐỂ HIỆN TIẾNG VIỆT NHƯNG GIỮ LOGIC EN */}
               {["All", "Open", "Closed"].map((f) => {
                 const labelVN =
                   f === "All"
@@ -156,13 +158,14 @@ export default function ProjectManagement() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {filteredProjects.map((proj) => (
-              <div
+              /* THAY DIV BẰNG CARDSPOTLIGHT Ở ĐÂY */
+              <CardSpotlight
                 key={proj.projectID || Math.random()}
                 onClick={() => navigate(`/manager/projects/${proj.projectID}`)}
                 className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm hover:border-white/10 transition-colors cursor-pointer"
               >
                 <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-lg font-semibold text-white">
+                  <h3 className="text-lg font-semibold text-white group-hover/spotlight:text-blue-400 transition-colors">
                     {proj.projectName || "Dự án không tên"}
                   </h3>
                   <span
@@ -188,7 +191,7 @@ export default function ProjectManagement() {
                     <span>Tiến độ</span>
                     <span>0% (0/0)</span>
                   </div>
-                  <div className="w-full bg-[#0B1120] h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-[#0B1120] h-2 rounded-full overflow-hidden border border-white/5">
                     <div
                       className={`h-2 rounded-full ${
                         proj.status === "Open" || proj.status === "Active"
@@ -199,7 +202,7 @@ export default function ProjectManagement() {
                     ></div>
                   </div>
                 </div>
-              </div>
+              </CardSpotlight>
             ))}
           </div>
         )}
