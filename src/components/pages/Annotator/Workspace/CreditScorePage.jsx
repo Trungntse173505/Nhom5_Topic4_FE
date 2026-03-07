@@ -21,7 +21,7 @@ const CreditScorePage = () => {
     return (
       <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center text-white">
         <p className="text-red-500 mb-4">{error}</p>
-        <button onClick={() => navigate('/annotator')} className="text-blue-400 underline">Quay lại Dashboard</button>
+        <button onClick={() => navigate('/annotator')} className="text-blue-400 underline">Quay lại</button>
       </div>
     );
   }
@@ -29,19 +29,11 @@ const CreditScorePage = () => {
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200 p-8">
       <div className="max-w-4xl mx-auto">
-        
-        <button 
-          onClick={() => navigate('/annotator')}
-          className="flex items-center gap-2 text-slate-400 hover:text-white mb-6 transition-colors text-sm font-medium"
-        >
-          <ArrowLeft size={16} /> Quay lại Dashboard
-        </button>
-
         <div className="mb-8 border-b border-slate-800 pb-6">
           <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <Trophy className="text-yellow-500" /> Điểm Tín Nhiệm & Xếp Hạng
+            <Trophy className="text-yellow-500" /> Điểm Cá Nhân
           </h1>
-          <p className="text-slate-400 mt-2">Duy trì điểm số cao để được ưu tiên phân công đúng chuyên môn và nhận nhiều task hơn.</p>
+          <p className="text-slate-400 mt-2">Duy trì điểm số cao để được ưu tiên phân công và nhận nhiều task hơn.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
