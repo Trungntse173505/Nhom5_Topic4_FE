@@ -12,7 +12,7 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
   const tabs = [
     {
       id: "overview",
-      label: "Project Overview",
+      label: "Tổng quan Dự án",
       icon: (
         <svg
           className="w-4 h-4"
@@ -29,7 +29,7 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
     },
     {
       id: "upload",
-      label: "Dataset Upload",
+      label: "Tải lên Dữ liệu",
       icon: (
         <svg
           className="w-4 h-4"
@@ -46,7 +46,7 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
     },
     {
       id: "distribution",
-      label: "Work Distribution",
+      label: "Tạo Task",
       icon: (
         <svg
           className="w-4 h-4"
@@ -64,7 +64,7 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
     },
     {
       id: "labels",
-      label: "Label Set Editor",
+      label: "Chỉnh sửa Bộ nhãn",
       icon: (
         <svg
           className="w-4 h-4"
@@ -81,10 +81,9 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
         </svg>
       ),
     },
-    // ... các tab cũ
     {
       id: "tracking",
-      label: "Task Tracking",
+      label: "Theo dõi Nhiệm vụ",
       icon: (
         <svg
           className="w-4 h-4"
@@ -102,7 +101,6 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
         </svg>
       ),
     },
-    // ... tab Labels
   ];
 
   return (
@@ -147,9 +145,10 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
               <rect x="3" y="14" width="7" height="7"></rect>
             </svg>
           </div>
-          <div>
+          <div className="flex flex-col">
+            {/* Đã Việt hóa Tiêu đề */}
             <h1 className="text-lg font-semibold tracking-wide text-white">
-              Project Workspace {projectId ? `#${projectId}` : ""}
+              Không gian làm việc Dự án {projectId ? `#${projectId}` : ""}
             </h1>
             <p className="text-sm text-gray-400">test@gmail.com</p>
           </div>
@@ -158,7 +157,7 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
           onClick={handleLogout}
           className="rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10 transition-colors"
         >
-          Logout
+          Đăng xuất
         </button>
       </header>
 
