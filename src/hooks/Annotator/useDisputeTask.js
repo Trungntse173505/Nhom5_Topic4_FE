@@ -16,10 +16,7 @@ export const useDisputeTask = () => {
     setIsDisputing(true);
     setError(null);
     try {
-      // Gọi API POST /api/tasks/{taskId}/dispute với body là { reason }
       const response = await annotatorApi.disputeTask(taskId, { reason });
-      
-      // Trả về kết quả thành công từ Azure
       return response;
     } catch (err) {
       const errorMsg = err?.response?.data || "Không thể gửi khiếu nại lúc này.";
@@ -31,8 +28,8 @@ export const useDisputeTask = () => {
   };
 
   return { 
-    dispute,       // Hàm thực hiện khiếu nại
-    isDisputing,   // Trạng thái đang gửi yêu cầu
-    error          // Thông báo lỗi nếu có
+    dispute,     
+    isDisputing,  
+    error       
   };
 };

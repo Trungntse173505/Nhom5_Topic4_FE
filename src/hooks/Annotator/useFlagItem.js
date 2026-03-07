@@ -11,14 +11,10 @@ export const useFlagItem = () => {
    */
   const flag = async (itemId) => {
     if (!itemId) return;
-
     setIsFlagging(true);
     setError(null);
     try {
-      // Gọi API PATCH lên Azure để chuyển trạng thái ảnh sang IsFlagged = true
       const response = await annotatorApi.flagItem(itemId);
-      
-      // Trả về thông báo thành công: { message: "Đã đánh dấu ảnh bị lỗi" }
       return response;
     } catch (err) {
       const errorMsg = err?.response?.data?.message || "Không thể báo lỗi ảnh này.";
@@ -30,8 +26,8 @@ export const useFlagItem = () => {
   };
 
   return { 
-    flag,        // Hàm thực hiện báo lỗi
-    isFlagging,  // Trạng thái đang xử lý
+    flag,      
+    isFlagging, 
     error       
   };
 };

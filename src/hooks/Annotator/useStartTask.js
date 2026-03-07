@@ -15,9 +15,7 @@ export const useStartTask = () => {
     setIsStarting(true);
     setError(null);
     try {
-      // Gọi API PATCH để đổi trạng thái từ New -> InProgress trên Azure
       const response = await annotatorApi.startTask(taskId);  
-      // Trả về dữ liệu thành công { message: "Đã bắt đầu làm Task" }
       return response;
     } catch (err) {
       const errorMsg = err?.response?.data?.message || "Không thể bắt đầu làm Task này.";
@@ -29,8 +27,8 @@ export const useStartTask = () => {
   };
 
   return { 
-    start,        // Hàm thực hiện gọi API
-    isStarting,   // Trạng thái đang đợi server Azure phản hồi
-    error         // Thông báo lỗi nếu có
+    start,        
+    isStarting,  
+    error     
   };
 };

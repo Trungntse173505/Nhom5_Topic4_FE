@@ -16,9 +16,7 @@ export const useItemDetail = () => {
     setLoading(true);
     setError(null);
     try {
-      // Gọi API GET /api/task-items/{itemId} trên Azure
       const data = await annotatorApi.getItemDetail(itemId);
-      // Data trả về chứa itemID, filePath và mảng annotations (tọa độ cũ)
       setItem(data);
       return data;
     } catch (err) {
@@ -31,9 +29,9 @@ export const useItemDetail = () => {
   }, []);
 
   return { 
-    getItem,    // Hàm để gọi khi người dùng click vào 1 tấm ảnh
-    item,       // Dữ liệu ảnh hiện tại (bao gồm tọa độ)
-    loading,    // Trạng thái đang tải từ Azure
-    error       // Thông báo lỗi (ví dụ: "Không tìm thấy ảnh hoặc dữ liệu")
+    getItem,  
+    item,      
+    loading,  
+    error     
   };
 };

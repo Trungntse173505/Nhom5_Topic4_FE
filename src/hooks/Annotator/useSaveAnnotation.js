@@ -15,11 +15,9 @@ export const useSaveAnnotation = () => {
     setIsSaving(true);
     setError(null);
     try {
-      // Gọi đúng API POST /api/task-items/{itemId}/annotation
       const response = await annotatorApi.saveAnnotation(itemId, payload);
       return response;
     } catch (err) {
-      // Bóc tách lỗi từ server để dễ debug
       const errorMsg = err?.response?.data?.message || err?.response?.data || "Network Error";
       setError(errorMsg);
       throw err;
