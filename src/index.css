@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+@theme inline {
+  --animate-aurora: aurora 60s linear infinite;
+
+  @keyframes aurora {
+    0% {
+      background-position: 0% 50%;
+    }
+    100% {
+      /* Di chuyển đến 300% cho khớp với [background-size:300%_200%] trong file React */
+      background-position: 300% 50%;
+    }
+  }
+}
