@@ -1,6 +1,20 @@
 import { useCallback, useState } from 'react';
 import authFirstLoginApi from '../../api/authFirstLoginApi';
 
+const readCurrentUserId = () => {
+  const raw = localStorage.getItem('user');
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    const id = parsed?.id ?? parsed?.userId ?? parsed?.userID ?? null;
+    return id ? String(id) : null;
+  } catch {
+    return null;
+  }
+};
+
+const firstLoginPromptKey = (userId) => `first_login_change_password_prompt_seen:${String(userId)}`;
+
 const buildPayload = ({ oldPassword, newPassword }) => {
   const oldPw = oldPassword ?? '';
   const newPw = newPassword ?? '';
@@ -21,6 +35,18 @@ export const useChangePasswordFirstLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
+
+  const shouldPromptForCurrentUser = useCallback(() => {
+    const userId = readCurrentUserId();
+    if (!userId) return false;
+    return localStorage.getItem(firstLoginPromptKey(userId)) !== '1';
+  }, []);
+
+  const markPromptSeenForCurrentUser = useCallback(() => {
+    const userId = readCurrentUserId();
+    if (!userId) return;
+    localStorage.setItem(firstLoginPromptKey(userId), '1');
+  }, []);
 
   const changePasswordFirstLogin = useCallback(async ({ oldPassword, newPassword }) => {
     setLoading(true);
@@ -45,6 +71,13 @@ export const useChangePasswordFirstLogin = () => {
     }
   }, []);
 
-  return { changePasswordFirstLogin, loading, error, data, setError };
+  return {
+    shouldPromptForCurrentUser,
+    markPromptSeenForCurrentUser,
+    changePasswordFirstLogin,
+    loading,
+    error,
+    data,
+    setError,
+  };
 };
-

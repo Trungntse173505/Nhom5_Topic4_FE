@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useChangePasswordFirstLogin } from '../../hooks/Admin/useChangePasswordFirstLogin';
 
 export default function ChangePasswordFirstLoginModal({
@@ -9,10 +9,25 @@ export default function ChangePasswordFirstLoginModal({
   onSkip,
   onClose,
 }) {
-  const { changePasswordFirstLogin, loading, error } = useChangePasswordFirstLogin();
+  const {
+    shouldPromptForCurrentUser,
+    markPromptSeenForCurrentUser,
+    changePasswordFirstLogin,
+    loading,
+    error,
+  } = useChangePasswordFirstLogin();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [touched, setTouched] = useState({ newPassword: false, confirmPassword: false });
+
+  useEffect(() => {
+    if (!open) return;
+    if (!shouldPromptForCurrentUser()) {
+      onClose?.();
+      return;
+    }
+    markPromptSeenForCurrentUser();
+  }, [open, onClose, shouldPromptForCurrentUser, markPromptSeenForCurrentUser]);
 
   const errors = useMemo(() => {
     const e = {};
