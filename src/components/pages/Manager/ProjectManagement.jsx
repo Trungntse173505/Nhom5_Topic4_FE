@@ -6,6 +6,8 @@ import { useProjectManagement } from "../../../hooks/useProjectManagement";
 import { CardSpotlight } from "../../common/card-spotlight";
 // IMPORT NÚT BẤM ANIMATED
 import { AnimatedButton } from "../../common/AnimatedButton";
+// IMPORT NỀN CỰC QUANG
+import { AuroraBackground } from "../../common/aurora-background";
 
 export default function ProjectManagement() {
   const navigate = useNavigate();
@@ -55,8 +57,9 @@ export default function ProjectManagement() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#0B1120] text-white font-sans relative">
-      <header className="flex items-center justify-between px-8 py-4 bg-[#0B1120] border-b border-white/5">
+    // THAY DIV NGOÀI CÙNG BẰNG AURORA BACKGROUND
+    <AuroraBackground className="font-sans relative">
+      <header className="flex items-center justify-between px-8 py-4 bg-[#0B1120]/80 backdrop-blur-md border-b border-white/5 relative z-20">
         <div className="flex items-center gap-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#A855F7] shadow-lg shadow-purple-500/20 text-white">
             <svg
@@ -89,7 +92,7 @@ export default function ProjectManagement() {
         </button>
       </header>
 
-      <main className="p-8 max-w-7xl mx-auto space-y-6">
+      <main className="p-8 max-w-7xl mx-auto space-y-6 relative z-20">
         <div className="flex justify-between items-end mb-8">
           <div>
             <h1 className="text-2xl font-bold text-white">Quản Lý Dự Án</h1>
@@ -112,7 +115,7 @@ export default function ProjectManagement() {
                     className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
                       filter === f
                         ? "bg-blue-600 text-white"
-                        : "bg-[#151D2F] text-gray-400 border border-white/5 hover:bg-white/5"
+                        : "bg-[#151D2F]/80 backdrop-blur text-gray-400 border border-white/5 hover:bg-white/5"
                     }`}
                   >
                     {labelVN}
@@ -155,7 +158,7 @@ export default function ProjectManagement() {
             <span className="ml-3 text-gray-400">Đang tải dữ liệu...</span>
           </div>
         ) : filteredProjects.length === 0 ? (
-          <div className="text-center py-10 text-gray-500 bg-[#151D2F] rounded-xl border border-white/5">
+          <div className="text-center py-10 text-gray-500 bg-[#151D2F]/80 backdrop-blur rounded-xl border border-white/5">
             Chưa có dự án nào khớp với bộ lọc này.
           </div>
         ) : (
@@ -164,7 +167,7 @@ export default function ProjectManagement() {
               <CardSpotlight
                 key={proj.projectID || Math.random()}
                 onClick={() => navigate(`/manager/projects/${proj.projectID}`)}
-                className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm hover:border-white/10 transition-colors cursor-pointer"
+                className="rounded-xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-6 shadow-sm hover:border-white/10 transition-colors cursor-pointer"
               >
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="text-lg font-semibold text-white group-hover/spotlight:text-blue-400 transition-colors">
@@ -297,6 +300,6 @@ export default function ProjectManagement() {
           </div>
         </div>
       )}
-    </div>
+    </AuroraBackground>
   );
 }

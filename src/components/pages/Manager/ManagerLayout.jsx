@@ -1,6 +1,9 @@
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+// IMPORT NỀN CỰC QUANG VÀO ĐÂY
+import { AuroraBackground } from "../../common/aurora-background";
+
 export default function ManagerLayout({ activeTab, setActiveTab, children }) {
   const navigate = useNavigate();
   const { projectId } = useParams(); // Lấy ID từ URL
@@ -104,9 +107,10 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-[#0B1120] text-white font-sans">
-      {/* Header */}
-      <header className="flex items-center justify-between px-8 py-4 bg-[#0B1120] border-b border-white/5">
+    // THAY THẺ DIV BẰNG NỀN AURORA
+    <AuroraBackground className="font-sans">
+      {/* Header (Thêm z-20 và backdrop-blur để nổi lên trên nền cực quang) */}
+      <header className="flex items-center justify-between px-8 py-4 bg-[#0B1120]/80 backdrop-blur-md border-b border-white/5 relative z-20">
         <div className="flex items-center gap-4">
           {/* NÚT BACK VỀ QUẢN LÝ DỰ ÁN */}
           <button
@@ -161,10 +165,10 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
         </button>
       </header>
 
-      {/* Main Content & Navigation */}
-      <main className="p-8 max-w-7xl mx-auto">
+      {/* Main Content & Navigation (Thêm z-20 để nút bấm hoạt động bình thường) */}
+      <main className="p-8 max-w-7xl mx-auto relative z-20">
         {/* Tab Navigation Pill */}
-        <nav className="flex items-center gap-1 rounded-xl bg-[#151D2F] p-1 w-fit mb-8 border border-white/5 shadow-sm">
+        <nav className="flex items-center gap-1 rounded-xl bg-[#151D2F]/80 backdrop-blur p-1 w-fit mb-8 border border-white/5 shadow-sm">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -184,6 +188,6 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
         {/* Dynamic Content Rendering */}
         <div className="animate-in fade-in duration-300">{children}</div>
       </main>
-    </div>
+    </AuroraBackground>
   );
 }
