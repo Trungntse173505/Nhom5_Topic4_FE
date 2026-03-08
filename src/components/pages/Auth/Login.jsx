@@ -46,6 +46,10 @@ export default function Login() {
     navigate(roleToPath[String(roleName || "").toLowerCase()] || "/admin");
   };
 
+  const onForgotPassword = () => {
+    alert("Chức năng quên mật khẩu sẽ được cập nhật sau.");
+  };
+
   const errors = useMemo(() => {
     const e = {};
     if (!username.trim()) e.username = "Username is required.";
@@ -133,6 +137,16 @@ export default function Login() {
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-white/30 hover:text-white/60"
               >
                 {showPw ? "HIDE" : "SHOW"}
+              </button>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={onForgotPassword}
+                className="text-xs font-bold text-white/40 hover:text-white/70"
+              >
+                Quên mật khẩu?
               </button>
             </div>
 
