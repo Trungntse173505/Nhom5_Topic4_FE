@@ -2,36 +2,44 @@ import React from 'react';
 import { Tag } from 'lucide-react';
 
 const SidebarRight = ({ availableLabels = [], selectedLabel, setSelectedLabel, actualType, annotations = [], setAnnotations }) => {
-  const isVideo = actualType === 'video';
+  const isClassification = actualType === 'video' || actualType === 'audio';
+  let sidebarTitle = "Bộ Nhãn";
+  if (isClassification) {
+    sidebarTitle = `Phân loại ${actualType === 'video' ? 'Video' : 'Audio'}`;
+  }
 
   return (
     <aside className="w-64 border-l border-slate-800 bg-[#0f172a] p-4 flex flex-col shrink-0 text-left">
       <h3 className="text-sm font-semibold text-slate-400 mb-4 uppercase tracking-wider flex items-center gap-2">
-        <Tag size={16} className={isVideo ? "text-blue-400" : "text-green-400"} /> 
-        {isVideo ? "Phân loại Video" : "Bộ Nhãn"}
+        <Tag size={16} className={isClassification ? "text-blue-400" : "text-green-400"} /> 
+        {sidebarTitle}
       </h3>
       
-      <div className={`flex flex-col ${isVideo ? "gap-3" : "gap-2"}`}>
+      <div className={`flex flex-col ${isClassification ? "gap-3" : "gap-2"}`}>
         {availableLabels.map(({ name, color }) => {
-          // Gộp logic kiểm tra nhãn đang chọn
-          const isSelected = isVideo ? annotations[0]?.label === name : selectedLabel === name;
-          
-          return isVideo ? (
-            <button
-              key={name}
-              onClick={() => {
-                setAnnotations([{ id: `video-label-${Date.now()}`, x: 0, y: 0, width: 0, height: 0, label: name }]);
-                setSelectedLabel(name);
-              }}
-              className={`py-3.5 px-4 rounded-xl font-bold text-sm transition-all border-2 text-left flex justify-between items-center ${
-                isSelected ? 'text-white shadow-lg' : 'border-slate-800 text-slate-400 hover:border-slate-600 hover:text-slate-200 bg-[#1e293b]'
-              }`}
-              style={isSelected ? { backgroundColor: color, borderColor: color, boxShadow: `0 4px 15px ${color}40` } : {}}
-            >
-              <span className="truncate">{name}</span>
-              {isSelected && <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider shrink-0">Đã chọn</span>}
-            </button>
-          ) : (
+          // Kiểm tra nhãn đang chọn
+          const isSelected = isClassification ? annotations[0]?.label === name : selectedLabel === name;
+        
+          if (isClassification) {
+            return (
+              <button
+                key={name}
+                onClick={() => {
+                  setAnnotations([{ id: `${actualType}-label-${Date.now()}`, x: 0, y: 0, width: 0, height: 0, label: name }]);
+                  setSelectedLabel(name);
+                }}
+                className={`py-3.5 px-4 rounded-xl font-bold text-sm transition-all border-2 text-left flex justify-between items-center ${
+                  isSelected ? 'text-white shadow-lg' : 'border-slate-800 text-slate-400 hover:border-slate-600 hover:text-slate-200 bg-[#1e293b]'
+                }`}
+                style={isSelected ? { backgroundColor: color, borderColor: color, boxShadow: `0 4px 15px ${color}40` } : {}}
+              >
+                <span className="truncate">{name}</span>
+                {isSelected && <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider shrink-0">Đã chọn</span>}
+              </button>
+            );
+          }
+
+          return (
             <button
               key={name}
               onClick={() => setSelectedLabel(name)}
@@ -46,10 +54,10 @@ const SidebarRight = ({ availableLabels = [], selectedLabel, setSelectedLabel, a
           );
         })}
         
-        {/* Hiển thị text báo trống tương ứng */}
+        {/* 4. Thông báo khi không có nhãn */}
         {availableLabels.length === 0 && (
           <p className="text-xs text-slate-500 italic font-normal">
-            {isVideo ? "Chưa có nhãn." : "Chưa cấu hình nhãn."}
+            {isClassification ? "Chưa có nhãn." : "Chưa cấu hình nhãn."}
           </p>
         )}
       </div>
