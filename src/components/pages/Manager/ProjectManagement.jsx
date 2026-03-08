@@ -18,7 +18,7 @@ export default function ProjectManagement() {
 
   const [formData, setFormData] = useState({
     name: "",
-    topic: "",
+    topic: "", // Giữ state này để push lên BE, mặc định là ""
     type: "Image",
     description: "",
     guideline: "",
@@ -35,8 +35,9 @@ export default function ProjectManagement() {
   });
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.topic) {
-      alert("Vui lòng nhập Tên dự án và Chủ đề (Topic)!");
+    // Chỉ check bắt buộc Tên dự án, không check topic nữa
+    if (!formData.name) {
+      alert("Vui lòng nhập Tên dự án!");
       return;
     }
 
@@ -215,35 +216,20 @@ export default function ProjectManagement() {
           <div className="bg-[#151D2F] border border-white/10 rounded-xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-white mb-4">Tạo Dự Án Mới</h2>
             <div className="space-y-4">
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm text-gray-400 mb-1">
-                    Tên Dự Án <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
-                    placeholder="Nhập tên dự án..."
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="block text-sm text-gray-400 mb-1">
-                    Chủ đề <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.topic}
-                    onChange={(e) =>
-                      setFormData({ ...formData, topic: e.target.value })
-                    }
-                    className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
-                    placeholder="VD: Xe cộ, động vật..."
-                  />
-                </div>
+              {/* ĐÃ XÓA TRƯỜNG NHẬP "CHỦ ĐỀ", CHỈ GIỮ LẠI TÊN DỰ ÁN */}
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">
+                  Tên Dự Án <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
+                  placeholder="Nhập tên dự án..."
+                />
               </div>
 
               <div>
@@ -304,7 +290,6 @@ export default function ProjectManagement() {
                 Hủy bỏ
               </button>
 
-              {/* THAY NÚT CŨ BẰNG NÚT ANIMATED VÀO ĐÂY */}
               <AnimatedButton onClick={handleSubmit} disabled={isCreating}>
                 Tạo Dự Án
               </AnimatedButton>
