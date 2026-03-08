@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useLogin } from "../../../hooks/useLogin";
 import { updateUserPresence } from "../../../services/firebase";
 import ChangePasswordFirstLoginModal from "../../common/ChangePasswordFirstLoginModal";
+import ForgotPasswordModal from "../../common/ForgotPasswordModal";
 
 function ShieldIcon() {
   return (
@@ -34,6 +35,7 @@ export default function Login() {
   const [touched, setTouched] = useState({ username: false, password: false });
   const [pwModalOpen, setPwModalOpen] = useState(false);
   const [pendingRoleName, setPendingRoleName] = useState(null);
+  const [forgotModalOpen, setForgotModalOpen] = useState(false);
 
   const roleToPath = {
     admin: "/admin",
@@ -47,7 +49,7 @@ export default function Login() {
   };
 
   const onForgotPassword = () => {
-    alert("Chức năng quên mật khẩu sẽ được cập nhật sau.");
+    setForgotModalOpen(true);
   };
 
   const errors = useMemo(() => {
@@ -184,6 +186,14 @@ export default function Login() {
             setPwModalOpen(false);
             continueToApp(pendingRoleName);
           }}
+        />
+      )}
+
+      {forgotModalOpen && (
+        <ForgotPasswordModal
+          open={forgotModalOpen}
+          defaultValue={username}
+          onClose={() => setForgotModalOpen(false)}
         />
       )}
     </div>
