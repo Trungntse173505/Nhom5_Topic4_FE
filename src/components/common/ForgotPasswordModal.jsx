@@ -40,7 +40,7 @@ export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
                     <div>
                         <h2 className="text-lg font-bold text-white">Quên mật khẩu</h2>
                         <p className="mt-1 text-xs text-white/50">
-                            Nhập email nhận hướng dẫn đặt lại mật khẩu.
+                            Nhập email hoặc username để hệ thống gửi hướng dẫn đặt lại mật khẩu về email của bạn.
                         </p>
                     </div>
                     <button
