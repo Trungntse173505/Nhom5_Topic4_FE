@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useForgotPassword } from '../../hooks/Admin/useForgotPassword';
+import ResetPasswordModal from './ResetPasswordModal';
 
 export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
     const forgot = useForgotPassword();
     const [email, setEmail] = useState(defaultValue || '');
     const [touched, setTouched] = useState({ email: false });
+    const [resetOpen, setResetOpen] = useState(false);
 
     const loading = forgot.loading;
     const error = forgot.error;
@@ -110,6 +112,17 @@ export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
                             {successMessage}
                         </p>
                     )}
+
+                    {forgot.data && (
+                        <button
+                            type="button"
+                            className="w-full rounded-xl border border-white/10 bg-white/[0.02] py-3 text-xs font-bold text-white/60 hover:bg-white/[0.04] disabled:opacity-50"
+                            onClick={() => setResetOpen(true)}
+                            disabled={loading || !emailValue}
+                        >
+                            Mình đã có token → Đặt lại mật khẩu
+                        </button>
+                    )}
                     <button
                         type="submit"
                         disabled={!canSubmit}
@@ -131,6 +144,13 @@ export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
                     </button>
                 </form>
             </div>
+
+            <ResetPasswordModal
+                open={resetOpen}
+                email={emailValue}
+                onClose={() => setResetOpen(false)}
+                onSuccess={() => setResetOpen(false)}
+            />
         </div>
     );
 

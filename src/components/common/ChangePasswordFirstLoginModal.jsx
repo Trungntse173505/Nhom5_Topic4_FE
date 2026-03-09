@@ -87,10 +87,9 @@ export default function ChangePasswordFirstLoginModal({
               type="password"
               placeholder="New password"
               className={`w-full rounded-xl border bg-white/[0.03] px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-white/20
-                ${
-                  touched.newPassword && errors.newPassword
-                    ? 'border-rose-500/50'
-                    : 'border-white/10 focus:border-blue-500/50 focus:ring-blue-500/10 focus:ring-4'
+                ${touched.newPassword && errors.newPassword
+                  ? 'border-rose-500/50'
+                  : 'border-white/10 focus:border-blue-500/50 focus:ring-blue-500/10 focus:ring-4'
                 }`}
             />
             {touched.newPassword && errors.newPassword && (
@@ -106,10 +105,9 @@ export default function ChangePasswordFirstLoginModal({
               type="password"
               placeholder="Confirm new password"
               className={`w-full rounded-xl border bg-white/[0.03] px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-white/20
-                ${
-                  touched.confirmPassword && errors.confirmPassword
-                    ? 'border-rose-500/50'
-                    : 'border-white/10 focus:border-blue-500/50 focus:ring-blue-500/10 focus:ring-4'
+                ${touched.confirmPassword && errors.confirmPassword
+                  ? 'border-rose-500/50'
+                  : 'border-white/10 focus:border-blue-500/50 focus:ring-blue-500/10 focus:ring-4'
                 }`}
             />
             {touched.confirmPassword && errors.confirmPassword && (
