@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useForgotPassword } from '../../hooks/Admin/useForgotPassword';
+import { useResetPasswordRequest } from '../../hooks/Admin/useResetPasswordRequest';
 export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
-    const { forgotPassword, loading, error, data, setError } = useForgotPassword();
+    const { requestResetPassword, loading, error, data, setError } = useResetPasswordRequest();
     const [email, setEmail] = useState(defaultValue || '');
     const [touched, setTouched] = useState(false);
     const successMessage = useMemo(() => {
@@ -21,7 +21,7 @@ export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
     async function onSubmit(e) {
         e.preventDefault();
         if (!canSubmit) return;
-        const res = await forgotPassword({ email });
+        const res = await requestResetPassword({ email });
         if (!res.success) return;
     }
 
@@ -41,7 +41,7 @@ export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
                     <div>
                         <h2 className="text-lg font-bold text-white">Quên mật khẩu</h2>
                         <p className="mt-1 text-xs text-white/50">
-                            Nhập email để hệ thống gửi hướng dẫn đặt lại mật khẩu về email của bạn.
+                            Nhập email để hệ thống gửi token/ hướng dẫn đặt lại mật khẩu về email của bạn.
                         </p>
                     </div>
                     <button

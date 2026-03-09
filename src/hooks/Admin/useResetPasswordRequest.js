@@ -1,24 +1,24 @@
 import { useCallback, useState } from 'react';
-import authForgotPasswordApi from '../../api/authForgotPasswordApi';
+import authResetPasswordApi from '../../api/authResetPasswordApi';
 
 const buildPayload = ({ email }) => {
   const value = String(email ?? '').trim();
   return { email: value, Email: value };
 };
 
-export const useForgotPassword = () => {
+export const useResetPasswordRequest = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
 
-  const forgotPassword = useCallback(async ({ email }) => {
+  const requestResetPassword = useCallback(async ({ email }) => {
     setLoading(true);
     setError(null);
     setData(null);
 
     try {
       const payload = buildPayload({ email });
-      const res = await authForgotPasswordApi.forgotPassword(payload);
+      const res = await authResetPasswordApi.resetPassword(payload);
       setData(res);
       return { success: true, data: res };
     } catch (err) {
@@ -27,7 +27,7 @@ export const useForgotPassword = () => {
         err?.response?.data?.message ||
         err?.response?.data?.Message ||
         err?.message ||
-        (status === 404 ? 'API forgot-password không tồn tại (404).' : 'Gửi yêu cầu quên mật khẩu thất bại.');
+        (status === 404 ? 'API reset-password không tồn tại (404).' : 'Gửi yêu cầu reset mật khẩu thất bại.');
       setError(msg);
       return { success: false, error: msg, status };
     } finally {
@@ -35,5 +35,6 @@ export const useForgotPassword = () => {
     }
   }, []);
 
-  return { forgotPassword, loading, error, data, setError };
+  return { requestResetPassword, loading, error, data, setError };
 };
+
