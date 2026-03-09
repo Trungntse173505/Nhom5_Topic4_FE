@@ -1,7 +1,7 @@
-// src/hooks/useAuth.js
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginApi } from "../api/authApi";
+// Fix lỗi import: Lấy default export từ authApi
+import authApi from "../api/authApi";
 
 export const useAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -13,19 +13,31 @@ export const useAuth = () => {
     setErrorMsg("");
 
     try {
-      // 1. Gọi API
-      const data = await loginApi(email, password);
+      // 1. Gọi API (Truyền đúng dạng object payload { email, password })
+      const response = await authApi.loginAuth({ email, password });
+
+      // Tùy cách cấu hình axiosClient của sếp, data có thể nằm ở response.data hoặc chính là response
+      const data = response.data || response;
 
       // 2. Lưu token
       const token = data.token || data.accessToken || data.data?.token;
-      if (token) localStorage.setItem("token", token);
 
-      // 3. Báo thành công và chuyển trang
-      alert("Đăng nhập thành công!");
+      if (token) {
+        localStorage.setItem("token", token);
+      } else {
+        throw new Error("Đăng nhập thành công nhưng không tìm thấy Token!");
+      }
+
+      // 3. Chuyển trang (Bỏ dòng alert đi cho mượt, tự động bay vào manager luôn)
       navigate("/manager");
     } catch (error) {
-      // Bắt lỗi từ api và gán vào state errorMsg
-      setErrorMsg(error.message);
+      console.error("Lỗi đăng nhập:", error);
+      // Bắt lỗi thông minh hơn: Ưu tiên lấy message từ server trả về, nếu không có mới lấy lỗi mặc định
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        "Tài khoản hoặc mật khẩu không chính xác!";
+      setErrorMsg(message);
     } finally {
       setIsLoading(false);
     }
