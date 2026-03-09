@@ -1,12 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjectManagement } from "../../../hooks/useProjectManagement";
 
+// 1. NHỚ IMPORT API VÀO ĐÂY (Sửa lại đường dẫn nếu cần)
+import authApi from "../../../api/authApi";
+
 // IMPORT HIỆU ỨNG TỪ THƯ MỤC COMMON
 import { CardSpotlight } from "../../common/card-spotlight";
-// IMPORT NÚT BẤM ANIMATED
 import { AnimatedButton } from "../../common/AnimatedButton";
-// IMPORT NỀN CỰC QUANG
 import { AuroraBackground } from "../../common/aurora-background";
 
 export default function ProjectManagement() {
@@ -18,15 +19,54 @@ export default function ProjectManagement() {
   const [filter, setFilter] = useState("All");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // STATE lưu thông tin cá nhân của người dùng
+  const [userInfo, setUserInfo] = useState({
+    name: "Đang tải...",
+    email: "Đang lấy thông tin...",
+  });
+
   const [formData, setFormData] = useState({
     name: "",
-    topic: "", // Giữ state này để push lên BE, mặc định là ""
+    topic: "",
     type: "Image",
     description: "",
     guideline: "",
   });
 
-  const handleLogout = () => navigate("/login");
+  // GỌI API LẤY THÔNG TIN USER (SỬ DỤNG AUTHOAPI)
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const token = localStorage.getItem("token"); // Kiểm tra token
+
+        if (!token) {
+          setUserInfo({ name: "Quản lý Dự Án", email: "Chưa đăng nhập" });
+          return;
+        }
+
+        // Gọi hàm getMe() từ authApi, đã có sẵn cấu hình URL và Token bên trong axiosClient
+        const response = await authApi.getMe();
+
+        // Tùy cách cấu hình axiosClient, data có thể nằm ở response.data hoặc trực tiếp ở response
+        const data = response.data || response;
+
+        if (data) {
+          setUserInfo({
+            name: data.fullName || data.userName || "Quản lý Dự Án",
+            email: data.email || "Không rõ email",
+          });
+        }
+      } catch (error) {
+        console.error("Lỗi lấy thông tin cá nhân:", error);
+        setUserInfo({
+          name: "Quản lý Dự Án",
+          email: "Lỗi kết nối máy chủ",
+        });
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   // LOGIC LỌC ĐÃ ĐƯỢC FIX BỌC LÓT (Bắt cả Open lẫn Active)
   const filteredProjects = projects.filter((p) => {
@@ -78,18 +118,15 @@ export default function ProjectManagement() {
             </svg>
           </div>
           <div>
+            {/* THAY THẾ BẰNG DỮ LIỆU TỪ API */}
             <h1 className="text-lg font-semibold tracking-wide text-white">
-              Bảng Điều Khiển
+              {userInfo.name === "Đang tải..."
+                ? userInfo.name
+                : `Xin chào, ${userInfo.name}`}
             </h1>
-            <p className="text-sm text-gray-400">test@gmail.com</p>
+            <p className="text-sm text-blue-400">{userInfo.email}</p>
           </div>
         </div>
-        <button
-          onClick={handleLogout}
-          className="rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10 transition-colors"
-        >
-          Đăng xuất
-        </button>
       </header>
 
       <main className="p-8 max-w-7xl mx-auto space-y-6 relative z-20">
@@ -219,7 +256,6 @@ export default function ProjectManagement() {
           <div className="bg-[#151D2F] border border-white/10 rounded-xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-white mb-4">Tạo Dự Án Mới</h2>
             <div className="space-y-4">
-              {/* ĐÃ XÓA TRƯỜNG NHẬP "CHỦ ĐỀ", CHỈ GIỮ LẠI TÊN DỰ ÁN */}
               <div>
                 <label className="block text-sm text-gray-400 mb-1">
                   Tên Dự Án <span className="text-rose-500">*</span>
