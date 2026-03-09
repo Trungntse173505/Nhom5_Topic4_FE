@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLogin } from "../../../hooks/useLogin";
 import { updateUserPresence } from "../../../services/firebase";
+import ChangePasswordFirstLoginModal from "../../common/ChangePasswordFirstLoginModal";
+import ForgotPasswordModal from "../../common/ForgotPasswordModal";
 
 function ShieldIcon() {
   return (
@@ -31,6 +33,24 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [touched, setTouched] = useState({ username: false, password: false });
+  const [pwModalOpen, setPwModalOpen] = useState(false);
+  const [pendingRoleName, setPendingRoleName] = useState(null);
+  const [forgotModalOpen, setForgotModalOpen] = useState(false);
+
+  const roleToPath = {
+    admin: "/admin",
+    manager: "/manager",
+    annotator: "/annotator",
+    reviewer: "/reviewer",
+  };
+
+  const continueToApp = (roleName) => {
+    navigate(roleToPath[String(roleName || "").toLowerCase()] || "/admin");
+  };
+
+  const onForgotPassword = () => {
+    setForgotModalOpen(true);
+  };
 
   const errors = useMemo(() => {
     const e = {};
@@ -48,7 +68,7 @@ export default function Login() {
     if (!canSubmit) return;
     const res = await login({ username, password });
     if (res.success && res.user) {
-      const { userId, roleName, fullName } = res.user;
+      const { userId, roleName } = res.user;
 
       try {
         // Chỉ set online ngay — heartbeat sẽ do App.js xử lý khi navigate xong
@@ -58,14 +78,8 @@ export default function Login() {
         console.error("Lỗi Firebase:", err);
       }
 
-      const roleToPath = {
-        admin: "/admin",
-        manager: "/manager",
-        annotator: "/annotator",
-        reviewer: "/reviewer",
-      };
-
-      navigate(roleToPath[roleName.toLowerCase()] || "/admin");
+      setPendingRoleName(roleName);
+      setPwModalOpen(true);
     }
   }
 
@@ -128,6 +142,16 @@ export default function Login() {
               </button>
             </div>
 
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={onForgotPassword}
+                className="text-xs font-bold text-white/40 hover:text-white/70"
+              >
+                Quên mật khẩu?
+              </button>
+            </div>
+
             <button
               type="submit"
               disabled={!canSubmit}
@@ -144,6 +168,34 @@ export default function Login() {
           </form>
         </div>
       </div>
+
+      {pwModalOpen && (
+        <ChangePasswordFirstLoginModal
+          open={pwModalOpen}
+          oldPassword={password}
+          username={username}
+          onSuccess={() => {
+            setPwModalOpen(false);
+            continueToApp(pendingRoleName);
+          }}
+          onSkip={() => {
+            setPwModalOpen(false);
+            continueToApp(pendingRoleName);
+          }}
+          onClose={() => {
+            setPwModalOpen(false);
+            continueToApp(pendingRoleName);
+          }}
+        />
+      )}
+
+      {forgotModalOpen && (
+        <ForgotPasswordModal
+          open={forgotModalOpen}
+          defaultValue={username}
+          onClose={() => setForgotModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

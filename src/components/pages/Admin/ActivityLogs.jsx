@@ -16,7 +16,7 @@ const formatDateTime = (v) => {
     }).format(new Date(v));
 };
 
-const getFirstString = (...vals) => 
+const getFirstString = (...vals) =>
     vals.find(v => (typeof v === 'string' && v.trim()) || (typeof v === 'number' && Number.isFinite(v)))?.toString() || '';
 
 const normalizeLog = (raw, index) => ({
@@ -61,7 +61,7 @@ export default function ActivityLogs() {
     return (
         <div className="p-6">
             <h2 className="text-xl font-bold text-white mb-1">Nhật ký hoạt động</h2>
-            <p className="text-sm text-white/40 mb-6">Ghi vết toàn bộ thao tác hệ thống</p>
+
 
             <div className="flex items-center justify-between gap-3 mb-4">
                 <div className="text-xs text-white/40">
@@ -79,7 +79,7 @@ export default function ActivityLogs() {
                     >
                         {[10, 20, 50].map(n => <option key={n} value={n} className="bg-slate-900">{n} / trang</option>)}
                     </select>
-                    
+
                     <button onClick={() => fetchLogs()} disabled={loading} className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-xs text-white/80 hover:bg-white/10 disabled:opacity-50">Tải lại</button>
                     <button onClick={() => setPageNumber(p => Math.max(1, p - 1))} disabled={!canGoPrev} className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-xs text-white/80 hover:bg-white/10 disabled:opacity-50">Trước</button>
                     <button onClick={() => setPageNumber(p => p + 1)} disabled={!canGoNext} className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-xs text-white/80 hover:bg-white/10 disabled:opacity-50">Sau</button>
