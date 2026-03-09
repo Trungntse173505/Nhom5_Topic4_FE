@@ -20,9 +20,66 @@ export default function DatasetUpload() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [fileType, setFileType] = useState("Pic");
 
+  // Hàm phụ trợ để lấy chuỗi 'accept' cho thẻ input file
+  const getAcceptTypes = () => {
+    switch (fileType) {
+      case "Pic":
+        return "image/*";
+      case "Video":
+        return "video/*";
+      case "Audio":
+        return "audio/*";
+      case "Text":
+        return "text/*,.json,.csv";
+      default:
+        return "*/*";
+    }
+  };
+
+  // Hàm phụ trợ để hiển thị text gợi ý loại file
+  const getSupportedText = () => {
+    switch (fileType) {
+      case "Pic":
+        return "Hỗ trợ: JPG, PNG, GIF, WEBP...";
+      case "Video":
+        return "Hỗ trợ: MP4, AVI, MOV...";
+      case "Audio":
+        return "Hỗ trợ: MP3, WAV, OGG...";
+      case "Text":
+        return "Hỗ trợ: TXT, CSV, JSON...";
+      default:
+        return "Supported files...";
+    }
+  };
+
   const handleFileSelect = (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      setSelectedFiles(e.target.files);
+      const files = Array.from(e.target.files);
+
+      // KIỂM TRA NGHIÊM NGẶT LOẠI FILE (LỚP BẢO VỆ SỐ 2)
+      const isValid = files.every((file) => {
+        if (fileType === "Pic") return file.type.startsWith("image/");
+        if (fileType === "Video") return file.type.startsWith("video/");
+        if (fileType === "Audio") return file.type.startsWith("audio/");
+        if (fileType === "Text")
+          return (
+            file.type.startsWith("text/") ||
+            file.name.endsWith(".json") ||
+            file.name.endsWith(".csv")
+          );
+        return true;
+      });
+
+      if (!isValid) {
+        alert(
+          `Lỗi: Vui lòng chỉ chọn đúng định dạng file cho loại dữ liệu "${fileType}"!`,
+        );
+        // Reset lại input
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+
+      setSelectedFiles(files);
     }
   };
 
@@ -39,21 +96,25 @@ export default function DatasetUpload() {
     }
   };
 
+  // KHI ĐỔI LOẠI DATA, TỰ ĐỘNG XÓA CÁC FILE ĐÃ CHỌN TRƯỚC ĐÓ ĐỂ TRÁNH RÂU ÔNG NỌ CẮM CẰM BÀ KIA
+  const handleTypeChange = (e) => {
+    setFileType(e.target.value);
+    setSelectedFiles([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   return (
     <div className="space-y-8">
       {/* Tăng khoảng cách ra xíu cho form dễ lắc */}
       {/* ========================================== */}
       {/* KHỐI 1: HEADER & UPLOAD ZONE (3D)            */}
       {/* ========================================== */}
-      <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm">
+      <div className="rounded-xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-6 shadow-sm">
         <div className="mb-6 flex justify-between items-end">
           <div>
             <h2 className="text-lg font-semibold text-white">
-              Bulk Dataset Upload
+              Tải lên Dữ liệu Hàng loạt
             </h2>
-            <p className="text-sm text-gray-400 mt-1">
-              Upload images, text, or audio for labeling
-            </p>
           </div>
 
           <div>
@@ -62,12 +123,12 @@ export default function DatasetUpload() {
             </label>
             <select
               value={fileType}
-              onChange={(e) => setFileType(e.target.value)}
-              className="bg-[#0B1120] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm outline-none"
+              onChange={handleTypeChange}
+              className="bg-[#0B1120] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm outline-none cursor-pointer"
             >
               <option value="Pic">Pic (Ảnh)</option>
-              <option value="Text">Text</option>
-              <option value="Audio">Audio</option>
+              <option value="Text">Text (Văn bản)</option>
+              <option value="Audio">Audio (Âm thanh)</option>
               <option value="Video">Video</option>
             </select>
           </div>
@@ -129,8 +190,12 @@ export default function DatasetUpload() {
                   >
                     Bấm vào đây để chọn Files
                   </CardItem>
-                  <CardItem translateZ="30" className="text-sm text-gray-500">
-                    Supported: JPG, PNG, TXT, MP3, MP4...
+                  <CardItem
+                    translateZ="30"
+                    className="text-sm text-blue-400/80 mt-1 font-medium"
+                  >
+                    {/* DÒNG NÀY SẼ TỰ ĐỘNG ĐỔI THEO LOẠI DATA */}
+                    {getSupportedText()}
                   </CardItem>
                 </>
               )}
@@ -138,6 +203,7 @@ export default function DatasetUpload() {
               <input
                 type="file"
                 multiple
+                accept={getAcceptTypes()} // LỚP BẢO VỆ SỐ 1: Ép file picker chỉ hiện đúng loại
                 ref={fileInputRef}
                 onChange={handleFileSelect}
                 className="hidden"
@@ -160,26 +226,23 @@ export default function DatasetUpload() {
       {/* KHỐI 2: BẢNG DATA MANAGEMENT (CŨNG 3D)       */}
       {/* ========================================== */}
       <CardContainer containerClassName="w-full" className="w-full">
-        {/* Nền của Card (Cái mảng to đùng phía sau) */}
         <CardBody
-          className="w-full bg-[#151D2F] border border-white/5 rounded-xl p-6 shadow-2xl transition-colors group/card"
+          className="w-full bg-[#151D2F]/90 backdrop-blur-sm border border-white/5 rounded-xl p-6 shadow-2xl transition-colors group/card"
           style={{ transformStyle: "preserve-3d" }}
         >
-          {/* Tiêu đề bảng nảy lên cao xíu */}
           <CardItem translateZ="60" className="w-full mb-6">
             <h2 className="text-xl font-bold text-white drop-shadow-lg">
-              Uploaded Data Management
+              Quản lý Dữ liệu đã tải lên
             </h2>
           </CardItem>
 
-          {/* Nguyên cái khối BẢNG nảy lên (Đã đắp nền #0B1120 và gỡ bỏ overflow để 3D hoạt động) */}
           <CardItem
             translateZ="40"
             className="w-full rounded-lg bg-[#0B1120] border border-white/10 p-2 shadow-xl"
             style={{ transformStyle: "preserve-3d" }}
           >
             {isLoading ? (
-              <div className="text-center text-gray-500 py-6">
+              <div className="text-center text-gray-500 py-6 animate-pulse">
                 Đang tải danh sách data...
               </div>
             ) : dataItems.length === 0 ? (
@@ -193,9 +256,9 @@ export default function DatasetUpload() {
                     <th className="px-4 py-4 rounded-tl-lg font-medium">
                       Link Dữ liệu
                     </th>
-                    <th className="px-4 py-4 font-medium">Status</th>
+                    <th className="px-4 py-4 font-medium">Trạng thái</th>
                     <th className="px-4 py-4 rounded-tr-lg font-medium text-right">
-                      Action
+                      Thao tác
                     </th>
                   </tr>
                 </thead>
@@ -204,7 +267,9 @@ export default function DatasetUpload() {
                     const finalLink =
                       item.filePath || item.fileUrl || item.url || "";
                     const isAssigned = item.isAssigned === true;
-                    const statusText = isAssigned ? "Assigned" : "Unassigned";
+                    const statusText = isAssigned
+                      ? "Đã giao Task"
+                      : "Chưa giao";
 
                     return (
                       <tr
@@ -234,7 +299,7 @@ export default function DatasetUpload() {
                           <span
                             className={`px-3 py-1.5 rounded-full text-xs font-medium ${
                               isAssigned
-                                ? "bg-blue-500/10 text-blue-400"
+                                ? "bg-emerald-500/10 text-emerald-400"
                                 : "bg-gray-500/10 text-gray-400"
                             }`}
                           >
