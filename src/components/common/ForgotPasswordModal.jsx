@@ -13,7 +13,7 @@ export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
         const v = String(email || '').trim();
         if (!touched) return null;
         if (!v) return 'Vui lòng nhập email.';
-        if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v)) return 'Email không hợp lệ.';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Email không hợp lệ.';
         return null;
     }, [email, touched]);
 
