@@ -16,10 +16,10 @@ export default function QualityScore() {
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">
-          Quality Score & Performance
+          Điểm Chất Lượng & Hiệu Suất
         </h1>
         <p className="text-sm text-gray-400 mt-1">
-          Monitor trust scores and reputation logs of personnel
+          Theo dõi điểm uy tín và lịch sử làm việc của nhân sự
         </p>
       </div>
 
@@ -28,10 +28,10 @@ export default function QualityScore() {
         <div className="rounded-xl border border-white/5 bg-[#151D2F] shadow-sm flex flex-col h-[600px]">
           <div className="p-6 border-b border-white/5">
             <h2 className="text-lg font-semibold text-white">
-              Personnel Trust Scores
+              Bảng Điểm Uy Tín
             </h2>
             <p className="text-xs text-gray-400 mt-1">
-              Bấm "View" để xem lịch sử điểm
+              Bấm "Xem" để xem lịch sử biến động điểm
             </p>
           </div>
 
@@ -48,16 +48,18 @@ export default function QualityScore() {
               <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 bg-[#151D2F] z-10">
                   <tr className="border-b border-white/5 text-xs uppercase tracking-wider text-gray-500">
-                    <th className="pb-3 pt-4 font-medium">Name & Role</th>
-                    <th className="pb-3 pt-4 font-medium">Score</th>
-                    <th className="pb-3 pt-4 font-medium text-right">Action</th>
+                    <th className="pb-3 pt-4 font-medium">Họ Tên & Vai Trò</th>
+                    <th className="pb-3 pt-4 font-medium">Điểm</th>
+                    <th className="pb-3 pt-4 font-medium text-right">
+                      Thao Tác
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {users.map((user, idx) => {
                     const id = user.id || user.userId || user.userID;
                     const name =
-                      user.fullName || user.userName || "Unnamed User";
+                      user.fullName || user.userName || "Người dùng ẩn danh";
                     // Bọc lót tên biến điểm (score/qualityScore/reputation)
                     const score =
                       user.score ??
@@ -95,7 +97,7 @@ export default function QualityScore() {
                                 : "bg-white/5 hover:bg-white/10 text-gray-300"
                             }`}
                           >
-                            {isSelected ? "Close" : "View Log"}
+                            {isSelected ? "Đóng" : "Xem Log"}
                           </button>
                         </td>
                       </tr>
@@ -114,15 +116,16 @@ export default function QualityScore() {
             <div className="p-6 border-b border-white/5 flex justify-between items-center bg-blue-500/5">
               <div>
                 <h2 className="text-lg font-semibold text-blue-400">
-                  Reputation Logs
+                  Lịch Sử Uy Tín
                 </h2>
                 <p className="text-xs text-gray-400 mt-1">
-                  Lịch sử thay đổi điểm uy tín
+                  Nhật ký thay đổi điểm của nhân sự
                 </p>
               </div>
               <button
                 onClick={closeLogs}
                 className="text-gray-400 hover:text-white bg-white/5 p-2 rounded-lg"
+                title="Đóng"
               >
                 ✕
               </button>
@@ -186,7 +189,7 @@ export default function QualityScore() {
                             <time className="text-xs text-gray-500 font-medium">
                               {date
                                 ? new Date(date).toLocaleString("vi-VN")
-                                : "Unknown Time"}
+                                : "Thời gian không rõ"}
                             </time>
                           </div>
                           <p className="text-sm text-gray-300">{reason}</p>
@@ -203,10 +206,10 @@ export default function QualityScore() {
           <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col h-[600px] animate-in fade-in duration-500">
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-white">
-                Overdue Tasks Alert
+                Cảnh Báo Quá Hạn
               </h2>
               <p className="text-xs text-gray-400 mt-1">
-                Giao diện chờ tích hợp API (Tương lai)
+                Các nhiệm vụ đang bị trễ tiến độ (Chờ tích hợp API)
               </p>
             </div>
 
@@ -222,19 +225,19 @@ export default function QualityScore() {
                         Task #IMG_08{item}9
                       </span>
                       <span className="text-[10px] uppercase font-bold text-rose-400 bg-rose-400/10 px-2 py-0.5 rounded">
-                        Overdue 2 days
+                        Trễ hạn 2 ngày
                       </span>
                     </div>
                     <p className="text-xs text-gray-400">
-                      Assignee: Lisa Annotator
+                      Người nhận: Nguyễn Văn Annotator
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <button className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-medium rounded transition-colors">
-                      Extend Deadline
+                      Gia Hạn
                     </button>
                     <button className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-medium rounded transition-colors border border-rose-500/20">
-                      Revoke Task
+                      Thu Hồi Task
                     </button>
                   </div>
                 </div>
@@ -242,9 +245,9 @@ export default function QualityScore() {
             </div>
 
             <div className="mt-4 p-3 rounded bg-blue-500/5 border border-blue-500/10 text-xs text-blue-400/80">
-              <span className="font-semibold">System Rule:</span> Annotators
-              dropping to 0 points or failing 3 consecutive tasks will be
-              automatically deactivated.
+              <span className="font-semibold">Quy tắc Hệ thống:</span> Annotator
+              bị tụt xuống 0 điểm hoặc trượt 3 task liên tiếp sẽ tự động bị đình
+              chỉ tài khoản.
             </div>
           </div>
         )}
