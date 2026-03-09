@@ -1,26 +1,7 @@
 import axiosClient from './axiosClient';
 
-const ENDPOINT_CANDIDATES = [
-    '/api/Auth/forgot-password',
-];
-
 const authForgotPasswordApi = {
-    forgotPassword: async (payload) => {
-        let lastError;
-
-        for (let i = 0; i < ENDPOINT_CANDIDATES.length; i += 1) {
-            const url = ENDPOINT_CANDIDATES[i];
-            try {
-                const silent = i > 0;
-                return await axiosClient.post(url, payload, silent ? { silent: true } : undefined);
-            } catch (err) {
-                lastError = err;
-                const status = err?.response?.status ?? null;
-                if (status !== 404) break;
-            }
-        }
-
-        throw lastError;
-    },
+    forgotPassword: (payload, config) => axiosClient.post('/api/Auth/forgot-password', payload, config),
+    forgotPasswordWithUrl: (url, payload, config) => axiosClient.post(url, payload, config),
 };
 export default authForgotPasswordApi;

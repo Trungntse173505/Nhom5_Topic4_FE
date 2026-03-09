@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useForgotPassword } from '../../hooks/Admin/useForgotPassword';
 export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
     const { forgotPassword, loading, error, data, setError } = useForgotPassword();
-    const [emailOrUsername, setEmailOrUsername] = useState(defaultValue || '');
+    const [email, setEmail] = useState(defaultValue || '');
     const [touched, setTouched] = useState(false);
     const successMessage = useMemo(() => {
 
@@ -10,17 +10,18 @@ export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
         return data?.message || data?.Message || 'Yêu cầu đã được gửi. Vui lòng kiểm tra email.';
     }, [data]);
     const fieldError = useMemo(() => {
-        const v = String(emailOrUsername || '').trim();
+        const v = String(email || '').trim();
         if (!touched) return null;
-        if (!v) return 'Vui lòng nhập email hoặc username.';
+        if (!v) return 'Vui lòng nhập email.';
+        if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v)) return 'Email không hợp lệ.';
         return null;
-    }, [emailOrUsername, touched]);
+    }, [email, touched]);
 
     const canSubmit = open && !loading && !fieldError;
     async function onSubmit(e) {
         e.preventDefault();
         if (!canSubmit) return;
-        const res = await forgotPassword({ emailOrUsername });
+        const res = await forgotPassword({ email });
         if (!res.success) return;
     }
 
@@ -40,7 +41,7 @@ export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
                     <div>
                         <h2 className="text-lg font-bold text-white">Quên mật khẩu</h2>
                         <p className="mt-1 text-xs text-white/50">
-                            Nhập email hoặc username để hệ thống gửi hướng dẫn đặt lại mật khẩu về email của bạn.
+                            Nhập email để hệ thống gửi hướng dẫn đặt lại mật khẩu về email của bạn.
                         </p>
                     </div>
                     <button
@@ -60,11 +61,11 @@ export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
                 <form onSubmit={onSubmit} className="mt-6 space-y-4">
                     <div>
                         <input
-                            value={emailOrUsername}
-                            onChange={(e) => setEmailOrUsername(e.target.value)}
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             onBlur={() => setTouched(true)}
                             type="text"
-                            placeholder="Email hoặc Username"
+                            placeholder="Email"
                             className={`w-full rounded-xl border bg-white/[0.03] px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-white/20
                 ${fieldError ? 'border-rose-500/50' : 'border-white/10 focus:border-blue-500/50 focus:ring-blue-500/10 focus:ring-4'}`}
 

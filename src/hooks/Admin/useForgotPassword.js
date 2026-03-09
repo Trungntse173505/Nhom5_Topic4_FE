@@ -1,19 +1,13 @@
 import { useCallback, useState } from 'react';
 import authForgotPasswordApi from '../../api/authForgotPasswordApi';
 
-const looksLikeEmail = (value) => {
-  const v = String(value ?? '').trim();
-  if (!v) return false;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-};
+const ENDPOINT_CANDIDATES = [
+  '/api/Auth/forgot-password'
+];
 
-const buildPayload = ({ emailOrUsername }) => {
-  const value = String(emailOrUsername ?? '').trim();
-  const isEmail = looksLikeEmail(value);
-
-  return isEmail
-    ? { email: value, Email: value }
-    : { username: value, Username: value, userName: value, UserName: value };
+const buildPayload = ({ email }) => {
+  const value = String(email ?? '').trim();
+  return { email: value, Email: value };
 };
 
 export const useForgotPassword = () => {
@@ -21,16 +15,32 @@ export const useForgotPassword = () => {
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
 
-  const forgotPassword = useCallback(async ({ emailOrUsername }) => {
+  const forgotPassword = useCallback(async ({ email }) => {
     setLoading(true);
     setError(null);
     setData(null);
 
     try {
-      const payload = buildPayload({ emailOrUsername });
-      const res = await authForgotPasswordApi.forgotPassword(payload);
-      setData(res);
-      return { success: true, data: res };
+      const payload = buildPayload({ email });
+
+      let lastError;
+      for (let i = 0; i < ENDPOINT_CANDIDATES.length; i += 1) {
+        const url = ENDPOINT_CANDIDATES[i];
+        try {
+          const silent = i > 0;
+          const res = silent
+            ? await authForgotPasswordApi.forgotPasswordWithUrl(url, payload, { silent: true })
+            : await authForgotPasswordApi.forgotPasswordWithUrl(url, payload);
+          setData(res);
+          return { success: true, data: res };
+        } catch (err) {
+          lastError = err;
+          const status = err?.response?.status ?? null;
+          if (status !== 404) break;
+        }
+      }
+
+      throw lastError;
     } catch (err) {
       const status = err?.response?.status ?? null;
       const msg =
