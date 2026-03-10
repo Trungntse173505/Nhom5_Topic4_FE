@@ -1,17 +1,33 @@
-import React, { useState } from 'react';
-import { ThumbsUp, ThumbsDown, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import {
+  ThumbsUp,
+  ThumbsDown,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const ReviewerSidebarRight = ({ taskId, currentItem, toggleAnnotationApproval, approveTask, rejectTask, isProcessing }) => {
+// NHẬN THÊM activeBoxId VÀ setActiveBoxId TỪ COMPONENT CHA
+const ReviewerSidebarRight = ({
+  taskId,
+  currentItem,
+  toggleAnnotationApproval,
+  approveTask,
+  rejectTask,
+  isProcessing,
+  activeBoxId,
+  setActiveBoxId,
+}) => {
   const navigate = useNavigate();
-  const [feedback, setFeedback] = useState({ comment: '', errorRegion: '' });
+  const [feedback, setFeedback] = useState({ comment: "", errorRegion: "" });
 
   const handleApprove = async () => {
     if (!window.confirm("Duyệt toàn bộ task này?")) return;
     const res = await approveTask(taskId);
     if (res.success) {
       alert("✅ Thành công: " + res.data);
-      navigate('/reviewer/dashboard');
+      navigate("/reviewer/dashboard");
     } else alert("❌ Lỗi: " + res.error);
   };
 
@@ -21,68 +37,107 @@ const ReviewerSidebarRight = ({ taskId, currentItem, toggleAnnotationApproval, a
     const res = await rejectTask(taskId, feedback);
     if (res.success) {
       alert("✅ Thành công: " + res.data);
-      navigate('/reviewer/dashboard');
+      navigate("/reviewer/dashboard");
     } else alert("❌ Lỗi: " + res.error);
   };
 
   return (
     <aside className="w-80 border-l border-slate-800 bg-[#0f172a] flex flex-col shrink-0 text-left">
-      <div className="p-4 border-b border-slate-800">
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Chi tiết Ảnh Hiện Tại</h3>
+      <div className="p-4 border-b border-slate-800 flex justify-between items-center">
+        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
+          Chi tiết Ảnh Hiện Tại
+        </h3>
       </div>
-      
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 custom-scrollbar">
         {currentItem?.annotations?.length === 0 && (
-          <p className="text-sm text-slate-500 italic text-left">Chưa có object nào được vẽ.</p>
+          <p className="text-sm text-slate-500 italic text-left">
+            Chưa có object nào được vẽ.
+          </p>
         )}
 
         {/* Danh sách object trong ảnh hiện tại để click trực tiếp từ menu */}
-        {currentItem?.annotations?.map((ann) => (
-          <div key={ann.idDetail} className="bg-[#1e293b] p-3 rounded-xl border border-slate-700 flex flex-col gap-2">
-            <span className="text-sm font-bold text-white">{ann.content}</span>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => toggleAnnotationApproval(ann.idDetail, false)} // Bấm là chuyển thành True
-                className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-bold transition-colors ${ann.isApproved === true ? 'bg-green-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-green-500/20 hover:text-green-400'}`}
+        {currentItem?.annotations?.map((ann) => {
+          // Kiểm tra xem thẻ này có đang được chọn hay không
+          const isActive = activeBoxId === ann.idDetail;
+
+          return (
+            <div
+              key={ann.idDetail}
+              onClick={() => setActiveBoxId(ann.idDetail)} // CLICK ĐỂ CHỌN BOX NÀY
+              className={`p-3 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all duration-200 ${
+                isActive
+                  ? "bg-blue-500/10 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
+                  : "bg-[#1e293b] border-slate-700 hover:border-slate-500"
+              }`}
+            >
+              <span
+                className={`text-sm font-bold ${isActive ? "text-blue-400" : "text-white"}`}
               >
-                <CheckCircle size={14} /> Đúng
-              </button>
-              <button 
-                onClick={() => toggleAnnotationApproval(ann.idDetail, true)} // Bấm là chuyển thành False
-                className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-bold transition-colors ${ann.isApproved === false ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-red-500/20 hover:text-red-400'}`}
-              >
-                <XCircle size={14} /> Lỗi
-              </button>
+                {ann.content || "Chưa có nhãn"}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // NGĂN CHẶN SỰ KIỆN CLICK LAN RA NGOÀI VÀO THẺ BỌC
+                    toggleAnnotationApproval(ann.idDetail, false);
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-bold transition-colors ${ann.isApproved === true ? "bg-green-500 text-white shadow-lg shadow-green-500/20" : "bg-slate-800 text-slate-400 hover:bg-green-500/20 hover:text-green-400"}`}
+                >
+                  <CheckCircle size={14} /> Đúng
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // NGĂN CHẶN SỰ KIỆN CLICK LAN RA NGOÀI
+                    toggleAnnotationApproval(ann.idDetail, true);
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-bold transition-colors ${ann.isApproved === false ? "bg-red-500 text-white shadow-lg shadow-red-500/20" : "bg-slate-800 text-slate-400 hover:bg-red-500/20 hover:text-red-400"}`}
+                >
+                  <XCircle size={14} /> Lỗi
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* KHU VỰC SUBMIT (Luôn nằm dưới cùng) */}
       <div className="p-4 border-t border-slate-800 bg-[#1e293b] flex flex-col gap-4">
         <div className="flex flex-col gap-2 text-left">
-          <p className="text-xs font-semibold text-rose-400 flex items-center gap-1"><AlertCircle size={14}/> Nhập lỗi khi Reject</p>
-          <input 
-            type="text" placeholder="Vùng bị lỗi (VD: Ô tô 2)" 
-            className="w-full bg-[#0f172a] border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-rose-500 outline-none"
-            value={feedback.errorRegion} onChange={(e) => setFeedback({...feedback, errorRegion: e.target.value})}
+          <p className="text-xs font-semibold text-rose-400 flex items-center gap-1">
+            <AlertCircle size={14} /> Nhập lỗi khi Reject
+          </p>
+          <input
+            type="text"
+            placeholder="Vùng bị lỗi (VD: Ô tô 2)"
+            className="w-full bg-[#0f172a] border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-rose-500 outline-none transition-colors"
+            value={feedback.errorRegion}
+            onChange={(e) =>
+              setFeedback({ ...feedback, errorRegion: e.target.value })
+            }
           />
-          <textarea 
-            placeholder="Lý do chi tiết..." rows="2"
-            className="w-full bg-[#0f172a] border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-rose-500 outline-none resize-none"
-            value={feedback.comment} onChange={(e) => setFeedback({...feedback, comment: e.target.value})}
+          <textarea
+            placeholder="Lý do chi tiết..."
+            rows="2"
+            className="w-full bg-[#0f172a] border border-slate-700 rounded-lg p-2 text-sm text-white focus:border-rose-500 outline-none resize-none transition-colors"
+            value={feedback.comment}
+            onChange={(e) =>
+              setFeedback({ ...feedback, comment: e.target.value })
+            }
           />
         </div>
 
         <div className="flex gap-2">
-          <button 
-            onClick={handleApprove} disabled={isProcessing}
+          <button
+            onClick={handleApprove}
+            disabled={isProcessing}
             className="flex-1 flex flex-col items-center justify-center gap-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/20"
           >
             <ThumbsUp size={18} /> Duyệt
           </button>
-          <button 
-            onClick={handleReject} disabled={isProcessing}
+          <button
+            onClick={handleReject}
+            disabled={isProcessing}
             className="flex-1 flex flex-col items-center justify-center gap-1 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 transition-all shadow-lg shadow-rose-500/20"
           >
             <ThumbsDown size={18} /> Trả về
