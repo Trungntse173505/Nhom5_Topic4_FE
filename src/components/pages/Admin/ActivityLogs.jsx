@@ -6,18 +6,13 @@ export default function ActivityLogs() {
         normalizedLogs,
         loading,
         error,
-        pageNumber,
         pageSize,
         canGoPrev,
         canGoNext,
         draftFromTime,
         draftToTime,
-        draftUserId,
-        draftAction,
         setDraftFromTime,
         setDraftToTime,
-        setDraftUserId,
-        setDraftAction,
         applyFilters,
         clearFilters,
         reload,
@@ -55,11 +50,11 @@ export default function ActivityLogs() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                 <div className="space-y-1">
-                    <div className="text-xs text-white/50">Từ thời gian</div>
+                    <div className="text-xs text-white/50">Từ ngày</div>
                     <input
-                        type="datetime-local"
+                        type="date"
                         value={draftFromTime}
                         onChange={(e) => setDraftFromTime(e.target.value)}
                         disabled={loading}
@@ -67,39 +62,17 @@ export default function ActivityLogs() {
                     />
                 </div>
                 <div className="space-y-1">
-                    <div className="text-xs text-white/50">Đến thời gian</div>
+                    <div className="text-xs text-white/50">Đến ngày</div>
                     <input
-                        type="datetime-local"
+                        type="date"
                         value={draftToTime}
                         onChange={(e) => setDraftToTime(e.target.value)}
                         disabled={loading}
                         className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-xs text-white/80 disabled:opacity-50"
                     />
                 </div>
-                <div className="space-y-1">
-                    <div className="text-xs text-white/50">UserID</div>
-                    <input
-                        type="text"
-                        value={draftUserId}
-                        onChange={(e) => setDraftUserId(e.target.value)}
-                        placeholder="vd: 123"
-                        disabled={loading}
-                        className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-xs text-white/80 disabled:opacity-50"
-                    />
-                </div>
-                <div className="space-y-1">
-                    <div className="text-xs text-white/50">Tên thao tác</div>
-                    <input
-                        type="text"
-                        value={draftAction}
-                        onChange={(e) => setDraftAction(e.target.value)}
-                        placeholder="vd: CREATE_USER"
-                        disabled={loading}
-                        className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-xs text-white/80 disabled:opacity-50"
-                    />
-                </div>
 
-                <div className="md:col-span-4 flex items-center gap-2">
+                <div className="md:col-span-2 flex items-center gap-2">
                     <button
                         type="button"
                         disabled={loading}
@@ -127,10 +100,10 @@ export default function ActivityLogs() {
                         <div className="flex justify-between items-start gap-4">
                             <div className="min-w-0">
                                 <p className="text-sm font-semibold text-white/90">
-                                    UserID: <span className="text-blue-400">{log.userId || '-'}</span>
+                                    ID: <span className="text-blue-400">{log.id || '-'}</span>
                                 </p>
                                 <p className="text-sm font-semibold text-white/90 mt-1">
-                                    User: <span className="text-blue-400">{log.user || '-'}</span>
+                                    Username: <span className="text-blue-400">{log.username || '-'}</span>
                                 </p>
                                 <p className="text-sm text-white/80 mt-1">
                                     Action: <span className="text-white/90">{log.action || '-'}</span>
