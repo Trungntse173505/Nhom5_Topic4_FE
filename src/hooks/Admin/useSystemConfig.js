@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import systemConfigApi from '../api/systemConfig';
+import systemConfigApi from '../../api/systemConfig';
 
 const buildErrorMessage = (err) => {
   const status = err?.response?.status;
@@ -52,9 +52,9 @@ const normalizeSystemConfig = (rawResponse) => {
     ? rawFormats
     : typeof rawFormats === 'string'
       ? rawFormats
-          .split(/[;,]+/g)
-          .map((s) => s.trim())
-          .filter(Boolean)
+        .split(/[;,]+/g)
+        .map((s) => s.trim())
+        .filter(Boolean)
       : null;
 
   return { raw: item ?? data ?? rawResponse ?? null, id, storageLimitGb, allowedFormats };

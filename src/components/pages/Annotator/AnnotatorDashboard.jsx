@@ -16,7 +16,15 @@ const TYPE_ICONS = {
   text: <FileText size={16} className="text-blue-400" />,
   audio: <Headphones size={16} className="text-amber-400" />,
   image: <ImageIcon size={16} className="text-green-400" />,
-  video: <ImageIcon size={16} className="text-purple-400" />, // Có thể đổi icon video nếu muốn
+  video: <ImageIcon size={16} className="text-purple-400" />,
+};
+
+const STATUS_NAME = {
+  New: 'Mới',
+  InProgress: 'Đang Thực Hiện',
+  PendingReview: 'Đang Duyệt',
+  Rejected: 'Từ Chối',
+  Done: 'Hoàn Thành',
 };
 
 const STATUS_STYLES = {
@@ -35,12 +43,37 @@ const ACTION_STYLES = {
 };
 
 const STAT_CARDS = [
-  { icon: FolderOpen, color: 'blue', label: 'Tổng Gói Task', key: 'totalTasks' },
-  { icon: CheckCircle2, color: 'green', label: 'Task Hoàn Thành', key: 'completedTasks' },
-  { icon: XCircle, color: 'red', label: 'Task Bị Reject', key: 'rejectedTasks' },
+  { icon: FolderOpen, color: 'blue', label: 'Tổng Nhiệm Vụ', key: 'totalTasks' },
+  { icon: CheckCircle2, color: 'green', label: 'Nhiệm Vụ Hoàn Thành', key: 'completedTasks' },
+  { icon: XCircle, color: 'red', label: 'Nhiệm Vụ Bị Từ Chối', key: 'rejectedTasks' },
 ];
 
-const FILTERS = ['All', 'New', 'InProgress', 'PendingReview', 'Rejected', 'Done'];
+const FILTERS = [
+  {
+    name: "Tất cả",
+    status: "All"
+  },
+  {
+    name: "Mới",
+    status: "New"
+  },
+  {
+    name: "Đang Thực Hiện",
+    status: "InProgress"
+  },
+  {
+    name: "Đang duyệt",
+    status: "PendingReview"
+  },
+  {
+    name: "Từ Chối",
+    status: "Rejected"
+  },
+  {
+    name: "Hoàn Thành",
+    status: "Done"
+  }
+];
 
 const AnnotatorDashboard = () => {
   const navigate = useNavigate();
@@ -71,19 +104,15 @@ const AnnotatorDashboard = () => {
 
   // --- XỬ LÝ CLICK NÚT CHÍNH ---
   const handleActionClick = async (task) => {
-    // Lấy type từ API, nếu không có mặc định là 'image'
     const taskType = task.type || 'image'; 
-
     if (task.status === 'New') {
       try {
         await start(task.taskID);
-        // Chuyển hướng kèm theo type trên URL
         navigate(`/annotator/workspace/${task.taskID}?type=${taskType}`);
       } catch (err) {
         alert("Không thể bắt đầu Task này. Vui lòng thử lại!");
       }
     } else {
-      // Chuyển hướng kèm theo type trên URL
       navigate(`/annotator/workspace/${task.taskID}?type=${taskType}`);
     }
   };
@@ -135,7 +164,7 @@ const AnnotatorDashboard = () => {
 
       {/* Header & Stats (Giữ nguyên như cũ) */}
       <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 className="text-3xl font-bold text-white">Dashboard Quản Lý Nhiệm Vụ</h1>
+        <h1 className="text-3xl font-bold text-white">Quản Lý Nhiệm Vụ</h1>
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/annotator/score')}
@@ -171,15 +200,15 @@ const AnnotatorDashboard = () => {
         <div className="flex gap-2">
           {FILTERS.map(status => (
             <button
-              key={status}
-              onClick={() => setFilter(status)}
+              key={status.status}
+              onClick={() => setFilter(status.status)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                filter === status
+                filter === status.status
                   ? 'bg-blue-600 text-white'
                   : 'bg-[#0f172a] text-slate-400 hover:text-white hover:bg-slate-700 border border-slate-700'
               }`}
             >
-              {status}
+              {status.name}
             </button>
           ))}
         </div>
@@ -189,7 +218,7 @@ const AnnotatorDashboard = () => {
         <table className="w-full text-left border-collapse">
           <thead className="bg-[#0f172a]/50 text-slate-400 text-sm">
             <tr>
-              {['Mã / Tên Task', 'Vòng Lặp', 'Trạng thái', 'Deadline', 'Hành động'].map((h, i) => (
+              {['Mã / Tên Task', 'Số lần nộp', 'Trạng thái', 'Deadline', 'Hành động'].map((h, i) => (
                 <th key={i} className={`p-4 font-medium ${i === 4 ? 'text-right' : i === 1 ? 'w-1/4' : ''}`}>{h}</th>
               ))}
             </tr>
@@ -197,7 +226,6 @@ const AnnotatorDashboard = () => {
           <tbody>
             {filteredTasks.length > 0 ? filteredTasks.map(task => {
               const action = ACTION_STYLES[task.status] ?? ACTION_STYLES.default;
-              // Lấy icon theo loại task động
               const IconType = TYPE_ICONS[task.type] || TYPE_ICONS.image;
 
               return (
@@ -207,18 +235,17 @@ const AnnotatorDashboard = () => {
                       {IconType}
                       {task.taskName}
                     </div>
-                    <p className="text-xs text-slate-400 pl-6 text-ellipsis overflow-hidden w-48">{task.taskID}</p>
                   </td>
 
                   <td className="p-4">
                     <div className="text-sm font-medium text-slate-400">
-                      Lần nộp thứ: <span className="text-white font-bold">{task.currentRound}/3</span>
+                      Lần: <span className="text-white font-bold">{task.currentRound}/3</span>
                     </div>
                   </td>
 
                   <td className="p-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-bold inline-block border ${STATUS_STYLES[task.status]}`}>
-                      {task.status}
+                      {STATUS_NAME[task.status] || task.status}
                     </span>
                   </td>
 

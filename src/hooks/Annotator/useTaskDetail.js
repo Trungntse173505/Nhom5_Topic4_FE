@@ -12,10 +12,7 @@ export const useTaskDetail = (taskId) => {
     setLoading(true);
     setError(null);
     try {
-      // Gọi API lấy chi tiết Workspace từ Azure
-      const response = await annotatorApi.getTaskDetail(taskId);
-      
-      // Dữ liệu bao gồm: taskItems, availableLabels, taskName, status...
+      const response = await annotatorApi.getTaskDetail(taskId);  
       setData(response);
     } catch (err) {
       setError(err?.response?.data?.message || "Không thể tải chi tiết Task");
@@ -29,13 +26,8 @@ export const useTaskDetail = (taskId) => {
   }, [fetchDetail]);
 
   return {
-    // Trả về danh sách ảnh để hiển thị ở Sidebar
     taskItems: data?.taskItems || [], 
-    
-    // Trả về danh sách nhãn để Annotator chọn khi vẽ
-    availableLabels: data?.availableLabels || [], 
-    
-    // Các thông tin chung của Task
+    availableLabels: data?.availableLabels || [],   
     taskInfo: {
       taskID: data?.taskID,
       taskName: data?.taskName,

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAdminUsers } from '../../../hooks/useAdminUsers';
-import { useAdminRoles } from '../../../hooks/useAdminRoles';
+import { useAdminUsers } from '../../../hooks/Admin/useAdminUsers';
+import { useAdminRoles } from '../../../hooks/Admin/useAdminRoles';
 
 // Component phụ giúp tái sử dụng cấu trúc HTML của các ô nhập liệu
 const FormField = ({ label, isSelect, wrapperClass = "", children, ...props }) => (
@@ -41,7 +41,7 @@ export default function UserList() {
     const handleActionCreate = async () => {
         const res = await createUser(createForm);
         if (!res.success) return alert("Lỗi: " + res.error);
-        
+
         alert("Tạo user thành công!");
         const refreshRes = await refresh();
         if (!refreshRes?.success) {
@@ -66,8 +66,8 @@ export default function UserList() {
 
         setUsers(prev => prev.map(u => (u.id === user.id ? { ...u, status: finalStatus } : u)));
         await refresh();
-        setUsers(prev => prev.some(u => u.id === user.id) 
-            ? prev.map(u => (u.id === user.id ? { ...u, status: finalStatus } : u)) 
+        setUsers(prev => prev.some(u => u.id === user.id)
+            ? prev.map(u => (u.id === user.id ? { ...u, status: finalStatus } : u))
             : [{ ...user, status: finalStatus }, ...prev]
         );
     };
@@ -76,7 +76,7 @@ export default function UserList() {
         if (isBusy) return;
         const password = window.prompt(`Nhập mật khẩu mới cho ${user.name} (${user.email}):`);
         if (password === null) return;
-        if (!password.trim()) return alert('Password cannot be empty.');
+        if (!password.trim()) return alert('Mật khẩu không được để trống.');
         if (!window.confirm(`Xác nhận reset mật khẩu cho ${user.name} (${user.email})?`)) return;
 
         const res = await resetPassword(user.id, password);
@@ -93,7 +93,7 @@ export default function UserList() {
         setUsers(prev => prev.filter(u => String(u.id) !== String(user.id)));
         await refresh();
         setUsers(prev => prev.filter(u => String(u.id) !== String(user.id)));
-        
+
         if (selectedUser?.id === user.id) {
             setIsDetailOpen(false);
             setSelectedUser(null);
@@ -118,12 +118,12 @@ export default function UserList() {
         const res = await assignRole(user.id, normalizedRole);
         if (res.success) {
             await refresh();
-            setUsers(prev => prev.some(u => u.id === user.id) 
-                ? prev.map(u => (u.id === user.id ? { ...u, role: normalizedRole } : u)) 
+            setUsers(prev => prev.some(u => u.id === user.id)
+                ? prev.map(u => (u.id === user.id ? { ...u, role: normalizedRole } : u))
                 : [{ ...user, role: normalizedRole }, ...prev]
             );
         } else {
-            console.error('assign-role failed', { userId: user.id, nextRole: normalizedRole, details: res.details, status: res.status });
+            console.error('Đổi vai trò thất bại', { userId: user.id, nextRole: normalizedRole, details: res.details, status: res.status });
             setUsers(prev => prev.map(u => (u.id === user.id ? { ...u, role: user.role } : u)));
             alert("Lỗi: " + res.error);
         }
@@ -168,7 +168,7 @@ export default function UserList() {
                     onClick={() => setIsCreateOpen(true)} disabled={loading || usersLoading}
                     className="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                    + Tạo user
+                    + Tạo người dùng
                 </button>
             </div>
 
@@ -177,10 +177,10 @@ export default function UserList() {
             {/* BỘ LỌC ROLES */}
             <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.02] p-4 shadow-2xl">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                    <div className="text-sm font-bold text-white/80">Roles</div>
+                    <div className="text-sm font-bold text-white/80">Vai trò</div>
                     <div className="flex flex-wrap items-center gap-2">
                         <button onClick={() => refreshRoles()} disabled={rolesLoading} className="bg-sky-600 hover:bg-sky-500 px-3 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed">
-                            {rolesLoading ? 'Đang tải roles...' : 'Tải roles'}
+                            {rolesLoading ? 'Đang tải vai trò...' : 'Tải vai trò'}
                         </button>
                         <button
                             onClick={async () => {
@@ -190,14 +190,14 @@ export default function UserList() {
                             disabled={filterLoading || selectedRoles.length === 0}
                             className="bg-violet-600 hover:bg-violet-500 px-3 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            {filterLoading ? 'Đang lọc...' : 'Lọc theo roles'}
+                            {filterLoading ? 'Đang lọc...' : 'Lọc theo vai trò'}
                         </button>
                         <button
                             onClick={async () => { clearFilter(); await refresh(); }}
                             disabled={!filterResult && !filterError}
                             className="bg-white/5 hover:bg-white/10 px-3 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            Clear
+                            Xóa
                         </button>
                     </div>
                 </div>
@@ -225,7 +225,7 @@ export default function UserList() {
                         })}
                     </div>
                 ) : (
-                    <div className="text-xs text-white/40 mb-4">Chưa có roles. Bấm "Tải roles" để lấy dữ liệu.</div>
+                    <div className="text-xs text-white/40 mb-4">Chưa có vai trò. Bấm "Tải vai trò" để lấy dữ liệu.</div>
                 )}
 
                 {Array.isArray(appliedRoles) && appliedRoles.length > 0 && (
@@ -249,7 +249,7 @@ export default function UserList() {
                     </thead>
                     <tbody className="divide-y divide-white/5">
                         {usersLoading && (
-                            <tr><td className="px-6 py-6 text-sm text-white/50" colSpan={4}>Đang tải danh sách user...</td></tr>
+                            <tr><td className="px-6 py-6 text-sm text-white/50" colSpan={4}>Đang tải danh sách người dùng...</td></tr>
                         )}
                         {users.map((user) => (
                             <tr key={user.id} className="hover:bg-white/[0.03] transition-all">
@@ -277,13 +277,13 @@ export default function UserList() {
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end gap-2">
                                         <button onClick={() => openDetail(user)} className="text-xs bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded-lg">Sửa</button>
-                                        <button onClick={() => handleResetPassword(user)} disabled={isBusy || resettingId === user.id} title="Reset Mật Khẩu" className="text-xs bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 px-3 py-1.5 rounded-lg">
+                                        <button onClick={() => handleResetPassword(user)} disabled={isBusy || resettingId === user.id} title="Đặt lại Mật Khẩu" className="text-xs bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 px-3 py-1.5 rounded-lg">
                                             {resettingId === user.id ? '...' : '🔑'}
                                         </button>
                                         <button onClick={() => handleToggleStatus(user)} disabled={isBusy || togglingId === user.id} className={`text-xs px-3 py-1.5 rounded-lg font-bold ${user.status === 'Active' ? 'bg-rose-600/10 hover:bg-rose-600/20 text-rose-400' : 'bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400'}`}>
                                             {togglingId === user.id ? '...' : user.status === 'Active' ? 'Vô hiệu' : 'Kích hoạt'}
                                         </button>
-                                        <button onClick={() => handleDeleteUser(user)} disabled={isBusy || deletingId === user.id} title="Xóa user" className="text-xs bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 px-3 py-1.5 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed">
+                                        <button onClick={() => handleDeleteUser(user)} disabled={isBusy || deletingId === user.id} title="Xóa người dùng" className="text-xs bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 px-3 py-1.5 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed">
                                             {deletingId === user.id ? 'Đang xóa...' : 'Xóa'}
                                         </button>
                                     </div>

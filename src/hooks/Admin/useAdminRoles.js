@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
-import adminRoleApi from '../api/adminRoleApi';
-import axiosClient from '../api/axiosClient';
+import adminRoleApi from '../../api/adminRoleApi';
+import axiosClient from '../../api/axiosClient';
 
 const buildParamsSerializer = () => (params) => {
   const sp = new URLSearchParams();

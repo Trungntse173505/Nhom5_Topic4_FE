@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { useWorkDistribution } from "../../../hooks/useWorkDistribution";
 
+// IMPORT THÊM NÚT ANIMATED CHO ĐỒNG BỘ GIAO DIỆN
+import { AnimatedButton } from "../../common/AnimatedButton";
+
 export default function WorkDistribution({ project, onRefresh }) {
   const projectId = project?.projectID || project?.id;
 
@@ -29,7 +32,7 @@ export default function WorkDistribution({ project, onRefresh }) {
     );
     if (success) {
       alert(
-        "Tạo Task thành công! Vui lòng sang tab Task Tracking để giao việc.",
+        "Tạo Task thành công! Vui lòng sang tab Theo dõi Nhiệm vụ (Task Tracking) để giao việc.",
       );
       setSelectedIds([]);
       setTaskData({ taskName: "", deadline: "" });
@@ -43,14 +46,14 @@ export default function WorkDistribution({ project, onRefresh }) {
         <div className="mb-4 flex justify-between items-center">
           <div>
             <h2 className="text-lg font-semibold text-white">
-              Unassigned Files
+              Dữ Liệu Chưa Phân Công
             </h2>
             <p className="text-sm text-gray-400 mt-1">
               Chọn file để tạo lô công việc mới
             </p>
           </div>
-          <span className="text-sm text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full">
-            {selectedIds.length} selected
+          <span className="text-sm text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full font-medium">
+            Đã chọn {selectedIds.length}
           </span>
         </div>
 
@@ -61,7 +64,7 @@ export default function WorkDistribution({ project, onRefresh }) {
             </div>
           ) : unassignedItems.length === 0 ? (
             <div className="text-center py-20 text-gray-500 text-sm">
-              Kho trống.
+              Kho dữ liệu trống.
             </div>
           ) : (
             unassignedItems.map((item, idx) => {
@@ -72,15 +75,19 @@ export default function WorkDistribution({ project, onRefresh }) {
               return (
                 <label
                   key={targetId || idx}
-                  className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition-colors ${selectedIds.includes(targetId) ? "border-blue-500 bg-blue-500/10" : "border-white/5 bg-[#0B1120] hover:border-white/20"}`}
+                  className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition-colors ${
+                    selectedIds.includes(targetId)
+                      ? "border-blue-500 bg-blue-500/10"
+                      : "border-white/5 bg-[#0B1120] hover:border-white/20"
+                  }`}
                 >
                   <input
                     type="checkbox"
-                    className="w-4 h-4 rounded"
+                    className="w-4 h-4 rounded cursor-pointer"
                     checked={selectedIds.includes(targetId)}
                     onChange={() => toggleSelection(targetId)}
                   />
-                  <span className="text-gray-300 text-sm font-medium">
+                  <span className="text-gray-300 text-sm font-medium truncate">
                     {targetName}
                   </span>
                 </label>
@@ -92,14 +99,12 @@ export default function WorkDistribution({ project, onRefresh }) {
 
       {/* CỘT 2: FORM TẠO TASK */}
       <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm h-fit">
-        <h2 className="text-lg font-semibold text-white mb-6">
-          Create New Task
-        </h2>
+        <h2 className="text-lg font-semibold text-white mb-6">Tạo Task Mới</h2>
 
         <div className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">
-              Task Name
+              Tên Task <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
@@ -114,7 +119,7 @@ export default function WorkDistribution({ project, onRefresh }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">
-              Deadline
+              Hạn chót (Deadline) <span className="text-rose-500">*</span>
             </label>
             <input
               type="date"
@@ -126,15 +131,16 @@ export default function WorkDistribution({ project, onRefresh }) {
             />
           </div>
 
-          <button
-            onClick={handleSubmit}
-            disabled={selectedIds.length === 0 || isProcessing}
-            className="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-600 disabled:text-gray-400 text-white py-3 rounded-lg font-medium transition-colors shadow-lg"
-          >
-            {isProcessing
-              ? "Đang tạo..."
-              : `Create Task (${selectedIds.length} files)`}
-          </button>
+          <div className="mt-6 pt-4 border-t border-white/5">
+            <AnimatedButton
+              onClick={handleSubmit}
+              disabled={selectedIds.length === 0 || isProcessing}
+              // Ghi đè màu xanh dương mặc định thành màu xanh lá cây để cảnh báo hành động "Tạo"
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 hover:ring-emerald-500 shadow-emerald-500/20"
+            >
+              Tạo Task ({selectedIds.length} file)
+            </AnimatedButton>
+          </div>
         </div>
       </div>
     </div>

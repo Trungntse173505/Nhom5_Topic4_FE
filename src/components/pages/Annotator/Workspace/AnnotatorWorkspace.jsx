@@ -13,98 +13,61 @@ import { useSubmitTask } from '../../../../hooks/Annotator/useSubmitTask';
 import { useFlagItem } from '../../../../hooks/Annotator/useFlagItem';
 
 const AnnotatorWorkspace = () => {
-  const params = useParams();
-  const activeTaskId = params.taskId || params.id;
+  const { taskId, id } = useParams();
+  const activeTaskId = taskId || id;
   const navigate = useNavigate();
 
-  // Gọi Master Hook
   const { 
-    files, 
-    currentFileId, 
-    handleSelectFile, 
-    availableLabels,
-    selectedTool, 
-    setSelectedTool, 
-    selectedLabel, 
-    setSelectedLabel, 
-    annotations, 
-    setAnnotations, 
-    isLoading, 
-    isSaving, 
-    handleSave, 
-    toolbarConfig 
+    files, currentFileId, handleSelectFile, availableLabels,
+    selectedTool, setSelectedTool, selectedLabel, setSelectedLabel, 
+    annotations, setAnnotations, isLoading, isSaving, handleSave, toolbarConfig 
   } = useWorkspace(activeTaskId);
 
-  const { submit, isSubmitting } = useSubmitTask();
-  const { flag, isFlagging } = useFlagItem();
+  const { submit } = useSubmitTask();
+  const { flag } = useFlagItem();
 
   const handleFlagClick = async () => {
-    if (!currentFileId) return;
-    const isConfirm = window.confirm("File này bị mờ/hỏng và không thể gán nhãn. Bạn có chắc muốn báo lỗi?");
-    if (isConfirm) {
-      try {
-        await flag(currentFileId);
-        alert("Đã đánh dấu file bị lỗi!");
-      } catch (err) {
-        alert("Lỗi: Không thể báo lỗi file này.");
-      }
+    if (!currentFileId || !window.confirm("File này bị mờ/hỏng và không thể gán nhãn. Bạn có chắc muốn báo lỗi?")) return;
+    try {
+      await flag(currentFileId);
+      alert("Đã đánh dấu file bị lỗi!");
+    } catch {
+      alert("Lỗi: Không thể báo lỗi file này.");
     }
   };
 
+  // Rút gọn hàm nộp bài bằng Return sớm
   const handleSubmitClick = async () => {
-    const isConfirm = window.confirm("Bạn có chắc chắn muốn NỘP BÀI?");
-    if (isConfirm) {
-      try {
-        await submit(activeTaskId);
-        alert("🎉 Chúc mừng! Bạn đã nộp bài thành công.");
-        navigate('/annotator'); 
-      } catch (err) {
-        alert(err?.response?.data || "Chưa thể nộp bài. Vui lòng kiểm tra lại xem còn file nào sót không!");
-      }
+    if (!window.confirm("Bạn có chắc chắn muốn NỘP BÀI?")) return;
+    try {
+      await submit(activeTaskId);
+      alert("🎉 Chúc mừng! Bạn đã nộp bài thành công.");
+      navigate('/annotator'); 
+    } catch (err) {
+      alert(err?.response?.data || "Chưa thể nộp bài. Vui lòng kiểm tra lại xem còn file nào sót không!");
     }
   };
 
-  // 1. NHẬN DIỆN LOẠI FILE HIỆN TẠI
+  // 1. NHẬN DIỆN LOẠI FILE (Dùng array .some() để code ngắn gọn hơn)
   const fileData = files.find(f => f.id === currentFileId);
-  let actualType = 'image'; 
+  const urlLower = fileData?.url?.toLowerCase() || '';
   
-  if (fileData?.url) {
-    const urlLower = fileData.url.toLowerCase();
-    if (urlLower.includes('.mp4') || urlLower.includes('.webm') || urlLower.includes('.mov')) {
-      actualType = 'video';
-    } 
-    else if (urlLower.includes('.mp3') || urlLower.includes('.wav')) {
-      actualType = 'audio';
-    }
-  }
+  const actualType = ['mp4', 'webm', 'mov'].some(ext => urlLower.includes(ext)) ? 'video' 
+                   : ['mp3', 'wav'].some(ext => urlLower.includes(ext)) ? 'audio' 
+                   : 'image';
 
-  // 2. HÀM RENDER EDITOR CHÍNH GIỮA
+  // 2. HÀM RENDER EDITOR CHÍNH
   const renderEditor = () => {
     if (isLoading) return (
       <div className="flex-1 flex items-center justify-center">
         <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
       </div>
     );
-
-    const sharedProps = { 
-      selectedTool, 
-      selectedLabel, 
-      annotations, 
-      setAnnotations, 
-      fileData, 
-      availableLabels
-    };
-    
-    switch(actualType) {
-      case 'video': 
-        return <VideoCanvas {...sharedProps} videoUrl={fileData?.url} />;
-      case 'text': 
-        return <TextEditor {...sharedProps} />;
-      case 'audio': 
-        return <AudioEditor {...sharedProps} />;
-      default: 
-        return <ImageCanvas {...sharedProps} imageUrl={fileData?.url} />;
-    }
+    const props = { selectedTool, selectedLabel, annotations, setAnnotations, fileData, availableLabels };
+    if (actualType === 'video') return <VideoCanvas {...props} videoUrl={fileData?.url} />;
+    if (actualType === 'text') return <TextEditor {...props} />;
+    if (actualType === 'audio') return <AudioEditor {...props} />;
+    return <ImageCanvas {...props} imageUrl={fileData?.url} />;
   };
 
   if (!activeTaskId) return <div className="p-8 text-white">Lỗi: Không tìm thấy ID Task.</div>;
@@ -112,10 +75,8 @@ const AnnotatorWorkspace = () => {
   return (
     <div className="flex flex-col h-screen bg-[#0f172a] text-slate-200">
       <header className="flex justify-between items-center px-6 py-3 border-b border-slate-800 bg-[#1e293b]">
-        <div className="flex items-center gap-4">
-        </div>
+        <div className="flex items-center gap-4"></div>
 
-        {/* ẨN TOOLBAR NẾU KHÔNG PHẢI LÀ ẢNH */}
         {actualType === 'image' ? (
           <div className="flex bg-[#0f172a] p-1 rounded-lg border border-slate-800">
             {toolbarConfig?.map(tool => (
@@ -137,24 +98,14 @@ const AnnotatorWorkspace = () => {
         )}
 
         <div className="flex items-center gap-2">
-          <button 
-            onClick={handleFlagClick} 
-            className="flex items-center gap-2 bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 px-3 py-2 rounded-lg text-sm font-bold transition-all"
-          >
+          <button onClick={handleFlagClick} className="flex items-center gap-2 bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 px-3 py-2 rounded-lg text-sm font-bold transition-all">
             <AlertTriangle size={16}/> Báo lỗi
           </button>
-          <button 
-            onClick={handleSave} 
-            disabled={isSaving || isLoading} 
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg text-sm font-bold shadow-lg transition-all disabled:opacity-50"
-          >
+          <button onClick={handleSave} disabled={isSaving || isLoading} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg text-sm font-bold shadow-lg transition-all disabled:opacity-50">
             {isSaving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save size={16}/>} Lưu Kết Quả
           </button>
           <div className="w-px h-6 bg-slate-700 mx-2"></div>
-          <button 
-            onClick={handleSubmitClick} 
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-500 px-5 py-2 rounded-lg text-sm font-bold shadow-lg transition-all"
-          >
+          <button onClick={handleSubmitClick} className="flex items-center gap-2 bg-green-600 hover:bg-green-500 px-5 py-2 rounded-lg text-sm font-bold shadow-lg transition-all">
             <Send size={16}/> Nộp Bài
           </button>
           <button onClick={() => navigate('/annotator')} className="p-2 hover:bg-slate-800 rounded-lg ml-2 text-slate-400 hover:text-white">
@@ -170,7 +121,6 @@ const AnnotatorWorkspace = () => {
            {renderEditor()}
         </main>
         
-        {/* TRUYỀN THÊM TYPE VÀ ANNOTATIONS CHO SIDEBAR PHẢI */}
         <SidebarRight 
           availableLabels={availableLabels} 
           selectedLabel={selectedLabel} 

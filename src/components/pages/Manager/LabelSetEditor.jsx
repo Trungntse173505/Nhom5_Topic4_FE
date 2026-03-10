@@ -68,9 +68,9 @@ export default function LabelSetEditor({ project, onRefresh }) {
         {/* KHỐI 1: KHO NHÃN MẪU GOM THEO CHỦ ĐỀ (ACCORDION STYLE) */}
         <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col h-[500px]">
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-white">Label Library</h2>
+            <h2 className="text-lg font-semibold text-white">Kho Nhãn Mẫu</h2>
             <p className="text-sm text-gray-400 mt-1">
-              Bấm vào chủ đề để xem và Import nhãn
+              Bấm vào chủ đề để xem và Nhập nhãn
             </p>
           </div>
 
@@ -133,7 +133,7 @@ export default function LabelSetEditor({ project, onRefresh }) {
                         {groupedLibrary[category].map((lib, idx) => {
                           const targetId = lib.labelID || lib.id;
                           const targetName =
-                            lib.labelName || lib.name || "Unnamed";
+                            lib.labelName || lib.name || "Không tên";
                           const targetColor =
                             lib.defaultColor || lib.color || "#64748b";
 
@@ -158,7 +158,11 @@ export default function LabelSetEditor({ project, onRefresh }) {
                                   style={{ backgroundColor: targetColor }}
                                 ></div>
                                 <span
-                                  className={`text-xs truncate max-w-[80px] ${isImported ? "text-gray-500" : "text-gray-300"}`}
+                                  className={`text-xs truncate max-w-[80px] ${
+                                    isImported
+                                      ? "text-gray-500"
+                                      : "text-gray-300"
+                                  }`}
                                 >
                                   {targetName}
                                 </span>
@@ -168,7 +172,7 @@ export default function LabelSetEditor({ project, onRefresh }) {
                                   onClick={() => importFromLib([targetId])}
                                   className="text-[10px] bg-blue-600/20 text-blue-400 px-2 py-1 rounded hover:bg-blue-600/40 transition-all flex-shrink-0"
                                 >
-                                  Import
+                                  Nhập
                                 </button>
                               ) : (
                                 <span className="text-[10px] text-emerald-600 flex-shrink-0 font-bold">
@@ -190,9 +194,7 @@ export default function LabelSetEditor({ project, onRefresh }) {
         {/* KHỐI 2: NHÃN DỰ ÁN & TẠO MỚI (PROJECT LABELS) */}
         <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col h-[500px]">
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-white">
-              Active Project Labels
-            </h2>
+            <h2 className="text-lg font-semibold text-white">Nhãn Của Dự Án</h2>
             <p className="text-sm text-gray-400 mt-1">
               Các nhãn đang được dùng trong dự án này
             </p>
@@ -203,7 +205,7 @@ export default function LabelSetEditor({ project, onRefresh }) {
               <div className="text-center py-10">
                 <p className="text-gray-500 text-sm">Dự án chưa có nhãn nào.</p>
                 <p className="text-gray-600 text-xs mt-1">
-                  Import từ kho bên trái hoặc tạo mới ở dưới.
+                  Nhập từ kho bên trái hoặc tạo mới ở dưới.
                 </p>
               </div>
             ) : (
@@ -214,7 +216,7 @@ export default function LabelSetEditor({ project, onRefresh }) {
                   label.customName ||
                   label.labelName ||
                   label.name ||
-                  "Unnamed";
+                  "Không tên";
                 const targetColor =
                   label.colorCode ||
                   label.defaultColor ||
@@ -236,7 +238,7 @@ export default function LabelSetEditor({ project, onRefresh }) {
                       </span>
                       {label.isCustom && (
                         <span className="text-[9px] bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                          Custom
+                          Tùy chỉnh
                         </span>
                       )}
                     </div>
@@ -270,7 +272,7 @@ export default function LabelSetEditor({ project, onRefresh }) {
               onChange={(e) =>
                 setNewLabel({ ...newLabel, name: e.target.value })
               }
-              placeholder="Custom Label Name..."
+              placeholder="Tên nhãn tùy chỉnh..."
               className="w-full rounded-lg border border-white/10 bg-[#0B1120] px-4 py-2 text-sm text-white outline-none focus:border-blue-500/50"
             />
             <div className="flex gap-3">
@@ -287,7 +289,7 @@ export default function LabelSetEditor({ project, onRefresh }) {
                 disabled={isLoading}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition-colors"
               >
-                + Create Custom Label
+                + Tạo Nhãn Tùy Chỉnh
               </button>
             </div>
           </div>
@@ -299,10 +301,10 @@ export default function LabelSetEditor({ project, onRefresh }) {
         <div className="mb-4 flex justify-between items-center">
           <div>
             <h2 className="text-lg font-semibold text-white">
-              Annotation Guidelines
+              Hướng dẫn Dán nhãn (Guidelines)
             </h2>
             <p className="text-sm text-gray-400 mt-1">
-              Hướng dẫn chi tiết cho Annotator
+              Quy tắc và hướng dẫn chi tiết cho Annotator
             </p>
           </div>
           <button
@@ -310,14 +312,14 @@ export default function LabelSetEditor({ project, onRefresh }) {
             disabled={isActionLoading}
             className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-500/20"
           >
-            {isActionLoading ? "Saving..." : "Save Guidelines"}
+            {isActionLoading ? "Đang lưu..." : "Lưu Hướng Dẫn"}
           </button>
         </div>
         <textarea
           value={guideline}
           onChange={(e) => setGuideline(e.target.value)}
           className="w-full h-[200px] rounded-xl border border-white/10 bg-[#0B1120] p-4 text-sm text-gray-300 outline-none focus:border-blue-500/50 resize-none leading-relaxed"
-          placeholder="Viết hướng dẫn tại đây (Ví dụ: 1. Vẽ box sát đối tượng...)"
+          placeholder="Viết đường dẫn hoặc nội dung hướng dẫn tại đây (Ví dụ: https://docs.google.com/...)"
         />
       </div>
     </div>
