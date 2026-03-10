@@ -1,7 +1,4 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useLogin } from "../../../hooks/useLogin";
-import { updateUserPresence } from "../../../services/firebase";
+import { useLoginPage } from "../../../hooks/useLoginPage";
 import ChangePasswordFirstLoginModal from "../../common/ChangePasswordFirstLoginModal";
 import ForgotPasswordModal from "../../common/ForgotPasswordModal";
 
@@ -27,65 +24,28 @@ function ShieldIcon() {
 }
 
 export default function Login() {
-  const navigate = useNavigate();
-  const { login, loading: authLoading, error: authError } = useLogin();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPw, setShowPw] = useState(false);
-  const [touched, setTouched] = useState({ username: false, password: false });
-  const [pwModalOpen, setPwModalOpen] = useState(false);
-  const [pendingRoleName, setPendingRoleName] = useState(null);
-  const [forgotModalOpen, setForgotModalOpen] = useState(false);
-
-  const roleToPath = {
-    admin: "/admin",
-    manager: "/manager",
-    annotator: "/annotator",
-    reviewer: "/reviewer",
-  };
-
-  const continueToApp = (roleName) => {
-    navigate(roleToPath[String(roleName || "").toLowerCase()] || "/admin");
-  };
-
-  const onForgotPassword = () => {
-    setForgotModalOpen(true);
-  };
-
-  const errors = useMemo(() => {
-    const e = {};
-    if (!username.trim()) e.username = "Username is required.";
-    if (!password) e.password = "Password is required.";
-    else if (password.length < 5)
-      e.password = "Password must be at least 5 chars.";
-    return e;
-  }, [username, password]);
-
-  const canSubmit = Object.keys(errors).length === 0 && !authLoading;
-
-  async function onSubmit(e) {
-    e.preventDefault();
-    if (!canSubmit) return;
-    const res = await login({ username, password });
-    if (res.success && res.user) {
-      const { userId, roleName } = res.user;
-      const requirePasswordChange = Boolean(
-        res.requirePasswordChange ?? res.user?.requirePasswordChange
-      );
-
-      try {
-        // Chỉ set online ngay — heartbeat sẽ do App.js xử lý khi navigate xong
-        await updateUserPresence(userId, roleName, true);
-        console.log("Đã báo online thành công!");
-      } catch (err) {
-        console.error("Lỗi Firebase:", err);
-      }
-
-      setPendingRoleName(roleName);
-      if (requirePasswordChange) setPwModalOpen(true);
-      else continueToApp(roleName);
-    }
-  }
+  const {
+    username,
+    setUsername,
+    password,
+    setPassword,
+    showPw,
+    toggleShowPassword,
+    touched,
+    markTouched,
+    errors,
+    canSubmit,
+    onSubmit,
+    authLoading,
+    authError,
+    pwModalOpen,
+    pwChangeRequired,
+    closePwModal,
+    handlePasswordChangeSuccess,
+    forgotModalOpen,
+    openForgotPassword,
+    closeForgotPassword,
+  } = useLoginPage();
 
   return (
     <div className="min-h-screen w-full bg-[#050B1A] relative flex items-center justify-center px-4">
@@ -111,7 +71,7 @@ export default function Login() {
               <input
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                onBlur={() => setTouched((t) => ({ ...t, username: true }))}
+                onBlur={() => markTouched("username")}
                 type="text"
                 placeholder="Username"
                 className={`w-full rounded-xl border bg-white/[0.03] px-4 py-3.5 text-sm text-white outline-none transition-all placeholder:text-white/20 
@@ -127,7 +87,7 @@ export default function Login() {
               <input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+                onBlur={() => markTouched("password")}
                 type={showPw ? "text" : "password"}
                 placeholder="Password"
                 className={`w-full rounded-xl border bg-white/[0.03] px-4 py-3.5 text-sm text-white outline-none transition-all placeholder:text-white/20
@@ -139,7 +99,7 @@ export default function Login() {
               />
               <button
                 type="button"
-                onClick={() => setShowPw(!showPw)}
+                onClick={toggleShowPassword}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-white/30 hover:text-white/60"
               >
                 {showPw ? "HIDE" : "SHOW"}
@@ -149,7 +109,7 @@ export default function Login() {
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={onForgotPassword}
+                onClick={openForgotPassword}
                 className="text-xs font-bold text-white/40 hover:text-white/70"
               >
                 Quên mật khẩu?
@@ -176,21 +136,13 @@ export default function Login() {
       {pwModalOpen && (
         <ChangePasswordFirstLoginModal
           open={pwModalOpen}
+          enabled={pwChangeRequired}
           oldPassword={password}
           username={username}
           force
-          onSuccess={() => {
-            setPwModalOpen(false);
-            continueToApp(pendingRoleName);
-          }}
-          onSkip={() => {
-            setPwModalOpen(false);
-            continueToApp(pendingRoleName);
-          }}
-          onClose={() => {
-            setPwModalOpen(false);
-            continueToApp(pendingRoleName);
-          }}
+          onSuccess={handlePasswordChangeSuccess}
+          onSkip={closePwModal}
+          onClose={closePwModal}
         />
       )}
 
@@ -198,7 +150,7 @@ export default function Login() {
         <ForgotPasswordModal
           open={forgotModalOpen}
           defaultValue={username}
-          onClose={() => setForgotModalOpen(false)}
+          onClose={closeForgotPassword}
         />
       )}
     </div>

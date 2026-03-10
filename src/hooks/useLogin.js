@@ -53,6 +53,49 @@ const normalizeLoginResponse = (apiRes) => {
   return { ok, token, user, requirePasswordChange, message };
 };
 
+const decodeJwtPayload = (token) => {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length < 2) return null;
+  const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+  const pad = b64.length % 4 === 0 ? '' : '='.repeat(4 - (b64.length % 4));
+  try {
+    const json = atob(b64 + pad);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+};
+
+const buildUserFromToken = (token) => {
+  const payload = decodeJwtPayload(token);
+  if (!payload || typeof payload !== 'object') return null;
+
+  const role =
+    payload.role ||
+    payload.Role ||
+    payload.roles ||
+    payload.Roles ||
+    payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ||
+    null;
+  const userId =
+    payload.userId ||
+    payload.UserId ||
+    payload.sub ||
+    payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ||
+    payload.nameid ||
+    payload['nameid'] ||
+    null;
+
+  if (!role && !userId) return null;
+
+  return {
+    userId: userId ? String(userId) : undefined,
+    roleName: role ? String(Array.isArray(role) ? role[0] : role) : undefined,
+    fullName: payload.fullName || payload.FullName || payload.name || payload.Name || undefined,
+  };
+};
+
 export const useLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -70,18 +113,20 @@ export const useLogin = () => {
           user && typeof user === 'object'
             ? { ...user, requirePasswordChange }
             : user;
+        const fallbackUser = !userWithFlags && token ? buildUserFromToken(token) : null;
+        const finalUser = userWithFlags || fallbackUser;
 
         if (token) localStorage.setItem('token', token);
-        if (userWithFlags) {
+        if (finalUser) {
           localStorage.setItem('user', JSON.stringify({
-            id: userWithFlags.userId,    
-            role: userWithFlags.roleName, 
-            fullName: userWithFlags.fullName 
+            id: finalUser.userId,    
+            role: finalUser.roleName, 
+            fullName: finalUser.fullName 
           }));
         }
 
         setLoading(false);
-        return { success: true, user: userWithFlags, requirePasswordChange };
+        return { success: true, user: finalUser, requirePasswordChange, token };
       } else {
         const msg = normalized.message || "Sai tài khoản hoặc mật khẩu";
         setError(msg);

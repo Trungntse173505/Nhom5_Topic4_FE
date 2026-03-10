@@ -3,6 +3,7 @@ import { useChangePasswordFirstLogin } from '../../hooks/Admin/useChangePassword
 
 export default function ChangePasswordFirstLoginModal({
   open,
+  enabled = true,
   oldPassword,
   username,
   force = false,
@@ -33,11 +34,12 @@ export default function ChangePasswordFirstLoginModal({
 
   async function onSubmit(e) {
     e.preventDefault();
+    if (!enabled) return;
     if (!canSubmit) return;
 
     const res = await changePasswordFirstLogin({ oldPassword, newPassword });
     if (res.success) {
-      onSuccess?.(res.data);
+      onSuccess?.({ data: res.data, newPassword });
     }
   }
 
@@ -114,7 +116,7 @@ export default function ChangePasswordFirstLoginModal({
 
           <button
             type="submit"
-            disabled={!canSubmit}
+            disabled={!enabled || !canSubmit}
             className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-500 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
           >
             {loading ? 'Đang đổi mật khẩu...' : 'Đổi mật khẩu'}
