@@ -13,13 +13,11 @@ export const useWorkspace = (taskId) => {
   const [selectedLabel, setSelectedLabel] = useState('');
   const [annotations, setAnnotations] = useState([]);
 
-  // Tự động chọn file/nhãn đầu tiên nếu chưa có
   useEffect(() => {
     if (!currentFileId && taskItems[0]) setCurrentFileId(taskItems[0].itemID);
     if (!selectedLabel && availableLabels[0]) setSelectedLabel(availableLabels[0].name);
   }, [taskItems, availableLabels, currentFileId, selectedLabel]);
 
-  // Load và parse dữ liệu Annotation
   const refreshCurrentItemData = useCallback(async (id) => {
     if (!id) return;
     try {
