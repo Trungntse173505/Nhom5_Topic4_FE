@@ -69,6 +69,9 @@ export default function Login() {
     const res = await login({ username, password });
     if (res.success && res.user) {
       const { userId, roleName } = res.user;
+      const requirePasswordChange = Boolean(
+        res.requirePasswordChange ?? res.user?.requirePasswordChange
+      );
 
       try {
         // Chỉ set online ngay — heartbeat sẽ do App.js xử lý khi navigate xong
@@ -79,7 +82,8 @@ export default function Login() {
       }
 
       setPendingRoleName(roleName);
-      setPwModalOpen(true);
+      if (requirePasswordChange) setPwModalOpen(true);
+      else continueToApp(roleName);
     }
   }
 
@@ -174,6 +178,7 @@ export default function Login() {
           open={pwModalOpen}
           oldPassword={password}
           username={username}
+          force
           onSuccess={() => {
             setPwModalOpen(false);
             continueToApp(pendingRoleName);
