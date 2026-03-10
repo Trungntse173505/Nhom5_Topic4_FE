@@ -4,7 +4,6 @@ import { useItemDetail } from './useItemDetail';
 import { useSaveAnnotation } from './useSaveAnnotation';
 
 export const useWorkspace = (taskId) => {
-  // Đảm bảo taskItems và availableLabels luôn là mảng rỗng nếu chưa load xong
   const { taskItems = [], availableLabels = [], loading: loadingTask } = useTaskDetail(taskId);
   const { getItem, loading: loadingItem } = useItemDetail();
   const { save, isSaving } = useSaveAnnotation();
@@ -14,80 +13,56 @@ export const useWorkspace = (taskId) => {
   const [selectedLabel, setSelectedLabel] = useState('');
   const [annotations, setAnnotations] = useState([]);
 
-  const isLoading = loadingTask || loadingItem;
- const toolbarConfig = ['Vẽ Khung Nhãn'];
-
+  // Tự động chọn file/nhãn đầu tiên nếu chưa có
   useEffect(() => {
-    if (taskItems.length > 0 && !currentFileId) setCurrentFileId(taskItems[0].itemID);
-    if (availableLabels.length > 0 && !selectedLabel) {
-      setSelectedLabel(availableLabels[0].name);
-    }
+    if (!currentFileId && taskItems[0]) setCurrentFileId(taskItems[0].itemID);
+    if (!selectedLabel && availableLabels[0]) setSelectedLabel(availableLabels[0].name);
   }, [taskItems, availableLabels, currentFileId, selectedLabel]);
 
+  // Load và parse dữ liệu Annotation
   const refreshCurrentItemData = useCallback(async (id) => {
     if (!id) return;
     try {
       const data = await getItem(id);
-      if (data?.annotations) {
-        const parsedAnns = data.annotations.map((ann, idx) => {
-          let coords = {};
-          try { 
-            coords = typeof ann.annotationData === 'string' ? JSON.parse(ann.annotationData) : ann.annotationData; 
-          } catch (e) { coords = {}; }
-          return {
-            id: `box-${idx}-${Date.now()}`,
-            x: coords.x || 0,
-            y: coords.y || 0,
-            width: coords.width || 0,
-            height: coords.height || 0,
-            label: ann.content 
-          };
-        });
-        setAnnotations(parsedAnns);
-      } else {
-        setAnnotations([]);
-      }
+      setAnnotations((data?.annotations || []).map((ann, idx) => {
+        let coords = {};
+        try { coords = typeof ann.annotationData === 'string' ? JSON.parse(ann.annotationData) : (ann.annotationData || {}); } catch {}
+        return {
+          id: `box-${idx}-${Date.now()}`,
+          x: coords.x || 0, y: coords.y || 0, width: coords.width || 0, height: coords.height || 0,
+          label: ann.content 
+        };
+      }));
     } catch (err) { console.error("Lỗi đồng bộ:", err); }
   }, [getItem]);
 
   useEffect(() => { refreshCurrentItemData(currentFileId); }, [currentFileId, refreshCurrentItemData]);
 
+  // Lưu Annotation
   const handleSave = async () => {
     if (!currentFileId || isSaving) return;
-    const payload = {
-      annotations: annotations.map(ann => ({
-        annotationData: JSON.stringify({ x: ann.x, y: ann.y, width: ann.width, height: ann.height }),
-        content: String(ann.label),
+    await save(currentFileId, {
+      annotations: annotations.map(({ x, y, width, height, label }) => ({
+        annotationData: JSON.stringify({ x, y, width, height }),
+        content: String(label),
         field: "BoundingBox"
       }))
-    };
-    await save(currentFileId, payload);
+    });
     await refreshCurrentItemData(currentFileId);
     alert("Đã lưu thành công!");
   };
 
+  // Định dạng lại danh sách file
   const files = useMemo(() => taskItems.map(ti => ({
-    id: ti.itemID,
-    name: ti.fileName,
-    url: ti.filePath,
-    status: ti.isFlagged ? 'Rejected' : (ti.annotations?.length > 0 ? 'Done' : 'New'),
+    id: ti.itemID, name: ti.fileName, url: ti.filePath,
+    status: ti.isFlagged ? 'Rejected' : (ti.annotations?.length ? 'Done' : 'New'),
   })), [taskItems]);
 
-  // PHẢI RETURN ĐỦ CÁC BIẾN NÀY
   return {
-    files, 
-    availableLabels, 
-    currentFileId, 
-    handleSelectFile: setCurrentFileId,
-    selectedTool, 
-    setSelectedTool, 
-    selectedLabel, 
-    setSelectedLabel,
-    annotations, 
-    setAnnotations, 
-    isLoading, 
-    isSaving, 
-    handleSave,
-    toolbarConfig // <--- QUAN TRỌNG: Phải có dòng này
+    files, availableLabels, currentFileId, handleSelectFile: setCurrentFileId,
+    selectedTool, setSelectedTool, selectedLabel, setSelectedLabel,
+    annotations, setAnnotations, isSaving, handleSave,
+    isLoading: loadingTask || loadingItem, 
+    toolbarConfig: ['Vẽ Khung Nhãn']      
   };
 };

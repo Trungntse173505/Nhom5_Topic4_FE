@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Stage, Layer, Rect, Image as KonvaImage } from 'react-konva';
+import { Stage, Layer, Rect, Image as KonvaImage, Group, Label, Tag, Text } from 'react-konva';
 import useImage from 'use-image';
 import { Trash2, RotateCcw } from 'lucide-react';
 
@@ -15,7 +15,7 @@ const ImageCanvas = ({ selectedTool, selectedLabel, availableLabels = [], annota
     return matched ? matched.color : '#ffffff'; 
   };
 
-  // --- HÀM HỖ TRỢ (THÊM MỚI) ---
+  // --- HÀM HỖ TRỢ ---
   const handleUndo = () => {
     if (annotations.length > 0) {
       setAnnotations(annotations.slice(0, -1));
@@ -47,7 +47,7 @@ const ImageCanvas = ({ selectedTool, selectedLabel, availableLabels = [], annota
   const handleMouseUp = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
-    if (newAnnotation && Math.abs(newAnnotation.width) > 5) {
+    if (newAnnotation && Math.abs(newAnnotation.width) > 5 && Math.abs(newAnnotation.height) > 5) {
       setAnnotations([...annotations, newAnnotation]);
     }
     setNewAnnotation(null);
@@ -87,29 +87,63 @@ const ImageCanvas = ({ selectedTool, selectedLabel, availableLabels = [], annota
           <Layer>
             {image && <KonvaImage image={image} width={800} height={600} />}
             
+            {/* RENDER CÁC KHUNG ĐÃ VẼ */}
             {annotations.map((ann) => {
               const color = getLabelColor(ann.label);
+              // Tính tọa độ Top-Left để đặt Label chuẩn dù kéo ngược
+              const topX = Math.min(ann.x, ann.x + ann.width);
+              const topY = Math.min(ann.y, ann.y + ann.height);
+
               return (
-                <Rect
-                  key={ann.id}
-                  x={ann.x} y={ann.y} width={ann.width} height={ann.height}
-                  stroke={color} 
-                  strokeWidth={3}
-                  fill={`${color}33`} 
-                  // Vẫn giữ tính năng click vào khung để xóa lẻ
-                  onClick={() => setAnnotations(annotations.filter(a => a.id !== ann.id))}
-                  onMouseEnter={(e) => { e.target.getStage().container().style.cursor = 'pointer' }}
-                  onMouseLeave={(e) => { e.target.getStage().container().style.cursor = 'crosshair' }}
-                />
+                <Group key={ann.id}>
+                  <Rect
+                    x={ann.x} y={ann.y} width={ann.width} height={ann.height}
+                    stroke={color} 
+                    strokeWidth={3}
+                    fill={`${color}33`} 
+                    onClick={() => setAnnotations(annotations.filter(a => a.id !== ann.id))}
+                    onMouseEnter={(e) => { e.target.getStage().container().style.cursor = 'pointer' }}
+                    onMouseLeave={(e) => { e.target.getStage().container().style.cursor = 'crosshair' }}
+                  />
+                  <Label x={topX} y={topY - 24}>
+                    <Tag fill={color} cornerRadius={4} />
+                    <Text 
+                      text={ann.label} 
+                      fill="white" 
+                      fontSize={12} 
+                      fontStyle="bold"
+                      padding={4} 
+                    />
+                  </Label>
+                </Group>
               );
             })}
 
-            {newAnnotation && (
-              <Rect 
-                x={newAnnotation.x} y={newAnnotation.y} width={newAnnotation.width} height={newAnnotation.height} 
-                stroke={getLabelColor(newAnnotation.label)} strokeWidth={2} dash={[5, 5]} 
-              />
-            )}
+            {/* RENDER KHUNG ĐANG VẼ (NEW ANNOTATION) */}
+            {newAnnotation && (() => {
+              const color = getLabelColor(newAnnotation.label);
+              const topX = Math.min(newAnnotation.x, newAnnotation.x + newAnnotation.width);
+              const topY = Math.min(newAnnotation.y, newAnnotation.y + newAnnotation.height);
+              
+              return (
+                <Group>
+                  <Rect 
+                    x={newAnnotation.x} y={newAnnotation.y} width={newAnnotation.width} height={newAnnotation.height} 
+                    stroke={color} strokeWidth={2} dash={[5, 5]} 
+                  />
+                  <Label x={topX} y={topY - 24}>
+                    <Tag fill={color} cornerRadius={4} />
+                    <Text 
+                      text={newAnnotation.label} 
+                      fill="white" 
+                      fontSize={12} 
+                      fontStyle="bold"
+                      padding={4} 
+                    />
+                  </Label>
+                </Group>
+              );
+            })()}
           </Layer>
         </Stage>
       </div>

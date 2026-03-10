@@ -1,6 +1,9 @@
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+// IMPORT NỀN CỰC QUANG VÀO ĐÂY
+import { AuroraBackground } from "../../common/aurora-background";
+
 export default function ManagerLayout({ activeTab, setActiveTab, children }) {
   const navigate = useNavigate();
   const { projectId } = useParams(); // Lấy ID từ URL
@@ -12,7 +15,7 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
   const tabs = [
     {
       id: "overview",
-      label: "Project Overview",
+      label: "Tổng quan Dự án",
       icon: (
         <svg
           className="w-4 h-4"
@@ -29,7 +32,7 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
     },
     {
       id: "upload",
-      label: "Dataset Upload",
+      label: "Tải lên Dữ liệu",
       icon: (
         <svg
           className="w-4 h-4"
@@ -46,7 +49,7 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
     },
     {
       id: "distribution",
-      label: "Work Distribution",
+      label: "Tạo Task",
       icon: (
         <svg
           className="w-4 h-4"
@@ -64,7 +67,7 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
     },
     {
       id: "labels",
-      label: "Label Set Editor",
+      label: "Chỉnh sửa Bộ nhãn",
       icon: (
         <svg
           className="w-4 h-4"
@@ -81,10 +84,9 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
         </svg>
       ),
     },
-    // ... các tab cũ
     {
       id: "tracking",
-      label: "Task Tracking",
+      label: "Theo dõi Nhiệm vụ",
       icon: (
         <svg
           className="w-4 h-4"
@@ -102,13 +104,13 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
         </svg>
       ),
     },
-    // ... tab Labels
   ];
 
   return (
-    <div className="min-h-screen w-full bg-[#0B1120] text-white font-sans">
-      {/* Header */}
-      <header className="flex items-center justify-between px-8 py-4 bg-[#0B1120] border-b border-white/5">
+    // THAY THẺ DIV BẰNG NỀN AURORA
+    <AuroraBackground className="font-sans">
+      {/* Header (Thêm z-20 và backdrop-blur để nổi lên trên nền cực quang) */}
+      <header className="flex items-center justify-between px-8 py-4 bg-[#0B1120]/80 backdrop-blur-md border-b border-white/5 relative z-20">
         <div className="flex items-center gap-4">
           {/* NÚT BACK VỀ QUẢN LÝ DỰ ÁN */}
           <button
@@ -147,9 +149,10 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
               <rect x="3" y="14" width="7" height="7"></rect>
             </svg>
           </div>
-          <div>
+          <div className="flex flex-col">
+            {/* Đã Việt hóa Tiêu đề */}
             <h1 className="text-lg font-semibold tracking-wide text-white">
-              Project Workspace {projectId ? `#${projectId}` : ""}
+              Không gian làm việc Dự án {projectId ? `#${projectId}` : ""}
             </h1>
             <p className="text-sm text-gray-400">test@gmail.com</p>
           </div>
@@ -158,14 +161,14 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
           onClick={handleLogout}
           className="rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10 transition-colors"
         >
-          Logout
+          Đăng xuất
         </button>
       </header>
 
-      {/* Main Content & Navigation */}
-      <main className="p-8 max-w-7xl mx-auto">
+      {/* Main Content & Navigation (Thêm z-20 để nút bấm hoạt động bình thường) */}
+      <main className="p-8 max-w-7xl mx-auto relative z-20">
         {/* Tab Navigation Pill */}
-        <nav className="flex items-center gap-1 rounded-xl bg-[#151D2F] p-1 w-fit mb-8 border border-white/5 shadow-sm">
+        <nav className="flex items-center gap-1 rounded-xl bg-[#151D2F]/80 backdrop-blur p-1 w-fit mb-8 border border-white/5 shadow-sm">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -185,6 +188,6 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
         {/* Dynamic Content Rendering */}
         <div className="animate-in fade-in duration-300">{children}</div>
       </main>
-    </div>
+    </AuroraBackground>
   );
 }

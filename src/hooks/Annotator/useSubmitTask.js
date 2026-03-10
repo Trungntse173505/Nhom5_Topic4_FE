@@ -11,13 +11,10 @@ export const useSubmitTask = () => {
    */
   const submit = async (taskId) => {
     if (!taskId) return;
-
     setIsSubmitting(true);
     setError(null);
     try {
-      // Gọi API POST /api/tasks/{taskId}/submit
       const response = await annotatorApi.submitTask(taskId);
-      
       // Trả về thông báo thành công (ví dụ: "Nộp bài thành công.")
       return response;
     } catch (err) {
@@ -31,8 +28,8 @@ export const useSubmitTask = () => {
   };
 
   return { 
-    submit,       // Hàm thực hiện nộp bài
-    isSubmitting, // Trạng thái đang gửi yêu cầu lên server
-    error         // Thông báo lỗi nếu nộp không thành công
+    submit,      
+    isSubmitting, 
+    error    
   };
 };

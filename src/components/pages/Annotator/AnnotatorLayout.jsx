@@ -1,8 +1,8 @@
 import SidebarLayout from "../../common/SidebarLayout";
 
 const menuItems = [
-  { path: "/annotator", label: "Dashboard", icon: "📋" },
-  { path: "/annotator/score", label: "Điểm Tín Nhiệm", icon: "🏆" },
+  { path: "/annotator", label: "Quản Lý Nhiệm Vụ", icon: "📋" },
+  { path: "/annotator/score", label: "Điểm Cá Nhân", icon: "🏆" },
 ];
 
 export default function AnnotatorLayout() {

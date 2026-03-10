@@ -1,6 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjectManagement } from "../../../hooks/useProjectManagement";
+
+// 1. NHỚ IMPORT API VÀO ĐÂY (Sửa lại đường dẫn nếu cần)
+import authApi from "../../../api/authApi";
+
+// IMPORT HIỆU ỨNG TỪ THƯ MỤC COMMON
+import { CardSpotlight } from "../../common/card-spotlight";
+import { AnimatedButton } from "../../common/AnimatedButton";
+import { AuroraBackground } from "../../common/aurora-background";
 
 export default function ProjectManagement() {
   const navigate = useNavigate();
@@ -11,6 +19,12 @@ export default function ProjectManagement() {
   const [filter, setFilter] = useState("All");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // STATE lưu thông tin cá nhân của người dùng
+  const [userInfo, setUserInfo] = useState({
+    name: "Đang tải...",
+    email: "Đang lấy thông tin...",
+  });
+
   const [formData, setFormData] = useState({
     name: "",
     topic: "",
@@ -19,18 +33,56 @@ export default function ProjectManagement() {
     guideline: "",
   });
 
-  const handleLogout = () => navigate("/login");
+  // GỌI API LẤY THÔNG TIN USER (SỬ DỤNG AUTHOAPI)
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const token = localStorage.getItem("token"); // Kiểm tra token
 
-  const filteredProjects =
-    filter === "All" ? projects : projects.filter((p) => p.status === filter);
+        if (!token) {
+          setUserInfo({ name: "Quản lý Dự Án", email: "Chưa đăng nhập" });
+          return;
+        }
+
+        // Gọi hàm getMe() từ authApi, đã có sẵn cấu hình URL và Token bên trong axiosClient
+        const response = await authApi.getMe();
+
+        // Tùy cách cấu hình axiosClient, data có thể nằm ở response.data hoặc trực tiếp ở response
+        const data = response.data || response;
+
+        if (data) {
+          setUserInfo({
+            name: data.fullName || data.userName || "Quản lý Dự Án",
+            email: data.email || "Không rõ email",
+          });
+        }
+      } catch (error) {
+        console.error("Lỗi lấy thông tin cá nhân:", error);
+        setUserInfo({
+          name: "Quản lý Dự Án",
+          email: "Lỗi kết nối máy chủ",
+        });
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
+
+  // LOGIC LỌC ĐÃ ĐƯỢC FIX BỌC LÓT (Bắt cả Open lẫn Active)
+  const filteredProjects = projects.filter((p) => {
+    if (filter === "All") return true;
+    if (filter === "Open") return p.status === "Open" || p.status === "Active";
+    if (filter === "Closed") return p.status === "Closed";
+    return p.status === filter;
+  });
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.topic) {
-      alert("Vui lòng nhập Tên dự án và Chủ đề (Topic)!");
+    // Chỉ check bắt buộc Tên dự án, không check topic nữa
+    if (!formData.name) {
+      alert("Vui lòng nhập Tên dự án!");
       return;
     }
 
-    // Chỉ gửi formData lên Hook
     const isSuccess = await createNewProject(formData);
     if (isSuccess) {
       setIsModalOpen(false);
@@ -45,8 +97,9 @@ export default function ProjectManagement() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#0B1120] text-white font-sans relative">
-      <header className="flex items-center justify-between px-8 py-4 bg-[#0B1120] border-b border-white/5">
+    // THAY DIV NGOÀI CÙNG BẰNG AURORA BACKGROUND
+    <AuroraBackground className="font-sans relative">
+      <header className="flex items-center justify-between px-8 py-4 bg-[#0B1120]/80 backdrop-blur-md border-b border-white/5 relative z-20">
         <div className="flex items-center gap-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#A855F7] shadow-lg shadow-purple-500/20 text-white">
             <svg
@@ -65,40 +118,47 @@ export default function ProjectManagement() {
             </svg>
           </div>
           <div>
+            {/* THAY THẾ BẰNG DỮ LIỆU TỪ API */}
             <h1 className="text-lg font-semibold tracking-wide text-white">
-              Manager Dashboard
+              {userInfo.name === "Đang tải..."
+                ? userInfo.name
+                : `Xin chào, ${userInfo.name}`}
             </h1>
-            <p className="text-sm text-gray-400">test@gmail.com</p>
+            <p className="text-sm text-blue-400">{userInfo.email}</p>
           </div>
         </div>
-        <button
-          onClick={handleLogout}
-          className="rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10 transition-colors"
-        >
-          Logout
-        </button>
       </header>
 
-      <main className="p-8 max-w-7xl mx-auto space-y-6">
+      <main className="p-8 max-w-7xl mx-auto space-y-6 relative z-20">
         <div className="flex justify-between items-end mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-white">
-              Project Management
-            </h1>
+            <h1 className="text-2xl font-bold text-white">Quản Lý Dự Án</h1>
             <p className="text-sm text-gray-400 mt-1">
-              Manage all labeling projects in the system
+              Quản lý tất cả các dự án dán nhãn trong hệ thống
             </p>
 
             <div className="flex gap-2 mt-4">
-              {["All", "Active", "Closed"].map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${filter === f ? "bg-blue-600 text-white" : "bg-[#151D2F] text-gray-400 border border-white/5 hover:bg-white/5"}`}
-                >
-                  {f}
-                </button>
-              ))}
+              {["All", "Open", "Closed"].map((f) => {
+                const labelVN =
+                  f === "All"
+                    ? "Tất cả"
+                    : f === "Open"
+                      ? "Đang hoạt động"
+                      : "Đã đóng";
+                return (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      filter === f
+                        ? "bg-blue-600 text-white"
+                        : "bg-[#151D2F]/80 backdrop-blur text-gray-400 border border-white/5 hover:bg-white/5"
+                    }`}
+                  >
+                    {labelVN}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -106,7 +166,7 @@ export default function ProjectManagement() {
             onClick={() => setIsModalOpen(true)}
             className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg font-medium shadow-lg shadow-blue-500/20 transition-all"
           >
-            + Create New Project
+            + Tạo Dự Án Mới
           </button>
         </div>
 
@@ -135,21 +195,19 @@ export default function ProjectManagement() {
             <span className="ml-3 text-gray-400">Đang tải dữ liệu...</span>
           </div>
         ) : filteredProjects.length === 0 ? (
-          <div className="text-center py-10 text-gray-500 bg-[#151D2F] rounded-xl border border-white/5">
-            Chưa có dự án nào. Bấm "Create New Project" để bắt đầu!
+          <div className="text-center py-10 text-gray-500 bg-[#151D2F]/80 backdrop-blur rounded-xl border border-white/5">
+            Chưa có dự án nào khớp với bộ lọc này.
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {filteredProjects.map((proj) => (
-              <div
-                // --- ĐÃ SỬA THÀNH projectID CHO CHUẨN BE ---
+              <CardSpotlight
                 key={proj.projectID || Math.random()}
                 onClick={() => navigate(`/manager/projects/${proj.projectID}`)}
-                className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm hover:border-white/10 transition-colors cursor-pointer"
+                className="rounded-xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-6 shadow-sm hover:border-white/10 transition-colors cursor-pointer"
               >
                 <div className="flex justify-between items-start mb-4">
-                  {/* Đã sửa thành projectName */}
-                  <h3 className="text-lg font-semibold text-white">
+                  <h3 className="text-lg font-semibold text-white group-hover/spotlight:text-blue-400 transition-colors">
                     {proj.projectName || "Dự án không tên"}
                   </h3>
                   <span
@@ -159,22 +217,23 @@ export default function ProjectManagement() {
                         : "bg-gray-500/10 text-gray-400"
                     }`}
                   >
-                    {proj.status || "Active"}
+                    {proj.status === "Open" || proj.status === "Active"
+                      ? "Đang mở"
+                      : "Đã đóng"}
                   </span>
                 </div>
                 <div className="text-sm text-gray-400 mb-6">
-                  {/* Đã sửa thành projectType */}
-                  Type:{" "}
+                  Loại:{" "}
                   <span className="text-gray-200">
-                    {proj.projectType || "Unknown"}
+                    {proj.projectType || "Không xác định"}
                   </span>
                 </div>
                 <div>
                   <div className="flex justify-between text-xs mb-2 text-gray-400">
-                    <span>Progress</span>
+                    <span>Tiến độ</span>
                     <span>0% (0/0)</span>
                   </div>
-                  <div className="w-full bg-[#0B1120] h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-[#0B1120] h-2 rounded-full overflow-hidden border border-white/5">
                     <div
                       className={`h-2 rounded-full ${
                         proj.status === "Open" || proj.status === "Active"
@@ -185,7 +244,7 @@ export default function ProjectManagement() {
                     ></div>
                   </div>
                 </div>
-              </div>
+              </CardSpotlight>
             ))}
           </div>
         )}
@@ -195,44 +254,26 @@ export default function ProjectManagement() {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
           <div className="bg-[#151D2F] border border-white/10 rounded-xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold text-white mb-4">
-              Create New Project
-            </h2>
+            <h2 className="text-xl font-bold text-white mb-4">Tạo Dự Án Mới</h2>
             <div className="space-y-4">
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm text-gray-400 mb-1">
-                    Project Name <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
-                    placeholder="Enter project name..."
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="block text-sm text-gray-400 mb-1">
-                    Topic <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.topic}
-                    onChange={(e) =>
-                      setFormData({ ...formData, topic: e.target.value })
-                    }
-                    className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
-                    placeholder="VD: car, animal..."
-                  />
-                </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">
+                  Tên Dự Án <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
+                  placeholder="Nhập tên dự án..."
+                />
               </div>
 
               <div>
                 <label className="block text-sm text-gray-400 mb-1">
-                  Data Type
+                  Loại Dữ Liệu
                 </label>
                 <select
                   value={formData.type}
@@ -241,17 +282,17 @@ export default function ProjectManagement() {
                   }
                   className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
                 >
-                  <option value="Image">Image</option>
-                  <option value="Text">Text</option>
-                  <option value="Audio">Audio</option>
+                  <option value="Image">Ảnh (Image)</option>
+                  <option value="Text">Văn bản (Text)</option>
+                  <option value="Audio">Âm thanh (Audio)</option>
                   <option value="Video">Video</option>
-                  <option value="Mixed">Mixed (Hỗn hợp)</option>
+                  <option value="Mixed">Hỗn hợp (Mixed)</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm text-gray-400 mb-1">
-                  Description
+                  Mô tả
                 </label>
                 <textarea
                   value={formData.description}
@@ -259,13 +300,13 @@ export default function ProjectManagement() {
                     setFormData({ ...formData, description: e.target.value })
                   }
                   className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500 h-20 resize-none"
-                  placeholder="Brief description..."
+                  placeholder="Mô tả ngắn gọn về dự án..."
                 ></textarea>
               </div>
 
               <div>
                 <label className="block text-sm text-gray-400 mb-1">
-                  Guideline Link (Tùy chọn)
+                  Đường dẫn Hướng dẫn (Tùy chọn)
                 </label>
                 <input
                   type="text"
@@ -285,45 +326,16 @@ export default function ProjectManagement() {
                 disabled={isCreating}
                 className="px-4 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
               >
-                Cancel
+                Hủy bỏ
               </button>
-              <button
-                onClick={handleSubmit}
-                disabled={isCreating}
-                className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {isCreating ? (
-                  <>
-                    <svg
-                      className="animate-spin h-4 w-4 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Creating...
-                  </>
-                ) : (
-                  "Create Project"
-                )}
-              </button>
+
+              <AnimatedButton onClick={handleSubmit} disabled={isCreating}>
+                Tạo Dự Án
+              </AnimatedButton>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </AuroraBackground>
   );
 }

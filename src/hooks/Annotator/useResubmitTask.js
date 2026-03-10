@@ -15,13 +15,10 @@ export const useResubmitTask = () => {
     setIsResubmitting(true);
     setError(null);
     try {
-      // Gọi API POST /api/tasks/{taskId}/resubmit
       const response = await annotatorApi.resubmitTask(taskId);
-      
-      // Trả về thông báo thành công từ Azure
       return response;
     } catch (err) {
-      // Xử lý lỗi (ví dụ: "Đã quá 3 lần nộp lại" hoặc "Task không ở trạng thái Rejected")
+
       const errorMsg = err?.response?.data || "Nộp lại bài thất bại. Vui lòng kiểm tra số lần nộp còn lại.";
       setError(errorMsg);
       throw err;
@@ -31,8 +28,8 @@ export const useResubmitTask = () => {
   };
 
   return { 
-    resubmit,       // Hàm thực hiện nộp lại
-    isResubmitting, // Trạng thái đang xử lý trên Azure
-    error           // Thông báo lỗi nếu có
+    resubmit,      
+    isResubmitting, 
+    error  
   };
 };
