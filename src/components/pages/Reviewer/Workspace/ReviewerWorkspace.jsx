@@ -52,8 +52,9 @@ const ReviewerWorkspace = () => {
     <div className="flex flex-col h-screen bg-[#0f172a] text-slate-200">
       <header className="flex justify-between items-center px-6 py-3 border-b border-slate-800 bg-[#1e293b]">
         <div className="flex items-center gap-4 flex-1 text-left">
+          {/* ĐÃ FIX: Chỉ navigate về /reviewer */}
           <button
-            onClick={() => navigate("/reviewer/dashboard")}
+            onClick={() => navigate("/reviewer")}
             className="text-slate-400 hover:text-white transition-colors"
           >
             <ArrowLeft size={20} />
@@ -74,8 +75,9 @@ const ReviewerWorkspace = () => {
             Đang duyệt bài
           </div>
           <div className="w-px h-6 bg-slate-700 mx-1"></div>
+          {/* ĐÃ FIX: Nút Thoát cũng về /reviewer (Nếu sếp muốn Đăng Xuất hẳn thì gọi API logout ở đây nhé) */}
           <button
-            onClick={() => navigate("/reviewer/dashboard")}
+            onClick={() => navigate("/reviewer")}
             className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
           >
             <LogOut size={20} />
@@ -91,7 +93,7 @@ const ReviewerWorkspace = () => {
           onSelectIndex={setCurrentImageIndex}
         />
 
-        {/* CANVAS CHÍNH (Đã truyền activeBoxId và hàm set vào) */}
+        {/* CANVAS CHÍNH */}
         <main className="flex-1 overflow-hidden relative flex flex-col bg-[#0b1220] p-4">
           <div className="bg-[#1e293b] rounded-2xl border border-slate-800 flex-1 overflow-hidden">
             {currentItem ? (
@@ -109,7 +111,7 @@ const ReviewerWorkspace = () => {
           </div>
         </main>
 
-        {/* SIDEBAR PHẢI (Đã truyền activeBoxId và hàm set vào) */}
+        {/* SIDEBAR PHẢI */}
         <ReviewerSidebarRight
           taskId={activeTaskId}
           currentItem={currentItem}
