@@ -16,6 +16,7 @@ import AnnotatorDashboard from "./components/pages/Annotator/AnnotatorDashboard"
 import AnnotatorWorkspace from "./components/pages/Annotator/Workspace/AnnotatorWorkspace";
 import CreditScorePage from "./components/pages/Annotator/Workspace/CreditScorePage";
 import DisputeList from "./components/pages/Annotator/Dispute/DisputeList";
+import DisputeDetail from "./components/pages/Annotator/Dispute/DisputeDetail";
 
 // ================= ADMIN =================
 import AdminGlobalLayout from "./components/pages/Admin/AdminGlobalLayout";
@@ -106,6 +107,7 @@ function App() {
             <Route path="workspace/:taskId" element={<AnnotatorWorkspace />} />
             <Route path="score" element={<CreditScorePage />} />
             <Route path="disputes" element={<DisputeList />} />
+            <Route path="disputes/:id" element={<DisputeDetail />} />
           </Route>
         </Route>
 
