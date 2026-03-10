@@ -279,84 +279,177 @@ export default function TaskTracking({ project }) {
         )}
       </div>
 
+      {/* --- MODAL GIAO TASK MỚI (CHIA 2 CỘT RỘNG RÃI) --- */}
       {reassignModal.show && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#0B1120]/80 backdrop-blur-sm rounded-xl">
-          <div className="bg-[#151D2F] border border-white/10 p-6 rounded-xl shadow-2xl w-[400px]">
-            <h3 className="text-lg font-semibold text-white mb-4">
-              {reassignModal.isFirstAssign
-                ? "Giao việc cho Task"
-                : "Giao lại Task"}
-            </h3>
-
-            <div className="space-y-4 mb-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#151D2F] border border-white/10 rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-6 border-b border-white/5 flex justify-between items-center">
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">
-                  Chọn Annotator
-                </label>
-                <select
-                  value={reassignModal.annotatorId}
-                  onChange={(e) =>
-                    setReassignModal({
-                      ...reassignModal,
-                      annotatorId: e.target.value,
-                    })
-                  }
-                  className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none"
-                >
-                  <option value="">-- Chọn Annotator --</option>
-                  {annotators.map((u) => (
-                    <option key={u.userID} value={u.userID}>
-                      {u.fullName} {u.score ? `(Score: ${u.score})` : ""} -{" "}
-                      {u.expertise || "Cơ bản"}
-                    </option>
-                  ))}
-                </select>
+                <h3 className="text-xl font-bold text-white">
+                  {reassignModal.isFirstAssign
+                    ? "Giao việc cho nhân sự"
+                    : "Chuyển giao lại Task"}
+                </h3>
+                <p className="text-sm text-gray-400 mt-1">
+                  Chọn người dán nhãn (bắt buộc) và người kiểm duyệt (tùy chọn)
+                  từ danh sách gợi ý.
+                </p>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">
-                  Chọn Reviewer
-                </label>
-                <select
-                  value={reassignModal.reviewerId}
-                  onChange={(e) =>
-                    setReassignModal({
-                      ...reassignModal,
-                      reviewerId: e.target.value,
+              <button
+                onClick={() =>
+                  setReassignModal({ ...reassignModal, show: false })
+                }
+                className="text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-lg transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body (Chia 2 cột) */}
+            <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-8 custom-scrollbar">
+              {/* CỘT TRÁI: ANNOTATOR */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-lg">🧑‍💻</span>
+                  <h4 className="text-base font-semibold text-white">
+                    Gợi ý Annotator <span className="text-rose-500">*</span>
+                  </h4>
+                </div>
+
+                <div className="space-y-3">
+                  {annotators.length === 0 ? (
+                    <div className="text-sm text-gray-500 italic p-4 border border-dashed border-white/10 rounded-xl text-center">
+                      Không có Annotator nào.
+                    </div>
+                  ) : (
+                    annotators.map((u) => {
+                      const isSelected = reassignModal.annotatorId === u.userID;
+                      return (
+                        <div
+                          key={u.userID}
+                          onClick={() =>
+                            setReassignModal({
+                              ...reassignModal,
+                              annotatorId: u.userID,
+                            })
+                          }
+                          className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                            isSelected
+                              ? "bg-blue-500/10 border-blue-500"
+                              : "bg-[#0B1120] border-white/5 hover:border-white/20"
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div
+                                className={`font-medium ${isSelected ? "text-blue-400" : "text-gray-200"}`}
+                              >
+                                {u.fullName}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                Chuyên môn: {u.expertise || "Cơ bản"}
+                              </div>
+                            </div>
+                            {u.score && (
+                              <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded text-xs font-medium text-amber-400">
+                                <span>⭐</span> {u.score}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
                     })
-                  }
-                  className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none"
-                >
-                  <option value="">-- Bỏ qua nếu không cần --</option>
-                  {reviewers.map((u) => (
-                    <option key={u.userID} value={u.userID}>
-                      {u.fullName} {u.score ? `(Score: ${u.score})` : ""}
-                    </option>
-                  ))}
-                </select>
+                  )}
+                </div>
+              </div>
+
+              {/* CỘT PHẢI: REVIEWER */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-lg">👁️</span>
+                  <h4 className="text-base font-semibold text-white">
+                    Gợi ý Reviewer (Tùy chọn)
+                  </h4>
+                </div>
+
+                <div className="space-y-3">
+                  {/* Tùy chọn: Không chọn Reviewer */}
+                  <div
+                    onClick={() =>
+                      setReassignModal({
+                        ...reassignModal,
+                        reviewerId: "",
+                      })
+                    }
+                    className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                      reassignModal.reviewerId === ""
+                        ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400"
+                        : "bg-[#0B1120] border-white/5 hover:border-white/20 text-gray-400"
+                    }`}
+                  >
+                    <div className="font-medium text-sm">
+                      -- Không cần kiểm duyệt --
+                    </div>
+                  </div>
+
+                  {reviewers.map((u) => {
+                    const isSelected = reassignModal.reviewerId === u.userID;
+                    return (
+                      <div
+                        key={u.userID}
+                        onClick={() =>
+                          setReassignModal({
+                            ...reassignModal,
+                            reviewerId: u.userID,
+                          })
+                        }
+                        className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                          isSelected
+                            ? "bg-purple-500/10 border-purple-500"
+                            : "bg-[#0B1120] border-white/5 hover:border-white/20"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div
+                              className={`font-medium ${isSelected ? "text-purple-400" : "text-gray-200"}`}
+                            >
+                              {u.fullName}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Chuyên môn: {u.expertise || "Cơ bản"}
+                            </div>
+                          </div>
+                          {u.score && (
+                            <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded text-xs font-medium text-amber-400">
+                              <span>⭐</span> {u.score}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-3 justify-end">
+            {/* Footer */}
+            <div className="p-6 border-t border-white/5 bg-[#0B1120]/50 flex justify-end gap-3">
               <button
                 onClick={() =>
-                  setReassignModal({
-                    show: false,
-                    taskId: null,
-                    annotatorId: "",
-                    reviewerId: "",
-                    isFirstAssign: false,
-                  })
+                  setReassignModal({ ...reassignModal, show: false })
                 }
-                className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                className="px-5 py-2.5 text-sm font-medium text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
               >
                 Hủy bỏ
               </button>
               <button
                 onClick={submitReassign}
-                disabled={isActionLoading}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition-colors"
+                disabled={isActionLoading || !reassignModal.annotatorId}
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-blue-500/20"
               >
-                {isActionLoading ? "Đang xử lý..." : "Xác nhận giao"}
+                {isActionLoading ? "Đang xử lý..." : "Xác nhận giao Task"}
               </button>
             </div>
           </div>
