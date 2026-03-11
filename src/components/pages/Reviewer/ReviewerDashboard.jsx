@@ -1,7 +1,20 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Clock, FolderOpen, Filter, FileText, Headphones, Image as ImageIcon, Loader2, Trophy, XCircle } from 'lucide-react';
-import { useTasks } from '../../../hooks/Reviewer/useTasks';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  CheckCircle2,
+  Clock,
+  FolderOpen,
+  Filter,
+  FileText,
+  Headphones,
+  Image as ImageIcon,
+  Loader2,
+  Trophy,
+  XCircle,
+} from "lucide-react";
+import { useTasks } from "../../../hooks/Reviewer/useTasks";
+// 1. IMPORT HOOK ĐIỂM VỪA TẠO VÀO ĐÂY (Sếp check lại đường dẫn import nha)
+import { useScore } from "../../../hooks/useScore";
 
 const TYPE_ICONS = {
   text: <FileText size={16} className="text-blue-400" />,
@@ -10,77 +23,107 @@ const TYPE_ICONS = {
 };
 
 const STATUS_STYLES = {
-  PendingReview: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  Approved: 'bg-green-500/20 text-green-400 border-green-500/30',
-  InProgress: 'bg-red-500/20 text-red-400 border-red-500/30', 
+  PendingReview: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+  Approved: "bg-green-500/20 text-green-400 border-green-500/30",
+  InProgress: "bg-red-500/20 text-red-400 border-red-500/30",
 };
 
 const ACTION_STYLES = {
-  PendingReview: { label: 'Kiểm duyệt', cls: 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20' },
-  Approved: { label: 'Xem lại', cls: 'bg-slate-700 hover:bg-slate-600 border border-slate-600 cursor-not-allowed opacity-50' },
-  InProgress: { label: 'Đang làm lại', cls: 'bg-slate-700 hover:bg-slate-600 border border-slate-600 cursor-not-allowed opacity-50' },
+  PendingReview: {
+    label: "Kiểm duyệt",
+    cls: "bg-blue-600 hover:bg-blue-500 shadow-blue-500/20",
+  },
+  Approved: {
+    label: "Xem lại",
+    cls: "bg-slate-700 hover:bg-slate-600 border border-slate-600 cursor-not-allowed opacity-50",
+  },
+  InProgress: {
+    label: "Đang làm lại",
+    cls: "bg-slate-700 hover:bg-slate-600 border border-slate-600 cursor-not-allowed opacity-50",
+  },
 };
 
 const STAT_CARDS = [
-  { icon: FolderOpen, color: 'blue', label: 'Tổng Task', key: 'totalTasks' },
-  { icon: CheckCircle2, color: 'green', label: 'Đã Duyệt', key: 'doneTasks' },
-  { icon: XCircle, color: 'yellow', label: 'Chờ Duyệt', key: 'pendingTasks' },
+  { icon: FolderOpen, color: "blue", label: "Tổng Task", key: "totalTasks" },
+  { icon: CheckCircle2, color: "green", label: "Đã Duyệt", key: "doneTasks" },
+  { icon: XCircle, color: "yellow", label: "Chờ Duyệt", key: "pendingTasks" },
 ];
 
-const FILTERS = ['All', 'Pending', 'Done'];
+const FILTERS = ["All", "Pending", "Done"];
 
 const ReviewerDashboard = () => {
   const navigate = useNavigate();
-  const [filter, setFilter] = useState('All');
-  
-  // Dùng hook thật gọi API lấy data
+  const [filter, setFilter] = useState("All");
+
+  // Dùng hook gọi API lấy list task
   const { tasks, isLoading, error, refetch } = useTasks();
 
-  if (isLoading) return (
-    <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white">
-      <Loader2 className="animate-spin w-8 h-8 mr-3" /> Đang tải dữ liệu...
-    </div>
-  );
+  // 2. GỌI HOOK LẤY ĐIỂM
+  const { myScore, isLoadingScore } = useScore();
 
-  if (error) return (
-    <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center text-white">
-      <XCircle className="text-red-500 w-12 h-12 mb-4" />
-      <p>Lỗi tải dữ liệu: {error}</p>
-      <button onClick={refetch} className="mt-4 bg-blue-600 px-4 py-2 rounded">Thử lại</button>
-    </div>
-  );
+  if (isLoading)
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white">
+        <Loader2 className="animate-spin w-8 h-8 mr-3" /> Đang tải dữ liệu...
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center text-white">
+        <XCircle className="text-red-500 w-12 h-12 mb-4" />
+        <p>Lỗi tải dữ liệu: {error}</p>
+        <button
+          onClick={refetch}
+          className="mt-4 bg-blue-600 px-4 py-2 rounded"
+        >
+          Thử lại
+        </button>
+      </div>
+    );
 
   // Tính toán thống kê từ data thật
   const stats = {
     totalTasks: tasks?.length || 0,
-    pendingTasks: tasks?.filter(t => t.status === 'PendingReview').length || 0,
-    doneTasks: tasks?.filter(t => t.status === 'Approved').length || 0,
+    pendingTasks:
+      tasks?.filter((t) => t.status === "PendingReview").length || 0,
+    doneTasks: tasks?.filter((t) => t.status === "Approved").length || 0,
   };
 
   // Lọc data theo tab UI
-  const filteredTasks = tasks?.filter(task => {
-    if (filter === 'All') return true;
-    if (filter === 'Pending') return task.status === 'PendingReview';
-    if (filter === 'Done') return task.status === 'Approved';
-    return true;
-  }) || [];
+  const filteredTasks =
+    tasks?.filter((task) => {
+      if (filter === "All") return true;
+      if (filter === "Pending") return task.status === "PendingReview";
+      if (filter === "Done") return task.status === "Approved";
+      return true;
+    }) || [];
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200 p-8">
-
       {/* Header */}
       <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 className="text-3xl font-bold text-white">Dashboard Kiểm Duyệt</h1>
         <button
-          onClick={() => navigate('/reviewer/score')}
+          onClick={() => navigate("/reviewer/score")}
           className="flex items-center gap-4 bg-[#1e293b] border border-yellow-500/30 hover:border-yellow-500/60 p-3 pr-6 rounded-2xl transition-all shadow-lg shadow-yellow-500/10 group"
         >
           <div className="p-3 bg-yellow-500/20 rounded-xl text-yellow-500 group-hover:scale-110 transition-transform">
             <Trophy size={28} />
           </div>
           <div className="text-left">
-            <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Điểm Tín Nhiệm</p>
-            <p className="text-2xl font-black text-yellow-400">85 <span className="text-sm font-medium text-slate-500">pts</span></p>
+            <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-0.5">
+              Điểm Tín Nhiệm
+            </p>
+            {/* 3. THAY THẾ SỐ 85 BẰNG STATE myScore TỪ HOOK */}
+            <p className="text-2xl font-black text-yellow-400">
+              {isLoadingScore ? (
+                <Loader2 className="animate-spin inline-block w-5 h-5 mr-1" />
+              ) : (
+                myScore
+              )}{" "}
+              <span className="text-sm font-medium text-slate-500">pts</span>
+            </p>
           </div>
         </button>
       </div>
@@ -88,8 +131,15 @@ const ReviewerDashboard = () => {
       {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {STAT_CARDS.map(({ icon: Icon, color, label, key }) => (
-          <div key={key} className="bg-[#1e293b] border border-slate-700 p-6 rounded-2xl flex items-center gap-4">
-            <div className={`p-4 bg-${color}-500/20 rounded-xl text-${color}-500`}><Icon size={28} /></div>
+          <div
+            key={key}
+            className="bg-[#1e293b] border border-slate-700 p-6 rounded-2xl flex items-center gap-4"
+          >
+            <div
+              className={`p-4 bg-${color}-500/20 rounded-xl text-${color}-500`}
+            >
+              <Icon size={28} />
+            </div>
             <div>
               <p className="text-sm text-slate-400 font-medium">{label}</p>
               <p className="text-3xl font-bold text-white">{stats[key]}</p>
@@ -104,14 +154,14 @@ const ReviewerDashboard = () => {
           <Filter size={20} className="text-blue-400" /> Danh Sách Task
         </h2>
         <div className="flex gap-2">
-          {FILTERS.map(status => (
+          {FILTERS.map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 filter === status
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-[#0f172a] text-slate-400 hover:text-white hover:bg-slate-700 border border-slate-700'
+                  ? "bg-blue-600 text-white"
+                  : "bg-[#0f172a] text-slate-400 hover:text-white hover:bg-slate-700 border border-slate-700"
               }`}
             >
               {status}
@@ -125,68 +175,89 @@ const ReviewerDashboard = () => {
         <table className="w-full text-left border-collapse">
           <thead className="bg-[#0f172a]/50 text-slate-400 text-sm">
             <tr>
-              {['Tên Task', 'Annotator', 'Trạng thái', 'Deadline', ''].map((h, i) => (
-                <th key={i} className={`p-4 font-medium ${i === 4 ? 'text-right w-px' : ''}`}>{h}</th>
-              ))}
+              {["Tên Task", "Annotator", "Trạng thái", "Deadline", ""].map(
+                (h, i) => (
+                  <th
+                    key={i}
+                    className={`p-4 font-medium ${i === 4 ? "text-right w-px" : ""}`}
+                  >
+                    {h}
+                  </th>
+                ),
+              )}
             </tr>
           </thead>
           <tbody>
-            {filteredTasks.length > 0 ? filteredTasks.map(task => {
-              // Map trạng thái BE với Config UI
-              const action = ACTION_STYLES[task.status] ?? ACTION_STYLES.PendingReview;
-              const statusStyle = STATUS_STYLES[task.status] ?? 'bg-gray-500/20 text-gray-400';
-              
-              // Custom Text Trạng thái
-              let statusText = 'Chưa rõ';
-              if (task.status === 'PendingReview') statusText = 'Chờ duyệt';
-              if (task.status === 'Approved') statusText = 'Đã duyệt';
-              if (task.status === 'InProgress') statusText = 'Đang làm lại';
+            {filteredTasks.length > 0 ? (
+              filteredTasks.map((task) => {
+                const action =
+                  ACTION_STYLES[task.status] ?? ACTION_STYLES.PendingReview;
+                const statusStyle =
+                  STATUS_STYLES[task.status] ?? "bg-gray-500/20 text-gray-400";
 
-              return (
-                <tr key={task.taskID} className="border-t border-slate-700 hover:bg-slate-800/50 transition-colors">
-                  <td className="p-4">
-                    {/* Bỏ class ml-4 ở đây để canh lề đều với tiêu đề cột */}
-                    <div className="flex items-center gap-2 font-bold text-white mb-1">
-                      {TYPE_ICONS.image}
-                      {task.taskName}
-                    </div>
-                    <p className="text-xs text-slate-400 ml-6">
-                      {task.taskID.substring(0, 8)}... • Vòng {task.currentRound || 0}
-                    </p>
-                  </td>
+                let statusText = "Chưa rõ";
+                if (task.status === "PendingReview") statusText = "Chờ duyệt";
+                if (task.status === "Approved") statusText = "Đã duyệt";
+                if (task.status === "InProgress") statusText = "Đang làm lại";
 
-                  <td className="p-4">
-                    <p className="text-sm text-slate-300 font-medium">Ẩn danh</p> 
-                  </td>
+                return (
+                  <tr
+                    key={task.taskID}
+                    className="border-t border-slate-700 hover:bg-slate-800/50 transition-colors"
+                  >
+                    <td className="p-4">
+                      <div className="flex items-center gap-2 font-bold text-white mb-1">
+                        {TYPE_ICONS.image}
+                        {task.taskName}
+                      </div>
+                      <p className="text-xs text-slate-400 ml-6">
+                        {task.taskID.substring(0, 8)}... • Vòng{" "}
+                        {task.currentRound || 0}
+                      </p>
+                    </td>
 
-                  <td className="p-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold inline-block border ${statusStyle}`}>
-                      {statusText}
-                    </span>
-                    {task.rejectCount > 0 && (
-                      <p className="text-xs text-red-400 mt-2 font-medium">⚠️ Đã từ chối {task.rejectCount} lần</p>
-                    )}
-                  </td>
+                    <td className="p-4">
+                      <p className="text-sm text-slate-300 font-medium">
+                        Ẩn danh
+                      </p>
+                    </td>
 
-                  <td className="p-4">
-                    <div className="flex items-center gap-1.5 text-sm text-slate-300">
-                      <Clock size={14} className="text-slate-500" />
-                      {new Date(task.deadline).toLocaleDateString('vi-VN')}
-                    </div>
-                  </td>
+                    <td className="p-4">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold inline-block border ${statusStyle}`}
+                      >
+                        {statusText}
+                      </span>
+                      {task.rejectCount > 0 && (
+                        <p className="text-xs text-red-400 mt-2 font-medium">
+                          ⚠️ Đã từ chối {task.rejectCount} lần
+                        </p>
+                      )}
+                    </td>
 
-                  <td className="p-4 text-right">
-                    <button
-                      onClick={() => task.status === 'PendingReview' && navigate(`/reviewer/workspace/${task.taskID}`)}
-                      disabled={task.status !== 'PendingReview'}
-                      className={`px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-all shadow-lg ${action.cls}`}
-                    >
-                      {action.label}
-                    </button>
-                  </td>
-                </tr>
-              );
-            }) : (
+                    <td className="p-4">
+                      <div className="flex items-center gap-1.5 text-sm text-slate-300">
+                        <Clock size={14} className="text-slate-500" />
+                        {new Date(task.deadline).toLocaleDateString("vi-VN")}
+                      </div>
+                    </td>
+
+                    <td className="p-4 text-right">
+                      <button
+                        onClick={() =>
+                          task.status === "PendingReview" &&
+                          navigate(`/reviewer/workspace/${task.taskID}`)
+                        }
+                        disabled={task.status !== "PendingReview"}
+                        className={`px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-all shadow-lg ${action.cls}`}
+                      >
+                        {action.label}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
               <tr>
                 <td colSpan="5" className="p-8 text-center text-slate-500">
                   Không tìm thấy task nào với bộ lọc "{filter}"
