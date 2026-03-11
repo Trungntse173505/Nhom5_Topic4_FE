@@ -2,6 +2,8 @@ import SidebarLayout from "../../common/SidebarLayout";
 
 const menuItems = [
   { path: "/reviewer", label: "Dashboard", icon: "🔍" },
+  { path: "/reviewer/disputes", label: "Khiếu Nại", icon: "⚖️" }, 
+
 ];
 
 export default function ReviewerLayout() {
@@ -11,7 +13,7 @@ export default function ReviewerLayout() {
       title="LabelMaster"
       menuLabel="Menu"
       basePath="/reviewer"
-      userInfo={{ name: "Reviewer", email: "", avatar: "R", color: "bg-purple-500" }}
+      userInfo={{ name: "Reviewer", email: "reviewer@labelmaster.com", avatar: "R", color: "bg-purple-500" }}
     />
   );
 }

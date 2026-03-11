@@ -37,8 +37,9 @@ import LabelLibrary from "./components/pages/Manager/LabelLibrary";
 // ================= REVIEWER =================
 import ReviewerLayout from "./components/pages/Reviewer/ReviewerLayout";
 import ReviewerDashboard from "./components/pages/Reviewer/ReviewerDashboard";
-// THÊM DÒNG NÀY: Import ReviewerWorkspace
 import ReviewerWorkspace from "./components/pages/Reviewer/Workspace/ReviewerWorkspace"; 
+import ReviewerDisputeList from "./components/pages/Reviewer/Dispute/ReviewerDisputeList";
+import ReviewerDisputeDetail from "./components/pages/Reviewer/Dispute/ReviewerDisputeDetail";
 
 const AnalyticsTracker = () => {
   useEffect(() => {
@@ -113,13 +114,12 @@ function App() {
 
         {/* ================= REVIEWER PROTECTED ================= */}
         <Route element={<ProtectedRoute allowedRoles={["reviewer"]} />}>        
-          {/* Những trang cần Sidebar Layout */}
           <Route path="/reviewer" element={<ReviewerLayout />}>
-            <Route index element={<ReviewerDashboard />} />
-            {/* Nếu bạn có trang điểm tín nhiệm cho Reviewer thì thêm ở đây */}
-          </Route>
-          {/* THÊM DÒNG NÀY: Trang Workspace Full màn hình (nằm ngoài Layout, nhưng vẫn trong ProtectedRoute) */}
+          <Route index element={<ReviewerDashboard />} />
           <Route path="/reviewer/workspace/:taskId" element={<ReviewerWorkspace />} />
+          <Route path="disputes" element={<ReviewerDisputeList />} />
+            <Route path="disputes/:id" element={<ReviewerDisputeDetail />} />
+          </Route>
 
         </Route>
 
