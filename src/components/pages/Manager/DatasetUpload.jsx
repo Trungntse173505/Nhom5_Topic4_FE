@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { useDatasetUpload } from "../../../hooks/useDatasetUpload";
 
@@ -7,7 +7,8 @@ import { CardContainer, CardBody, CardItem } from "../../common/3d-card";
 // Bổ sung import cái nút Animated cực mượt mới tạo
 import { AnimatedButton } from "../../common/AnimatedButton";
 
-export default function DatasetUpload() {
+// ĐÃ SỬA: Nhận thêm prop `project` từ ManagerDashboard truyền qua
+export default function DatasetUpload({ project }) {
   const { projectId: paramProjectId } = useParams();
   const location = useLocation();
 
@@ -18,7 +19,23 @@ export default function DatasetUpload() {
 
   const fileInputRef = useRef(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [fileType, setFileType] = useState("Pic");
+  const [fileType, setFileType] = useState("Pic"); // Mặc định ban đầu
+
+  // TỰ ĐỘNG MAP LOẠI DATA CỦA DỰ ÁN VÀO KHUNG UPLOAD
+  useEffect(() => {
+    if (project?.projectType) {
+      const type = project.projectType.toLowerCase();
+      if (type.includes("image") || type.includes("pic")) {
+        setFileType("Pic");
+      } else if (type.includes("video")) {
+        setFileType("Video");
+      } else if (type.includes("audio")) {
+        setFileType("Audio");
+      } else if (type.includes("text")) {
+        setFileType("Text");
+      }
+    }
+  }, [project]);
 
   // Hàm phụ trợ để lấy chuỗi 'accept' cho thẻ input file
   const getAcceptTypes = () => {
@@ -72,7 +89,7 @@ export default function DatasetUpload() {
 
       if (!isValid) {
         alert(
-          `Lỗi: Vui lòng chỉ chọn đúng định dạng file cho loại dữ liệu "${fileType}"!`,
+          `Lỗi: Vui lòng chỉ chọn đúng định dạng file cho loại dữ liệu "${fileType}" của dự án này!`,
         );
         // Reset lại input
         if (fileInputRef.current) fileInputRef.current.value = "";
@@ -96,16 +113,8 @@ export default function DatasetUpload() {
     }
   };
 
-  // KHI ĐỔI LOẠI DATA, TỰ ĐỘNG XÓA CÁC FILE ĐÃ CHỌN TRƯỚC ĐÓ ĐỂ TRÁNH RÂU ÔNG NỌ CẮM CẰM BÀ KIA
-  const handleTypeChange = (e) => {
-    setFileType(e.target.value);
-    setSelectedFiles([]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
   return (
     <div className="space-y-8">
-      {/* Tăng khoảng cách ra xíu cho form dễ lắc */}
       {/* ========================================== */}
       {/* KHỐI 1: HEADER & UPLOAD ZONE (3D)            */}
       {/* ========================================== */}
@@ -115,6 +124,12 @@ export default function DatasetUpload() {
             <h2 className="text-lg font-semibold text-white">
               Tải lên Dữ liệu Hàng loạt
             </h2>
+            {project?.projectType && (
+              <p className="text-sm text-gray-400 mt-1">
+                Dự án hiện tại yêu cầu dữ liệu loại:{" "}
+                <strong className="text-blue-400">{project.projectType}</strong>
+              </p>
+            )}
           </div>
 
           <div>
@@ -123,14 +138,17 @@ export default function DatasetUpload() {
             </label>
             <select
               value={fileType}
-              onChange={handleTypeChange}
-              className="bg-[#0B1120] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm outline-none cursor-pointer"
+              disabled // KHÓA CỨNG DROPDOWN NÀY LẠI
+              className="bg-[#0B1120] border border-white/10 rounded-lg px-3 py-1.5 text-gray-400 text-sm outline-none cursor-not-allowed opacity-80"
             >
               <option value="Pic">Pic (Ảnh)</option>
               <option value="Text">Text (Văn bản)</option>
               <option value="Audio">Audio (Âm thanh)</option>
               <option value="Video">Video</option>
             </select>
+            <p className="text-[10px] text-rose-400/80 mt-1 italic text-right">
+              * Cố định theo dự án
+            </p>
           </div>
         </div>
 
@@ -194,7 +212,6 @@ export default function DatasetUpload() {
                     translateZ="30"
                     className="text-sm text-blue-400/80 mt-1 font-medium"
                   >
-                    {/* DÒNG NÀY SẼ TỰ ĐỘNG ĐỔI THEO LOẠI DATA */}
                     {getSupportedText()}
                   </CardItem>
                 </>
@@ -203,7 +220,7 @@ export default function DatasetUpload() {
               <input
                 type="file"
                 multiple
-                accept={getAcceptTypes()} // LỚP BẢO VỆ SỐ 1: Ép file picker chỉ hiện đúng loại
+                accept={getAcceptTypes()} // LỚP BẢO VỆ SỐ 1
                 ref={fileInputRef}
                 onChange={handleFileSelect}
                 className="hidden"
@@ -212,7 +229,6 @@ export default function DatasetUpload() {
           </CardBody>
         </CardContainer>
 
-        {/* ĐÃ SỬA: Dùng AnimatedButton thay thế */}
         {selectedFiles.length > 0 && (
           <div className="mt-4 flex justify-end">
             <AnimatedButton onClick={handleStartUpload} disabled={isUploading}>
@@ -327,7 +343,6 @@ export default function DatasetUpload() {
           </CardItem>
         </CardBody>
       </CardContainer>
-      {/* ========================================== */}
     </div>
   );
 }
