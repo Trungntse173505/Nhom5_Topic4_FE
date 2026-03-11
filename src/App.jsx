@@ -24,6 +24,7 @@ import AdminOverview from "./components/pages/Admin/AdminOverview";
 import UserList from "./components/pages/Admin/UserList";
 import ActivityLogs from "./components/pages/Admin/ActivityLogs";
 import SystemConfig from "./components/pages/Admin/SystemConfig";
+import AdminRules from './components/pages/Admin/AdminRules';
 
 // ================= MANAGER =================
 import ManagerGlobalLayout from "./components/pages/Manager/ManagerGlobalLayout";
@@ -85,6 +86,7 @@ function App() {
             <Route path="users" element={<UserList />} />
             <Route path="logs" element={<ActivityLogs />} />
             <Route path="config" element={<SystemConfig />} />
+            <Route path="rules" element={<AdminRules />} />
           </Route>
         </Route>
 
