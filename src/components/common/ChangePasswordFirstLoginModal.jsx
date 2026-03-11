@@ -1,33 +1,25 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useChangePasswordFirstLogin } from '../../hooks/Admin/useChangePasswordFirstLogin';
 
 export default function ChangePasswordFirstLoginModal({
   open,
+  enabled = true,
   oldPassword,
   username,
+  force = false,
   onSuccess,
   onSkip,
   onClose,
 }) {
-  const {
-    shouldPromptForCurrentUser,
-    markPromptSeenForCurrentUser,
-    changePasswordFirstLogin,
-    loading,
-    error,
-  } = useChangePasswordFirstLogin();
+  const { changePasswordFirstLogin, loading, error } = useChangePasswordFirstLogin();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [touched, setTouched] = useState({ newPassword: false, confirmPassword: false });
 
-  useEffect(() => {
-    if (!open) return;
-    if (!shouldPromptForCurrentUser()) {
-      onClose?.();
-      return;
-    }
-    markPromptSeenForCurrentUser();
-  }, [open, onClose, shouldPromptForCurrentUser, markPromptSeenForCurrentUser]);
+  const handleClose = () => {
+    if (force) return;
+    onClose?.();
+  };
 
   const errors = useMemo(() => {
     const e = {};
@@ -42,11 +34,12 @@ export default function ChangePasswordFirstLoginModal({
 
   async function onSubmit(e) {
     e.preventDefault();
+    if (!enabled) return;
     if (!canSubmit) return;
 
     const res = await changePasswordFirstLogin({ oldPassword, newPassword });
     if (res.success) {
-      onSuccess?.(res.data);
+      onSuccess?.({ data: res.data, newPassword });
     }
   }
 
@@ -56,7 +49,7 @@ export default function ChangePasswordFirstLoginModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        onClick={() => onClose?.()}
+        onClick={handleClose}
       />
 
       <div className="relative w-full max-w-md rounded-3xl border border-white/10 bg-[#0B1226]/95 p-8 shadow-2xl">
@@ -70,7 +63,7 @@ export default function ChangePasswordFirstLoginModal({
           <button
             type="button"
             className="rounded-lg px-2 py-1 text-xs font-bold text-white/40 hover:text-white/70"
-            onClick={() => onClose?.()}
+            onClick={handleClose}
             disabled={loading}
             aria-label="Close"
           >
@@ -123,28 +116,30 @@ export default function ChangePasswordFirstLoginModal({
 
           <button
             type="submit"
-            disabled={!canSubmit}
+            disabled={!enabled || !canSubmit}
             className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-500 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
           >
             {loading ? 'Đang đổi mật khẩu...' : 'Đổi mật khẩu'}
           </button>
 
           <div className="flex items-center justify-between gap-3">
+            {!force && (
+              <button
+                type="button"
+                className="w-full rounded-xl border border-white/10 bg-white/[0.02] py-3 text-xs font-bold text-white/60 hover:bg-white/[0.04] disabled:opacity-50"
+                onClick={() => onSkip?.()}
+                disabled={loading}
+              >
+                Bỏ qua
+              </button>
+            )}
             <button
               type="button"
               className="w-full rounded-xl border border-white/10 bg-white/[0.02] py-3 text-xs font-bold text-white/60 hover:bg-white/[0.04] disabled:opacity-50"
-              onClick={() => onSkip?.()}
+              onClick={handleClose}
               disabled={loading}
             >
-              Bỏ qua
-            </button>
-            <button
-              type="button"
-              className="w-full rounded-xl border border-white/10 bg-white/[0.02] py-3 text-xs font-bold text-white/60 hover:bg-white/[0.04] disabled:opacity-50"
-              onClick={() => onClose?.()}
-              disabled={loading}
-            >
-              Đóng
+              {force ? 'Quay lại' : 'Đóng'}
             </button>
           </div>
         </form>

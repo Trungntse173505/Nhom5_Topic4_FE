@@ -15,10 +15,8 @@ export const useSubmitTask = () => {
     setError(null);
     try {
       const response = await annotatorApi.submitTask(taskId);
-      // Trả về thông báo thành công (ví dụ: "Nộp bài thành công.")
       return response;
     } catch (err) {
-      // Xử lý lỗi từ server (ví dụ: "Bạn chưa hoàn thành tất cả các file trong Task.")
       const errorMsg = err?.response?.data || "Nộp bài thất bại. Vui lòng kiểm tra lại các ảnh.";
       setError(errorMsg);
       throw err;
