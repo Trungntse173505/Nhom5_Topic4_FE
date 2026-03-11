@@ -1,6 +1,6 @@
 // src/hooks/useAdminRules.js
 import { useState, useEffect, useCallback } from 'react';
-import adminRuleApi from '../api/adminRuleApi';
+import adminRuleApi from '../../api/adminRuleApi';
 
 export const useAdminRules = () => {
   const [rules, setRules] = useState([]);
