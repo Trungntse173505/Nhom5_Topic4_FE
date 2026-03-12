@@ -6,7 +6,7 @@ import authApi from "../../../api/authApi";
 const menuItems = [
   { path: "/reviewer", label: "Dashboard", icon: "🔍" },
   { path: "/reviewer/disputes", label: "Khiếu Nại", icon: "⚖️" }, 
-
+  { path: "/reviewer/credit-score", label: "Điểm Tín Nhiệm", icon: "🏆" },
 ];
 
 export default function ReviewerLayout() {
