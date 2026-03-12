@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import ReviewerSidebarLeft from "./ReviewerSidebarLeft";
-import ReviewerSidebarRight from "./ReviewerSidebarRight";
-import ReviewerCanvas from "./ReviewerCanvas";
-import { LogOut, Loader2, ArrowLeft } from "lucide-react";
-import { useTaskDetail } from "../../../../hooks/Reviewer/useTaskDetail";
-import { useReviewerActions } from "../../../../hooks/Reviewer/useReviewActions";
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import ReviewerSidebarLeft from './ReviewerSidebarLeft';
+import ReviewerSidebarRight from './ReviewerSidebarRight';
+import ReviewerCanvas from './ReviewerCanvas';
+import { LogOut, Loader2, ArrowLeft, Send, CheckCircle, XCircle } from 'lucide-react';
+import { useTaskDetail } from '../../../../hooks/Reviewer/useTaskDetail';
+import { useReviewerActions } from '../../../../hooks/Reviewer/useReviewActions';
 
 const ReviewerWorkspace = () => {
   const params = useParams();
@@ -17,21 +17,17 @@ const ReviewerWorkspace = () => {
   const { approveTask, rejectTask, isProcessing } = useReviewerActions();
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
-  // STATE MỚI: Lưu ID của box đang được click bên Sidebar Phải
   const [activeBoxId, setActiveBoxId] = useState(null);
 
-  // Tự động reset box được chọn khi chuyển sang ảnh khác
   useEffect(() => {
     setActiveBoxId(null);
   }, [currentImageIndex]);
 
-  if (isLoading)
-    return (
-      <div className="flex h-screen bg-[#0f172a] items-center justify-center">
-        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
-      </div>
-    );
+  if (isLoading) return (
+    <div className="flex h-screen bg-[#0f172a] items-center justify-center">
+      <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+    </div>
+  );
 
   if (error || !taskDetail)
     return (
@@ -48,15 +44,16 @@ const ReviewerWorkspace = () => {
 
   const currentItem = taskDetail.items?.[currentImageIndex];
 
+  // 2. LOGIC PHÂN BIỆT ẢNH HAY VIDEO
+  const isVideoProject =
+    taskDetail.projectType === "Video" ||
+    currentItem?.filePath?.match(/\.(mp4|avi|mov|mkv|webm)$/i);
+
   return (
     <div className="flex flex-col h-screen bg-[#0f172a] text-slate-200">
       <header className="flex justify-between items-center px-6 py-3 border-b border-slate-800 bg-[#1e293b]">
         <div className="flex items-center gap-4 flex-1 text-left">
-          {/* ĐÃ FIX: Chỉ navigate về /reviewer */}
-          <button
-            onClick={() => navigate("/reviewer")}
-            className="text-slate-400 hover:text-white transition-colors"
-          >
+          <button onClick={() => navigate('/reviewer/dashboard')} className="text-slate-400 hover:text-white transition-colors">
             <ArrowLeft size={20} />
           </button>
           <div>
@@ -75,11 +72,7 @@ const ReviewerWorkspace = () => {
             Đang duyệt bài
           </div>
           <div className="w-px h-6 bg-slate-700 mx-1"></div>
-          {/* ĐÃ FIX: Nút Thoát cũng về /reviewer (Nếu sếp muốn Đăng Xuất hẳn thì gọi API logout ở đây nhé) */}
-          <button
-            onClick={() => navigate("/reviewer")}
-            className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
-          >
+          <button onClick={() => navigate('/reviewer/dashboard')} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors">
             <LogOut size={20} />
           </button>
         </div>
@@ -100,13 +93,9 @@ const ReviewerWorkspace = () => {
               <ReviewerCanvas
                 currentItem={currentItem}
                 toggleAnnotationApproval={toggleAnnotationApproval}
-                activeBoxId={activeBoxId}
-                setActiveBoxId={setActiveBoxId}
               />
             ) : (
-              <div className="h-full flex items-center justify-center text-slate-500">
-                Không có ảnh nào
-              </div>
+              <div className="h-full flex items-center justify-center text-slate-500">Không có ảnh nào</div>
             )}
           </div>
         </main>
@@ -114,6 +103,9 @@ const ReviewerWorkspace = () => {
         {/* SIDEBAR PHẢI */}
         <ReviewerSidebarRight
           taskId={activeTaskId}
+          // ĐÃ THÊM: Truyền 2 biến này để Sidebar phải đọc được toàn bộ danh sách và có thể bấm nhảy ảnh
+          items={taskDetail.items}
+          onSelectIndex={setCurrentImageIndex}
           currentItem={currentItem}
           toggleAnnotationApproval={toggleAnnotationApproval}
           approveTask={approveTask}

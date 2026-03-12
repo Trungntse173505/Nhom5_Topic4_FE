@@ -10,9 +10,6 @@ const firebaseConfig = {
   appId: "1:266003184159:web:416f73983ecf9a0720732a",
   measurementId: "G-301EM7BDJ2",
 };
-
 // Khởi tạo Firebase
 const app = initializeApp(firebaseConfig);
-
-// Khởi tạo Storage và export ra để dùng
 export const storage = getStorage(app);

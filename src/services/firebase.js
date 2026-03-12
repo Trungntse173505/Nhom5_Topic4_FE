@@ -13,114 +13,94 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
+// Biến dùng chung để quản lý dọn dẹp bộ nhớ
 let heartbeatInterval = null;
-let cleanupListeners = null;
+let eventListenersRef = null;
 
 /**
- * Cập nhật trạng thái online/offline lên Firestore
+ * HÀM 1: Cập nhật trạng thái (Dùng cho cả Online và Offline)
  */
 export const updateUserPresence = async (userId, role, isOnline) => {
   const safeUserId = String(userId);
-  if (!safeUserId || safeUserId === "undefined" || safeUserId === "null") {
-    console.error("Lỗi: userId không hợp lệ!");
-    return;
-  }
+  if (!safeUserId || safeUserId === "undefined") return;
+
+  const userRef = doc(db, "presence", safeUserId);
+  const data = {
+    role: role,
+    status: isOnline ? "online" : "offline",
+    lastActive: serverTimestamp(),
+  };
 
   try {
-    const userRef = doc(db, "presence", safeUserId);
-    await setDoc(
-      userRef,
-      {
-        role: role,
-        status: isOnline ? "online" : "offline",
-        lastActive: serverTimestamp(),
-      },
-      { merge: true }
-    );
-    console.log(`[Firebase] ${isOnline ? "Online" : "Offline"} - ${safeUserId} (${role})`);
+    // merge: true giúp giữ lại các trường khác nếu có
+    await setDoc(userRef, data, { merge: true });
+    console.log(`[Firebase] User ${safeUserId} is now ${isOnline ? 'Online' : 'Offline'}`);
   } catch (error) {
     console.error("Lỗi cập nhật Presence:", error);
   }
 };
 
 /**
- * BẮT ĐẦU TRACKING
- * 
- * Cơ chế phát hiện offline khi tắt browser đột ngột:
- * - Heartbeat mỗi 20 giây cập nhật lastActive lên Firestore
- * - Khi tắt browser → heartbeat dừng → lastActive không cập nhật nữa
- * - AdminOverview check mỗi 15 giây: nếu lastActive > 1 phút → coi là offline
- * 
- * => KHÔNG dùng sendBeacon vì Firestore REST API cần auth token
+ * HÀM 2: Bắt đầu theo dõi (Gắn vào App.jsx)
  */
 export const startPresenceTracking = (userId, role) => {
   const safeUserId = String(userId);
+  const userRef = doc(db, "presence", safeUserId);
 
-  // Cleanup cũ nếu có
-  if (cleanupListeners) cleanupListeners();
+  // --- Bước A: Dọn dẹp những gì cũ còn sót lại ---
   if (heartbeatInterval) clearInterval(heartbeatInterval);
+  if (eventListenersRef) eventListenersRef();
 
-  // 1. HEARTBEAT - mỗi 20 giây
+  // --- Bước B: Thiết lập Heartbeat (Cứ 20 giây báo danh 1 lần) ---
   heartbeatInterval = setInterval(() => {
-    const userRef = doc(db, "presence", safeUserId);
-    setDoc(userRef, { lastActive: serverTimestamp() }, { merge: true }).catch(
-      (err) => console.error("Heartbeat error:", err)
-    );
-  }, 15000);
+    setDoc(userRef, { lastActive: serverTimestamp() }, { merge: true })
+      .catch((err) => console.error("Lỗi Heartbeat:", err));
+  }, 20000);
 
-  // 2. BEFOREUNLOAD - cố set offline khi tắt tab (best-effort, không đảm bảo 100%)
-  const handleBeforeUnload = () => {
-    try {
-      const userRef = doc(db, "presence", safeUserId);
-      setDoc(
-        userRef,
-        { status: "offline", lastActive: serverTimestamp() },
-        { merge: true }
-      );
-    } catch (e) {
-      // Browser đang đóng, ignore
+  // --- Bước C: Định nghĩa các sự kiện trình duyệt ---
+  
+  // Khi người dùng tắt tab hoặc trình duyệt
+  const onBrowserClose = () => {
+    updateUserPresence(safeUserId, role, false);
+  };
+
+  // Khi người dùng chuyển tab hoặc thu nhỏ trình duyệt
+  const onTabChange = () => {
+    if (document.visibilityState === "visible") {
+      // Khi quay lại tab: Set online ngay lập tức
+      updateUserPresence(safeUserId, role, true);
     }
   };
 
-  // 3. VISIBILITYCHANGE - chuyển tab / minimize
-  const handleVisibilityChange = () => {
-    const userRef = doc(db, "presence", safeUserId);
-    if (document.visibilityState === "hidden") {
-      // Rời tab → cập nhật lastActive
-      setDoc(userRef, { lastActive: serverTimestamp() }, { merge: true }).catch(() => {});
-    } else if (document.visibilityState === "visible") {
-      // Quay lại tab → set online lại (phòng trường hợp đã bị timeout)
-      setDoc(
-        userRef,
-        { status: "online", lastActive: serverTimestamp() },
-        { merge: true }
-      ).catch(() => {});
-    }
+  // --- Bước D: Gắn sự kiện vào Window/Document ---
+  window.addEventListener("beforeunload", onBrowserClose);
+  document.addEventListener("visibilitychange", onTabChange);
+
+  // Lưu hàm dọn dẹp để gọi khi logout
+  eventListenersRef = () => {
+    window.removeEventListener("beforeunload", onBrowserClose);
+    document.removeEventListener("visibilitychange", onTabChange);
   };
 
-  window.addEventListener("beforeunload", handleBeforeUnload);
-  document.addEventListener("visibilitychange", handleVisibilityChange);
-
-  cleanupListeners = () => {
-    window.removeEventListener("beforeunload", handleBeforeUnload);
-    document.removeEventListener("visibilitychange", handleVisibilityChange);
-  };
-
-  console.log("[Firebase] Presence tracking started");
+  console.log("[Firebase] Bắt đầu theo dõi trạng thái cho:", safeUserId);
 };
 
 /**
- * DỪNG TRACKING - gọi khi logout
+ * HÀM 3: Dừng theo dõi (Gọi khi Logout)
  */
 export const stopPresenceTracking = async (userId, role) => {
+  // 1. Tắt đồng hồ Heartbeat
   if (heartbeatInterval) {
     clearInterval(heartbeatInterval);
     heartbeatInterval = null;
   }
-  if (cleanupListeners) {
-    cleanupListeners();
-    cleanupListeners = null;
+
+  // 2. Gỡ bỏ các sự kiện window/document
+  if (eventListenersRef) {
+    eventListenersRef();
+    eventListenersRef = null;
   }
+
+  // 3. Set trạng thái về offline lần cuối
   await updateUserPresence(userId, role, false);
-  console.log("[Firebase] Presence tracking stopped");
 };

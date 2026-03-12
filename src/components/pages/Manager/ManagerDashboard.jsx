@@ -290,7 +290,10 @@ export default function ManagerDashboard() {
           />
         );
       case "upload":
-        return <DatasetUpload />;
+        {
+          /* ĐÃ SỬA CHỖ NÀY: Truyền `project` vào DatasetUpload */
+        }
+        return <DatasetUpload project={project} />;
       case "distribution":
         return (
           <WorkDistribution project={project} onRefresh={fetchDetailAndUsers} />
