@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useWorkDistribution } from "../../../hooks/useWorkDistribution";
+import { useWorkDistribution } from "../../../hooks/Manager/useWorkDistribution";
 
 // IMPORT THÊM NÚT ANIMATED CHO ĐỒNG BỘ GIAO DIỆN
 import { AnimatedButton } from "../../common/AnimatedButton";

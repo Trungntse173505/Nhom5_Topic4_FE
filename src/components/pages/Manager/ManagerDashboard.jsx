@@ -12,8 +12,8 @@ import {
   getAvailableAnnotators,
   getAvailableReviewers,
 } from "../../../api/managerApi";
-import { useProjectActions } from "../../../hooks/useProjectActions";
-import { useProjectStats } from "../../../hooks/useProjectStats";
+import { useProjectActions } from "../../../hooks/Manager/useProjectActions";
+import { useProjectStats } from "../../../hooks/Manager/useProjectStats";
 
 // Import cái card ảo ma Spotlight
 import { CardSpotlight } from "../../common/card-spotlight";

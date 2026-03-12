@@ -1,4 +1,4 @@
-import { useLoginPage } from "../../../hooks/useLoginPage";
+import { useLoginPage } from "../../../hooks/auth/useLoginPage";
 import ChangePasswordFirstLoginModal from "../../common/ChangePasswordFirstLoginModal";
 import ForgotPasswordModal from "../../common/ForgotPasswordModal";
 

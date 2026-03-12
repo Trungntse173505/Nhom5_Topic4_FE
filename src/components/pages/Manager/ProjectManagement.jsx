@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useProjectManagement } from "../../../hooks/useProjectManagement";
+import { useProjectManagement } from "../../../hooks/Manager/useProjectManagement";
 
 // IMPORT API
 import authApi from "../../../api/authApi";

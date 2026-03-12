@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useTasks } from "../../../hooks/Reviewer/useTasks";
 // 1. IMPORT HOOK ĐIỂM VỪA TẠO VÀO ĐÂY (Sếp check lại đường dẫn import nha)
-import { useScore } from "../../../hooks/useScore";
+import { useScore } from "../../../hooks/Reviewer/useScore";
 
 const TYPE_ICONS = {
   text: <FileText size={16} className="text-blue-400" />,
