@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom";
 
 const ReviewerSidebarRight = ({
   taskId,
+  items = [], // ĐÃ THÊM: Lấy toàn bộ danh sách data của task
+  onSelectIndex, // ĐÃ THÊM: Hàm để bấm vào box ở file khác thì nó tự nhảy sang file đó
   currentItem,
   toggleAnnotationApproval,
   approveTask,
@@ -20,7 +22,6 @@ const ReviewerSidebarRight = ({
 }) => {
   const navigate = useNavigate();
 
-  // STATE MỚI: Lưu trữ lý do lỗi của TỪNG BOX (key là idDetail, value là nội dung lỗi)
   const [boxFeedbacks, setBoxFeedbacks] = useState({});
 
   const handleFeedbackChange = (idDetail, text) => {
@@ -31,7 +32,8 @@ const ReviewerSidebarRight = ({
   };
 
   const handleApprove = async () => {
-    if (!window.confirm("Duyệt toàn bộ task này?")) return;
+    if (!window.confirm("Bạn có chắc chắn muốn DUYỆT toàn bộ task này?"))
+      return;
     const res = await approveTask(taskId);
     if (res.success) {
       alert("✅ Thành công: " + res.data);
@@ -40,18 +42,28 @@ const ReviewerSidebarRight = ({
   };
 
   const handleReject = async () => {
-    // Thu thập tất cả các box bị đánh "Lỗi" (isApproved === false)
-    const rejectedBoxes =
-      currentItem?.annotations?.filter((a) => a.isApproved === false) || [];
+    // ĐÃ FIX: Lấy TOÀN BỘ box bị lỗi trên TẤT CẢ các file của Task
+    const allRejectedBoxes = [];
+    items.forEach((item, index) => {
+      item.annotations?.forEach((ann) => {
+        if (ann.isApproved === false) {
+          allRejectedBoxes.push({
+            ...ann,
+            fileIndex: index + 1,
+            fileName: item.fileName || `File ${index + 1}`,
+          });
+        }
+      });
+    });
 
-    if (rejectedBoxes.length === 0) {
+    if (allRejectedBoxes.length === 0) {
       return alert(
-        "Vui lòng đánh dấu 'Lỗi' cho ít nhất một vùng trước khi Trả về!",
+        "Vui lòng đánh dấu 'Lỗi' cho ít nhất một vùng (ở bất kỳ file nào) trước khi Trả về!",
       );
     }
 
     // Kiểm tra xem các box bị lỗi đã được nhập lý do chưa
-    const missingFeedback = rejectedBoxes.some(
+    const missingFeedback = allRejectedBoxes.some(
       (box) => !boxFeedbacks[box.idDetail]?.trim(),
     );
     if (missingFeedback) {
@@ -60,19 +72,19 @@ const ReviewerSidebarRight = ({
       );
     }
 
-    if (!window.confirm("Trả task về bắt làm lại?")) return;
+    if (!window.confirm("Bạn muốn trả task này về cho Annotator làm lại?"))
+      return;
 
-    // GOM DATA ĐỂ GỬI BE: Gom các lỗi thành một chuỗi hoặc mảng tùy Backend yêu cầu
-    // Ở đây tui đang gom thành một đoạn text tổng hợp dễ đọc: "Vùng: [Tên nhãn] - Lỗi: [Lý do]"
-    const compiledComment = rejectedBoxes
+    // GOM DATA ĐỂ GỬI BE (Hiển thị rõ lỗi nằm ở File nào)
+    const compiledComment = allRejectedBoxes
       .map(
         (box) =>
-          `[${box.content || "Chưa có nhãn"}]: ${boxFeedbacks[box.idDetail]}`,
+          `[${box.fileName} - ${box.content || "Chưa có nhãn"}]: ${boxFeedbacks[box.idDetail]}`,
       )
       .join(" | ");
 
     const finalFeedback = {
-      errorRegion: "Nhiều vùng (Xem chi tiết)", // Sếp có thể tùy chỉnh
+      errorRegion: "Nhiều vùng (Xem chi tiết)",
       comment: compiledComment,
     };
 
@@ -83,108 +95,155 @@ const ReviewerSidebarRight = ({
     } else alert("❌ Lỗi: " + res.error);
   };
 
+  // Tính tổng số lượng Box của toàn bộ Task để hiển thị
+  const totalBoxes = items.reduce(
+    (total, item) => total + (item.annotations?.length || 0),
+    0,
+  );
+
   return (
     <aside className="w-80 border-l border-slate-800 bg-[#0f172a] flex flex-col shrink-0 text-left">
       <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-[#1e293b]">
         <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
-          Chi tiết Ảnh Hiện Tại
+          Chi tiết Toàn bộ Task
         </h3>
         <span className="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded-full font-bold">
-          {currentItem?.annotations?.length || 0} Box
+          {totalBoxes} Box
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 custom-scrollbar">
-        {currentItem?.annotations?.length === 0 && (
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-5 custom-scrollbar">
+        {items.length === 0 && (
           <div className="text-sm text-slate-500 italic text-center p-6 border border-dashed border-slate-700 rounded-xl">
-            Chưa có object nào được vẽ trên ảnh này.
+            Không có dữ liệu nào trong Task này.
           </div>
         )}
 
-        {currentItem?.annotations?.map((ann) => {
-          const isActive = activeBoxId === ann.idDetail;
-          // Box này có đang bị đánh dấu Lỗi (false) không?
-          const isRejected = ann.isApproved === false;
+        {items.map((item, index) => {
+          // So sánh xem file đang loop có phải là file đang được xem trên màn hình không
+          const isCurrentFile = currentItem && currentItem === item;
 
           return (
-            <div
-              key={ann.idDetail}
-              onClick={() => setActiveBoxId(ann.idDetail)}
-              className={`p-3 rounded-xl border flex flex-col gap-3 cursor-pointer transition-all duration-200 ${
-                isActive
-                  ? "bg-blue-500/10 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
-                  : "bg-[#1e293b] border-slate-700 hover:border-slate-500"
-              }`}
-            >
-              {/* Tiêu đề Box */}
-              <div className="flex justify-between items-center">
-                <span
-                  className={`text-sm font-bold ${isActive ? "text-blue-400" : "text-white"}`}
-                >
-                  {ann.content || "Chưa có nhãn"}
+            <div key={index} className="flex flex-col gap-3">
+              {/* Tiêu đề phân cách từng File */}
+              <div
+                className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer transition-colors ${
+                  isCurrentFile
+                    ? "bg-blue-500/20 text-blue-400"
+                    : "bg-slate-800 text-slate-400 hover:text-white"
+                }`}
+                onClick={() => onSelectIndex && onSelectIndex(index)}
+              >
+                <span className="text-xs font-bold truncate pr-2">
+                  File {index + 1}: {item.fileName || `No_name_${index + 1}`}
                 </span>
-                {isRejected && (
-                  <MessageSquareWarning
-                    size={14}
-                    className="text-rose-500 animate-pulse"
-                  />
+                {isCurrentFile && (
+                  <span className="text-[10px] uppercase font-bold shrink-0">
+                    Đang xem
+                  </span>
                 )}
               </div>
 
-              {/* Nút Đúng / Lỗi */}
-              <div className="flex gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleAnnotationApproval(ann.idDetail, false);
-                  }}
-                  className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-bold transition-colors ${
-                    ann.isApproved === true
-                      ? "bg-green-500 text-white shadow-lg shadow-green-500/20"
-                      : "bg-slate-800 text-slate-400 hover:bg-green-500/20 hover:text-green-400"
-                  }`}
-                >
-                  <CheckCircle size={14} /> Đúng
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleAnnotationApproval(ann.idDetail, true);
-                    // Tự động focus vào ô nhập lý do (nếu cần thiết có thể thêm logic useRef)
-                  }}
-                  className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-bold transition-colors ${
-                    isRejected
-                      ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20"
-                      : "bg-slate-800 text-slate-400 hover:bg-rose-500/20 hover:text-rose-400"
-                  }`}
-                >
-                  <XCircle size={14} /> Lỗi
-                </button>
-              </div>
-
-              {/* Ô NHẬP LÝ DO (CHỈ HIỆN KHI BỊ ĐÁNH DẤU LỖI) */}
-              {isRejected && (
-                <div
-                  className="mt-1 animate-in slide-in-from-top-2 fade-in duration-200"
-                  onClick={(e) => e.stopPropagation()} // Ngăn click vào input làm kích hoạt chọn box
-                >
-                  <input
-                    type="text"
-                    placeholder="Nhập lý do lỗi cho vùng này..."
-                    className="w-full bg-[#0f172a] border border-rose-500/50 rounded-lg p-2 text-xs text-white focus:border-rose-500 outline-none transition-colors"
-                    value={boxFeedbacks[ann.idDetail] || ""}
-                    onChange={(e) =>
-                      handleFeedbackChange(ann.idDetail, e.target.value)
-                    }
-                  />
+              {item.annotations?.length === 0 && (
+                <div className="text-xs text-slate-600 italic px-2">
+                  Chưa có object nào
                 </div>
               )}
+
+              {item.annotations?.map((ann) => {
+                const isActive = activeBoxId === ann.idDetail;
+                const isRejected = ann.isApproved === false;
+
+                return (
+                  <div
+                    key={ann.idDetail}
+                    onClick={() => {
+                      if (!isCurrentFile && onSelectIndex) {
+                        onSelectIndex(index); // Nhảy sang ảnh chứa box này
+                      }
+                      setActiveBoxId(ann.idDetail);
+                    }}
+                    className={`p-3 rounded-xl border flex flex-col gap-3 cursor-pointer transition-all duration-200 ${
+                      isActive
+                        ? "bg-blue-500/10 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
+                        : "bg-[#1e293b] border-slate-700 hover:border-slate-500"
+                    }`}
+                  >
+                    {/* Tiêu đề Box */}
+                    <div className="flex justify-between items-center">
+                      <span
+                        className={`text-sm font-bold ${isActive ? "text-blue-400" : "text-white"}`}
+                      >
+                        {ann.content || "Chưa có nhãn"}
+                      </span>
+                      {isRejected && (
+                        <MessageSquareWarning
+                          size={14}
+                          className="text-rose-500 animate-pulse"
+                        />
+                      )}
+                    </div>
+
+                    {/* Nút Đúng / Lỗi */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!isCurrentFile && onSelectIndex)
+                            onSelectIndex(index);
+                          toggleAnnotationApproval(ann.idDetail, false);
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-bold transition-colors ${
+                          ann.isApproved === true
+                            ? "bg-green-500 text-white shadow-lg shadow-green-500/20"
+                            : "bg-slate-800 text-slate-400 hover:bg-green-500/20 hover:text-green-400"
+                        }`}
+                      >
+                        <CheckCircle size={14} /> Đúng
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!isCurrentFile && onSelectIndex)
+                            onSelectIndex(index);
+                          toggleAnnotationApproval(ann.idDetail, true);
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-bold transition-colors ${
+                          isRejected
+                            ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20"
+                            : "bg-slate-800 text-slate-400 hover:bg-rose-500/20 hover:text-rose-400"
+                        }`}
+                      >
+                        <XCircle size={14} /> Lỗi
+                      </button>
+                    </div>
+
+                    {/* Ô NHẬP LÝ DO */}
+                    {isRejected && (
+                      <div
+                        className="mt-1 animate-in slide-in-from-top-2 fade-in duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="text"
+                          placeholder="Nhập lý do lỗi cho vùng này..."
+                          className="w-full bg-[#0f172a] border border-rose-500/50 rounded-lg p-2 text-xs text-white focus:border-rose-500 outline-none transition-colors"
+                          value={boxFeedbacks[ann.idDetail] || ""}
+                          onChange={(e) =>
+                            handleFeedbackChange(ann.idDetail, e.target.value)
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           );
         })}
       </div>
 
-      {/* KHU VỰC NÚT ACTION TỔNG (Duyệt / Trả về) */}
+      {/* KHU VỰC NÚT ACTION TỔNG */}
       <div className="p-4 border-t border-slate-800 bg-[#1e293b]">
         <div className="flex gap-2">
           <button
@@ -192,7 +251,7 @@ const ReviewerSidebarRight = ({
             disabled={isProcessing}
             className="flex-1 flex flex-col items-center justify-center gap-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/20"
           >
-            <ThumbsUp size={18} /> Duyệt Ảnh Này
+            <ThumbsUp size={18} /> Duyệt Toàn Bộ
           </button>
           <button
             onClick={handleReject}

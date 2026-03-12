@@ -126,6 +126,9 @@ const ReviewerWorkspace = () => {
         {/* SIDEBAR PHẢI */}
         <ReviewerSidebarRight
           taskId={activeTaskId}
+          // ĐÃ THÊM: Truyền 2 biến này để Sidebar phải đọc được toàn bộ danh sách và có thể bấm nhảy ảnh
+          items={taskDetail.items}
+          onSelectIndex={setCurrentImageIndex}
           currentItem={currentItem}
           toggleAnnotationApproval={toggleAnnotationApproval}
           approveTask={approveTask}
