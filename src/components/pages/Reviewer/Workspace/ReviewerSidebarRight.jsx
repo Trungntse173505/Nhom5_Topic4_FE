@@ -6,11 +6,23 @@ import {
   XCircle,
   MessageSquareWarning,
 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const ReviewerSidebarRight = ({ taskId, currentItem, toggleAnnotationApproval, approveTask, rejectTask, isProcessing }) => {
   const navigate = useNavigate();
   const [feedback, setFeedback] = useState({ comment: '', errorRegion: '' });
+
+  // BỔ SUNG: Nhận items từ props (không thay đổi signature hiện có)
+  const items = (typeof arguments === "undefined" ? [] : arguments)?.[0]?.items || [];
+
+  // BỔ SUNG: Fix logic đảo đúng/sai (giữ nguyên UI nút bấm hiện có)
+  const __toggle = toggleAnnotationApproval;
+  if (typeof __toggle === "function") {
+    // eslint-disable-next-line no-param-reassign
+    toggleAnnotationApproval = (idDetail, targetStatus) =>
+      __toggle(idDetail, !targetStatus);
+  }
 
   const handleApprove = async () => {
     let hasUnevaluated = false;
@@ -52,6 +64,14 @@ const ReviewerSidebarRight = ({ taskId, currentItem, toggleAnnotationApproval, a
     (total, item) => total + (item.annotations?.length || 0),
     0,
   );
+
+  // BỔ SUNG: Điều kiện tổng kết để disable Trả Task về khi chưa chấm/không có lỗi
+  const __allAnnotations = items.flatMap((it) => it?.annotations || []);
+  const __isChecked = (v) => v === true || v === false;
+  const canFinalize =
+    __allAnnotations.length === 0 ||
+    __allAnnotations.every((a) => __isChecked(a?.isApproved));
+  const hasAnyWrong = __allAnnotations.some((a) => a?.isApproved === false);
 
   return (
     <aside className="w-80 border-l border-slate-800 bg-[#0f172a] flex flex-col shrink-0 text-left">

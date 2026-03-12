@@ -1,32 +1,16 @@
 import { useCallback, useState } from 'react';
 import authResetPasswordApi from '../../api/authResetPasswordApi';
 
-const buildPayload = ({ email, otp, token, newPassword }) => {
+const buildPayload = ({ email, otp, newPassword }) => {
   const emailValue = String(email ?? '').trim();
   const otpValue = String(otp ?? '').trim();
-  const tokenValue = String(token ?? '').trim();
   const newPasswordValue = String(newPassword ?? '');
 
-  const payload = {
+  return {
     email: emailValue,
-    Email: emailValue,
+    otp: otpValue,
     newPassword: newPasswordValue,
-    NewPassword: newPasswordValue,
-    password: newPasswordValue,
-    Password: newPasswordValue,
   };
-
-  if (otpValue) {
-    payload.otp = otpValue;
-    payload.OTP = otpValue;
-  }
-
-  if (tokenValue) {
-    payload.token = tokenValue;
-    payload.Token = tokenValue;
-  }
-
-  return payload;
 };
 
 const extractErrorMessage = (err, fallback) => {
@@ -55,13 +39,13 @@ export const useResetPassword = () => {
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
 
-  const resetPassword = useCallback(async ({ email, otp, token, newPassword }) => {
+  const resetPassword = useCallback(async ({ email, otp, newPassword }) => {
     setLoading(true);
     setError(null);
     setData(null);
 
     try {
-      const payload = buildPayload({ email, otp, token, newPassword });
+      const payload = buildPayload({ email, otp, newPassword });
       const res = await authResetPasswordApi.resetPassword(payload);
       setData(res);
       return { success: true, data: res };

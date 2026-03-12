@@ -38,11 +38,13 @@ export const useTaskDetail = (taskId) => {
           ...prev,
           items: prev.items.map((item) => ({
             ...item,
-            annotations: item.annotations.map((ann) =>
-              ann.idDetail === idDetail
-                ? { ...ann, isApproved: targetStatus }
-                : ann,
-            ),
+            annotations: Array.isArray(item.annotations)
+              ? item.annotations.map((ann) =>
+                  ann.idDetail === idDetail
+                    ? { ...ann, isApproved: targetStatus }
+                    : ann,
+                )
+              : item.annotations,
           })),
         };
       });

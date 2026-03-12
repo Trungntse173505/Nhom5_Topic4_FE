@@ -3,7 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import ReviewerSidebarLeft from './ReviewerSidebarLeft';
 import ReviewerSidebarRight from './ReviewerSidebarRight';
 import ReviewerCanvas from './ReviewerCanvas';
+import ReviewerTextViewer from "./ReviewerTextViewer";
+import ReviewerAudioViewer from "./ReviewerAudioViewer";
 import { LogOut, Loader2, ArrowLeft, Send, CheckCircle, XCircle } from 'lucide-react';
+import { useEffect } from "react";
 import { useTaskDetail } from '../../../../hooks/Reviewer/useTaskDetail';
 import { useReviewerActions } from '../../../../hooks/Reviewer/useReviewActions';
 
@@ -43,6 +46,18 @@ const ReviewerWorkspace = () => {
     );
 
   const currentItem = taskDetail.items?.[currentImageIndex];
+
+  // HIỂN THỊ AUDIO/TEXT TASK TƯƠNG TỰ ANNOTATOR (không thay đổi UI hiện có của Image)
+  const __filePathLower = String(currentItem?.filePath || "").toLowerCase();
+  const __cleanPath = __filePathLower.split("?")[0].split("#")[0];
+  const isAudioTask =
+    __cleanPath.includes(".mp3") ||
+    __cleanPath.includes(".wav") ||
+    __cleanPath.includes(".ogg");
+  const isTextTask =
+    __cleanPath.includes(".txt") ||
+    __cleanPath.includes(".csv") ||
+    __cleanPath.includes(".json");
 
   // 2. LOGIC PHÂN BIỆT ẢNH HAY VIDEO
   const isVideoProject =
@@ -98,6 +113,24 @@ const ReviewerWorkspace = () => {
               <div className="h-full flex items-center justify-center text-slate-500">Không có ảnh nào</div>
             )}
           </div>
+
+          {/* Overlay cho Audio/Text để hiển thị như task Image (giữ nguyên layout 3 cột) */}
+          {(isAudioTask || isTextTask) && currentItem && (
+            <div className="absolute inset-4">
+              <div className="bg-[#1e293b] rounded-2xl border border-slate-800 h-full overflow-hidden">
+                {isTextTask ? (
+                  <ReviewerTextViewer
+                    currentItem={currentItem}
+                    activeAnnotationId={activeBoxId}
+                    setActiveAnnotationId={setActiveBoxId}
+                    availableLabels={taskDetail?.availableLabels || []}
+                  />
+                ) : (
+                  <ReviewerAudioViewer currentItem={currentItem} />
+                )}
+              </div>
+            </div>
+          )}
         </main>
 
         {/* SIDEBAR PHẢI */}

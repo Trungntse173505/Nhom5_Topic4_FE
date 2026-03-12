@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useResetPassword } from './useResetPassword';
 
 const extractValue = (obj, keys) => {
@@ -9,7 +9,7 @@ const extractValue = (obj, keys) => {
   return null;
 };
 
-export const useResetPasswordModal = ({ open, email, onSuccess }) => {
+export const useResetPasswordModal = ({ open, email, onSuccess, onClose }) => {
   const { resetPassword, loading, error, data, setError } = useResetPassword();
 
   const [otp, setOtp] = useState('');
@@ -19,14 +19,18 @@ export const useResetPasswordModal = ({ open, email, onSuccess }) => {
 
   const emailValue = useMemo(() => String(email ?? '').trim(), [email]);
 
-  useEffect(() => {
-    if (open) return;
+  const reset = useCallback(() => {
     setOtp('');
     setNewPassword('');
     setConfirmPassword('');
     setTouched({ otp: false, newPassword: false, confirmPassword: false });
     setError(null);
-  }, [open, setError]);
+  }, [setError]);
+
+  const close = useCallback(() => {
+    reset();
+    onClose?.();
+  }, [reset, onClose]);
 
   const fieldError = useMemo(() => {
     const next = {};
@@ -72,6 +76,18 @@ export const useResetPasswordModal = ({ open, email, onSuccess }) => {
     setTouched({ otp: true, newPassword: true, confirmPassword: true });
   }, []);
 
+  const touchField = useCallback((key) => {
+    setTouched((t) => ({ ...t, [key]: true }));
+  }, []);
+
+  const onBlurOtp = useCallback(() => touchField('otp'), [touchField]);
+  const onBlurNewPassword = useCallback(() => touchField('newPassword'), [touchField]);
+  const onBlurConfirmPassword = useCallback(() => touchField('confirmPassword'), [touchField]);
+
+  const onChangeOtp = useCallback((value) => setOtp(value), []);
+  const onChangeNewPassword = useCallback((value) => setNewPassword(value), []);
+  const onChangeConfirmPassword = useCallback((value) => setConfirmPassword(value), []);
+
   const submit = useCallback(
     async (e) => {
       e?.preventDefault?.();
@@ -92,7 +108,6 @@ export const useResetPasswordModal = ({ open, email, onSuccess }) => {
     otp,
     newPassword,
     confirmPassword,
-    touched,
     fieldError,
     canSubmit,
     loading,
@@ -100,11 +115,14 @@ export const useResetPasswordModal = ({ open, email, onSuccess }) => {
     successMessage,
     responseFields,
     setError,
-    setOtp,
-    setNewPassword,
-    setConfirmPassword,
-    setTouched,
+    reset,
+    close,
+    onBlurOtp,
+    onBlurNewPassword,
+    onBlurConfirmPassword,
+    onChangeOtp,
+    onChangeNewPassword,
+    onChangeConfirmPassword,
     submit,
   };
 };
-
