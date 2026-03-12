@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import ReviewerSidebarLeft from "./ReviewerSidebarLeft";
 import ReviewerSidebarRight from "./ReviewerSidebarRight";
 import ReviewerCanvas from "./ReviewerCanvas";
+// 1. IMPORT CÁI CANVAS VIDEO VỪA TẠO VÀO
+import ReviewerVideoCanvas from "./ReviewerVideoCanvas";
 import { LogOut, Loader2, ArrowLeft } from "lucide-react";
 import { useTaskDetail } from "../../../../hooks/Reviewer/useTaskDetail";
 import { useReviewerActions } from "../../../../hooks/Reviewer/useReviewActions";
@@ -17,11 +19,8 @@ const ReviewerWorkspace = () => {
   const { approveTask, rejectTask, isProcessing } = useReviewerActions();
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
-  // STATE MỚI: Lưu ID của box đang được click bên Sidebar Phải
   const [activeBoxId, setActiveBoxId] = useState(null);
 
-  // Tự động reset box được chọn khi chuyển sang ảnh khác
   useEffect(() => {
     setActiveBoxId(null);
   }, [currentImageIndex]);
@@ -48,11 +47,15 @@ const ReviewerWorkspace = () => {
 
   const currentItem = taskDetail.items?.[currentImageIndex];
 
+  // 2. LOGIC PHÂN BIỆT ẢNH HAY VIDEO
+  const isVideoProject =
+    taskDetail.projectType === "Video" ||
+    currentItem?.filePath?.match(/\.(mp4|avi|mov|mkv|webm)$/i);
+
   return (
     <div className="flex flex-col h-screen bg-[#0f172a] text-slate-200">
       <header className="flex justify-between items-center px-6 py-3 border-b border-slate-800 bg-[#1e293b]">
         <div className="flex items-center gap-4 flex-1 text-left">
-          {/* ĐÃ FIX: Chỉ navigate về /reviewer */}
           <button
             onClick={() => navigate("/reviewer")}
             className="text-slate-400 hover:text-white transition-colors"
@@ -75,7 +78,6 @@ const ReviewerWorkspace = () => {
             Đang duyệt bài
           </div>
           <div className="w-px h-6 bg-slate-700 mx-1"></div>
-          {/* ĐÃ FIX: Nút Thoát cũng về /reviewer (Nếu sếp muốn Đăng Xuất hẳn thì gọi API logout ở đây nhé) */}
           <button
             onClick={() => navigate("/reviewer")}
             className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
@@ -97,15 +99,25 @@ const ReviewerWorkspace = () => {
         <main className="flex-1 overflow-hidden relative flex flex-col bg-[#0b1220] p-4">
           <div className="bg-[#1e293b] rounded-2xl border border-slate-800 flex-1 overflow-hidden">
             {currentItem ? (
-              <ReviewerCanvas
-                currentItem={currentItem}
-                toggleAnnotationApproval={toggleAnnotationApproval}
-                activeBoxId={activeBoxId}
-                setActiveBoxId={setActiveBoxId}
-              />
+              // 3. NẾU LÀ VIDEO THÌ GỌI VIDEO CANVAS, KHÔNG THÌ GỌI IMAGE CANVAS
+              isVideoProject ? (
+                <ReviewerVideoCanvas
+                  currentItem={currentItem}
+                  toggleAnnotationApproval={toggleAnnotationApproval}
+                  activeBoxId={activeBoxId}
+                  setActiveBoxId={setActiveBoxId}
+                />
+              ) : (
+                <ReviewerCanvas
+                  currentItem={currentItem}
+                  toggleAnnotationApproval={toggleAnnotationApproval}
+                  activeBoxId={activeBoxId}
+                  setActiveBoxId={setActiveBoxId}
+                />
+              )
             ) : (
               <div className="h-full flex items-center justify-center text-slate-500">
-                Không có ảnh nào
+                Không có dữ liệu nào
               </div>
             )}
           </div>
