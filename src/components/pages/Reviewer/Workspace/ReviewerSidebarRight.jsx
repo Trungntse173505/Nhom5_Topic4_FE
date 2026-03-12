@@ -10,8 +10,8 @@ import { useNavigate } from "react-router-dom";
 
 const ReviewerSidebarRight = ({
   taskId,
-  items = [], // ĐÃ THÊM: Lấy toàn bộ danh sách data của task
-  onSelectIndex, // ĐÃ THÊM: Hàm để bấm vào box ở file khác thì nó tự nhảy sang file đó
+  items = [],
+  onSelectIndex,
   currentItem,
   toggleAnnotationApproval,
   approveTask,
@@ -21,7 +21,6 @@ const ReviewerSidebarRight = ({
   setActiveBoxId,
 }) => {
   const navigate = useNavigate();
-
   const [boxFeedbacks, setBoxFeedbacks] = useState({});
 
   const handleFeedbackChange = (idDetail, text) => {
@@ -32,17 +31,32 @@ const ReviewerSidebarRight = ({
   };
 
   const handleApprove = async () => {
+    let hasUnevaluated = false;
+    items.forEach((item) => {
+      item.annotations?.forEach((ann) => {
+        if (ann.isApproved === null || ann.isApproved === undefined) {
+          hasUnevaluated = true;
+        }
+      });
+    });
+
+    if (hasUnevaluated) {
+      return alert(
+        "⚠️ Lỗi: Bạn phải chấm [Đúng/Lỗi] cho TẤT CẢ các vùng trước khi Duyệt Task!",
+      );
+    }
+
     if (!window.confirm("Bạn có chắc chắn muốn DUYỆT toàn bộ task này?"))
       return;
+
     const res = await approveTask(taskId);
     if (res.success) {
-      alert("✅ Thành công: " + res.data);
+      alert("✅ Thành công: " + (res.data || "Đã duyệt Task"));
       navigate("/reviewer");
-    } else alert("❌ Lỗi: " + res.error);
+    } else alert("❌ Lỗi duyệt: " + res.error);
   };
 
   const handleReject = async () => {
-    // ĐÃ FIX: Lấy TOÀN BỘ box bị lỗi trên TẤT CẢ các file của Task
     const allRejectedBoxes = [];
     items.forEach((item, index) => {
       item.annotations?.forEach((ann) => {
@@ -58,11 +72,10 @@ const ReviewerSidebarRight = ({
 
     if (allRejectedBoxes.length === 0) {
       return alert(
-        "Vui lòng đánh dấu 'Lỗi' cho ít nhất một vùng (ở bất kỳ file nào) trước khi Trả về!",
+        "Vui lòng đánh dấu 'Lỗi' cho ít nhất một vùng trước khi Trả về!",
       );
     }
 
-    // Kiểm tra xem các box bị lỗi đã được nhập lý do chưa
     const missingFeedback = allRejectedBoxes.some(
       (box) => !boxFeedbacks[box.idDetail]?.trim(),
     );
@@ -75,7 +88,6 @@ const ReviewerSidebarRight = ({
     if (!window.confirm("Bạn muốn trả task này về cho Annotator làm lại?"))
       return;
 
-    // GOM DATA ĐỂ GỬI BE (Hiển thị rõ lỗi nằm ở File nào)
     const compiledComment = allRejectedBoxes
       .map(
         (box) =>
@@ -84,18 +96,17 @@ const ReviewerSidebarRight = ({
       .join(" | ");
 
     const finalFeedback = {
-      errorRegion: "Nhiều vùng (Xem chi tiết)",
+      errorRegion: "Nhiều vùng",
       comment: compiledComment,
     };
 
     const res = await rejectTask(taskId, finalFeedback);
     if (res.success) {
-      alert("✅ Thành công: " + res.data);
+      alert("✅ Thành công: " + (res.data || "Đã trả Task về"));
       navigate("/reviewer");
-    } else alert("❌ Lỗi: " + res.error);
+    } else alert("❌ Lỗi từ chối: " + res.error);
   };
 
-  // Tính tổng số lượng Box của toàn bộ Task để hiển thị
   const totalBoxes = items.reduce(
     (total, item) => total + (item.annotations?.length || 0),
     0,
@@ -120,12 +131,10 @@ const ReviewerSidebarRight = ({
         )}
 
         {items.map((item, index) => {
-          // So sánh xem file đang loop có phải là file đang được xem trên màn hình không
           const isCurrentFile = currentItem && currentItem === item;
 
           return (
             <div key={index} className="flex flex-col gap-3">
-              {/* Tiêu đề phân cách từng File */}
               <div
                 className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer transition-colors ${
                   isCurrentFile
@@ -144,12 +153,6 @@ const ReviewerSidebarRight = ({
                 )}
               </div>
 
-              {item.annotations?.length === 0 && (
-                <div className="text-xs text-slate-600 italic px-2">
-                  Chưa có object nào
-                </div>
-              )}
-
               {item.annotations?.map((ann) => {
                 const isActive = activeBoxId === ann.idDetail;
                 const isRejected = ann.isApproved === false;
@@ -158,9 +161,7 @@ const ReviewerSidebarRight = ({
                   <div
                     key={ann.idDetail}
                     onClick={() => {
-                      if (!isCurrentFile && onSelectIndex) {
-                        onSelectIndex(index); // Nhảy sang ảnh chứa box này
-                      }
+                      if (!isCurrentFile && onSelectIndex) onSelectIndex(index);
                       setActiveBoxId(ann.idDetail);
                     }}
                     className={`p-3 rounded-xl border flex flex-col gap-3 cursor-pointer transition-all duration-200 ${
@@ -169,7 +170,6 @@ const ReviewerSidebarRight = ({
                         : "bg-[#1e293b] border-slate-700 hover:border-slate-500"
                     }`}
                   >
-                    {/* Tiêu đề Box */}
                     <div className="flex justify-between items-center">
                       <span
                         className={`text-sm font-bold ${isActive ? "text-blue-400" : "text-white"}`}
@@ -184,14 +184,15 @@ const ReviewerSidebarRight = ({
                       )}
                     </div>
 
-                    {/* Nút Đúng / Lỗi */}
                     <div className="flex gap-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           if (!isCurrentFile && onSelectIndex)
                             onSelectIndex(index);
-                          toggleAnnotationApproval(ann.idDetail, false);
+
+                          // TRUYỀN THẲNG TRUE (ĐÚNG)
+                          toggleAnnotationApproval(ann.idDetail, true);
                         }}
                         className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-bold transition-colors ${
                           ann.isApproved === true
@@ -206,7 +207,9 @@ const ReviewerSidebarRight = ({
                           e.stopPropagation();
                           if (!isCurrentFile && onSelectIndex)
                             onSelectIndex(index);
-                          toggleAnnotationApproval(ann.idDetail, true);
+
+                          // TRUYỀN THẲNG FALSE (LỖI)
+                          toggleAnnotationApproval(ann.idDetail, false);
                         }}
                         className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-bold transition-colors ${
                           isRejected
@@ -218,7 +221,6 @@ const ReviewerSidebarRight = ({
                       </button>
                     </div>
 
-                    {/* Ô NHẬP LÝ DO */}
                     {isRejected && (
                       <div
                         className="mt-1 animate-in slide-in-from-top-2 fade-in duration-200"
@@ -243,7 +245,6 @@ const ReviewerSidebarRight = ({
         })}
       </div>
 
-      {/* KHU VỰC NÚT ACTION TỔNG */}
       <div className="p-4 border-t border-slate-800 bg-[#1e293b]">
         <div className="flex gap-2">
           <button
