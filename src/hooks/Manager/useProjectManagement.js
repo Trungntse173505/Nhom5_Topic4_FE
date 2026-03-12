@@ -1,6 +1,6 @@
 // src/hooks/useProjectManagement.js
 import { useState, useEffect } from "react";
-import { getProjectsList, createProject } from "../api/managerApi";
+import { getProjectsList, createProject } from "../../api/managerApi";
 
 export const useProjectManagement = () => {
   const [projects, setProjects] = useState([]);

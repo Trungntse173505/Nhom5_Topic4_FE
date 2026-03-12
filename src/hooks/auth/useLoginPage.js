@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { updateUserPresence } from '../services/firebase';
+import { updateUserPresence } from '../../services/firebase';
 import { useLogin } from './useLogin';
 
 export const useLoginPage = () => {

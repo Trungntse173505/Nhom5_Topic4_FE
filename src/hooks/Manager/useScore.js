@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 // TỪ hooks/useScore.js LÙI 1 BƯỚC LÀ VÀO ĐƯỢC api/scoreApi.js
-import scoreApi from "../api/scoreApi";
+import scoreApi from "../../api/scoreApi";
 
 export const useScore = () => {
   const [scoresList, setScoresList] = useState([]);

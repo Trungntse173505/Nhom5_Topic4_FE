@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import authApi from '../api/authApi';
+import authApi from '../../api/authApi';
 
 const pick = (obj, keys) => {
   for (let i = 0; i < keys.length; i += 1) {
