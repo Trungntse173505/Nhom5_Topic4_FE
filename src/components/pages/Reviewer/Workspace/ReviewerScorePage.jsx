@@ -1,12 +1,42 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trophy, TrendingUp, TrendingDown, ShieldAlert, History, Loader2 } from 'lucide-react';
-// Sếp nhớ check lại đường dẫn import hook này cho chuẩn thư mục Reviewer nha
-import { useReputation } from '../../../../hooks/Reviewer/useReputation';
 
 const ReviewerCreditScorePage = () => {
   const navigate = useNavigate();
-  const { currentScore, logs, loading, error } = useReputation();
+  
+  const loading = false;
+  const error = null;
+  const currentScore = 85; // Thử đổi thành 45 (Vàng) hoặc 15 (Đỏ) để xem UI thay đổi nhé
+  
+  const logs = [
+    { 
+      reason: "Duyệt chính xác 50 yêu cầu liên tục", 
+      createdAt: "2024-10-25T10:30:00Z", 
+      scoreChange: 10 
+    },
+    { 
+      reason: "Hoàn thành yêu cầu kiểm duyệt #1024", 
+      createdAt: "2024-10-24T14:15:00Z", 
+      scoreChange: 2 
+    },
+    { 
+      reason: "Bị khiếu nại và quyết định bãi bỏ ở task #998", 
+      createdAt: "2024-10-20T09:00:00Z", 
+      scoreChange: -5 
+    },
+    { 
+      reason: "Hoàn thành yêu cầu kiểm duyệt #950", 
+      createdAt: "2024-10-18T16:45:00Z", 
+      scoreChange: 3 
+    },
+    { 
+      reason: "Bỏ qua yêu cầu kiểm duyệt quá hạn 24h", 
+      createdAt: "2024-10-15T08:20:00Z", 
+      scoreChange: -10 
+    }
+  ];
+  // ==========================================
 
   if (loading) return (
     <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white">
@@ -41,9 +71,7 @@ const ReviewerCreditScorePage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
           {/* Box Điểm Hiện Tại */}
-          {/* Box Lịch Sử */}
           <div className="col-span-1 bg-[#1e293b] border border-slate-700 p-8 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden h-fit">
-            {/* Đổi glow màu xanh thành màu TÍM (purple) cho hợp với theme Reviewer */}
             <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl ${isHigh ? 'bg-purple-500/20' : 'bg-red-500/20'}`} />
             <p className="text-sm text-slate-400 uppercase tracking-wider font-bold mb-2 z-10">Điểm hiện tại</p>
             
