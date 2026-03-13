@@ -149,7 +149,11 @@ export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
                 open={resetOpen}
                 email={emailValue}
                 onClose={() => setResetOpen(false)}
-                onSuccess={() => setResetOpen(false)}
+                onSuccess={() => {
+                    setResetOpen(false);
+                    setAllError(null);
+                    onClose?.();
+                }}
             />
         </div>
     );

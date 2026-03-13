@@ -97,7 +97,14 @@ export const useResetPasswordModal = ({ open, email, onSuccess, onClose }) => {
       }
 
       const res = await resetPassword({ email: emailValue, otp, newPassword });
-      if (res.success) onSuccess?.(res.data);
+      if (res.success) {
+        const msg =
+          res?.data?.message ||
+          res?.data?.Message ||
+          'Đặt lại mật khẩu thành công. Bạn có thể đăng nhập lại.';
+        window.alert(msg);
+        onSuccess?.(res.data);
+      }
       return res;
     },
     [canSubmit, touchAll, resetPassword, emailValue, otp, newPassword, onSuccess],
