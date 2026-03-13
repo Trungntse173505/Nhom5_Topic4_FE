@@ -97,7 +97,7 @@ const ReviewerTextViewer = ({
         );
       }
 
-      // GIỐNG Annotator: ưu tiên lấy màu từ availableLabels theo tên nhãn, fallback xanh dương.
+      //ưu tiên lấy màu từ availableLabels theo tên nhãn, fallback xanh dương.
       const labelDef = (availableLabels || []).find((l) => l?.name === ann.label);
       const color =
         labelDef?.color ||
