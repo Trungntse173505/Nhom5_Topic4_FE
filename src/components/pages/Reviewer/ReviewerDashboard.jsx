@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
@@ -13,7 +13,6 @@ import {
   XCircle,
 } from "lucide-react";
 import { useTasks } from "../../../hooks/Reviewer/useTasks";
-// 1. IMPORT HOOK ĐIỂM VỪA TẠO VÀO ĐÂY (Sếp check lại đường dẫn import nha)
 import { useScore } from "../../../hooks/Reviewer/useScore";
 
 const TYPE_ICONS = {
@@ -55,20 +54,30 @@ const ReviewerDashboard = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState("All");
 
-  // Dùng hook gọi API lấy list task
   const { tasks, isLoading, error, refetch } = useTasks();
-
-  // 2. GỌI HOOK LẤY ĐIỂM
   const { myScore, isLoadingScore } = useScore();
 
-  if (isLoading)
+  // ĐÃ THÊM: LOGIC TỰ ĐỘNG CẬP NHẬT REAL-TIME NGẦM (POLLING MỖI 5 GIÂY)
+  useEffect(() => {
+    // Cài đặt đồng hồ: Cứ 5000ms (5 giây) là tự gọi refetch kéo data mới
+    const intervalId = setInterval(() => {
+      if (refetch) refetch();
+    }, 5000);
+
+    // Dọn dẹp đồng hồ khi sếp rời khỏi trang Dashboard để tránh tốn RAM
+    return () => clearInterval(intervalId);
+  }, [refetch]);
+
+  // ĐÃ FIX: Chỉ hiện Loader full màn hình khi VÀO LẦN ĐẦU (tasks chưa có data).
+  // Chứ không cứ 5s update ngầm nó lại giật giật nháy màn hình 1 lần thì tiền đình mất.
+  if (isLoading && (!tasks || tasks.length === 0))
     return (
       <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white">
         <Loader2 className="animate-spin w-8 h-8 mr-3" /> Đang tải dữ liệu...
       </div>
     );
 
-  if (error)
+  if (error && (!tasks || tasks.length === 0))
     return (
       <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center text-white">
         <XCircle className="text-red-500 w-12 h-12 mb-4" />
@@ -82,19 +91,21 @@ const ReviewerDashboard = () => {
       </div>
     );
 
-  // Tính toán thống kê từ data thật
+  // Bọc lót các trạng thái API có thể trả về khác nhau
   const stats = {
     totalTasks: tasks?.length || 0,
     pendingTasks:
-      tasks?.filter((t) => t.status === "PendingReview").length || 0,
+      tasks?.filter(
+        (t) => t.status === "PendingReview" || t.status === "Pending",
+      ).length || 0,
     doneTasks: tasks?.filter((t) => t.status === "Approved").length || 0,
   };
 
-  // Lọc data theo tab UI
   const filteredTasks =
     tasks?.filter((task) => {
       if (filter === "All") return true;
-      if (filter === "Pending") return task.status === "PendingReview";
+      if (filter === "Pending")
+        return task.status === "PendingReview" || task.status === "Pending";
       if (filter === "Done") return task.status === "Approved";
       return true;
     }) || [];
@@ -115,7 +126,6 @@ const ReviewerDashboard = () => {
             <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-0.5">
               Điểm Tín Nhiệm
             </p>
-            {/* 3. THAY THẾ SỐ 85 BẰNG STATE myScore TỪ HOOK */}
             <p className="text-2xl font-black text-yellow-400">
               {isLoadingScore ? (
                 <Loader2 className="animate-spin inline-block w-5 h-5 mr-1" />
@@ -142,7 +152,9 @@ const ReviewerDashboard = () => {
             </div>
             <div>
               <p className="text-sm text-slate-400 font-medium">{label}</p>
-              <p className="text-3xl font-bold text-white">{stats[key]}</p>
+              <p className="text-3xl font-bold text-white transition-all duration-300">
+                {stats[key]}
+              </p>
             </div>
           </div>
         ))}
@@ -152,6 +164,11 @@ const ReviewerDashboard = () => {
       <div className="bg-[#1e293b] border border-slate-700 rounded-t-2xl p-4 flex items-center justify-between border-b-0">
         <h2 className="text-lg font-semibold text-white flex items-center gap-2">
           <Filter size={20} className="text-blue-400" /> Danh Sách Task
+          {/* Nháy đèn nhỏ biểu thị đang update realtime */}
+          <span className="relative flex h-2 w-2 ml-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
         </h2>
         <div className="flex gap-2">
           {FILTERS.map((status) => (
@@ -190,28 +207,39 @@ const ReviewerDashboard = () => {
           <tbody>
             {filteredTasks.length > 0 ? (
               filteredTasks.map((task) => {
+                let currentStatus = task.status;
+                if (
+                  currentStatus === "Pending" ||
+                  currentStatus === "Submitted"
+                ) {
+                  currentStatus = "PendingReview";
+                }
+
                 const action =
-                  ACTION_STYLES[task.status] ?? ACTION_STYLES.PendingReview;
+                  ACTION_STYLES[currentStatus] ?? ACTION_STYLES.PendingReview;
                 const statusStyle =
-                  STATUS_STYLES[task.status] ?? "bg-gray-500/20 text-gray-400";
+                  STATUS_STYLES[currentStatus] ??
+                  "bg-gray-500/20 text-gray-400";
 
                 let statusText = "Chưa rõ";
-                if (task.status === "PendingReview") statusText = "Chờ duyệt";
-                if (task.status === "Approved") statusText = "Đã duyệt";
-                if (task.status === "InProgress") statusText = "Đang làm lại";
+                if (currentStatus === "PendingReview") statusText = "Chờ duyệt";
+                if (currentStatus === "Approved") statusText = "Đã duyệt";
+                if (currentStatus === "InProgress") statusText = "Đang làm lại";
+
+                const theTaskId = task.taskId || task.taskID;
 
                 return (
                   <tr
-                    key={task.taskID}
-                    className="border-t border-slate-700 hover:bg-slate-800/50 transition-colors"
+                    key={theTaskId}
+                    className="border-t border-slate-700 hover:bg-slate-800/50 transition-colors animate-in fade-in duration-500"
                   >
                     <td className="p-4">
                       <div className="flex items-center gap-2 font-bold text-white mb-1">
                         {TYPE_ICONS.image}
-                        {task.taskName}
+                        {task.taskName || `Task ${theTaskId?.substring(0, 5)}`}
                       </div>
                       <p className="text-xs text-slate-400 ml-6">
-                        {task.taskID.substring(0, 8)}... • Vòng{" "}
+                        {theTaskId?.substring(0, 8)}... • Vòng{" "}
                         {task.currentRound || 0}
                       </p>
                     </td>
@@ -224,7 +252,7 @@ const ReviewerDashboard = () => {
 
                     <td className="p-4">
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold inline-block border ${statusStyle}`}
+                        className={`px-3 py-1 rounded-full text-xs font-bold inline-block border transition-colors duration-500 ${statusStyle}`}
                       >
                         {statusText}
                       </span>
@@ -238,17 +266,19 @@ const ReviewerDashboard = () => {
                     <td className="p-4">
                       <div className="flex items-center gap-1.5 text-sm text-slate-300">
                         <Clock size={14} className="text-slate-500" />
-                        {new Date(task.deadline).toLocaleDateString("vi-VN")}
+                        {task.deadline
+                          ? new Date(task.deadline).toLocaleDateString("vi-VN")
+                          : "N/A"}
                       </div>
                     </td>
 
                     <td className="p-4 text-right">
                       <button
                         onClick={() =>
-                          task.status === "PendingReview" &&
-                          navigate(`/reviewer/workspace/${task.taskID}`)
+                          currentStatus === "PendingReview" &&
+                          navigate(`/reviewer/workspace/${theTaskId}`)
                         }
-                        disabled={task.status !== "PendingReview"}
+                        disabled={currentStatus !== "PendingReview"}
                         className={`px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-all shadow-lg ${action.cls}`}
                       >
                         {action.label}

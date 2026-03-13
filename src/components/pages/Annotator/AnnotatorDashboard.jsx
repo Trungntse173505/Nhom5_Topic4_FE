@@ -196,7 +196,7 @@ const AnnotatorDashboard = () => {
 
                   <td className="p-4">
                     <div className="text-sm font-medium text-slate-400">
-                      Lần: <span className="text-white font-bold">{task.currentRound}/3</span>
+                      Lần: <span className="text-white font-bold">{task.currentRound}/4</span>
                     </div>
                   </td>
 
