@@ -5,6 +5,7 @@ const menuItems = [
   { path: "/admin/users", label: "Người dùng", icon: "👥" },
   { path: "/admin/logs", label: "Nhật ký hoạt động", icon: "📋" },
   { path: "/admin/config", label: "Cấu hình hệ thống", icon: "⚙️" },
+  { path: "/admin/rules", label: "Quy tắc (Rules)", icon: "⚖️" },
 ];
 
 export default function AdminGlobalLayout() {

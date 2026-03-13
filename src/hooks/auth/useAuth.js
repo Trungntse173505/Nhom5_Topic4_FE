@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 // Fix lỗi import: Lấy default export từ authApi
-import authApi from "../api/authApi";
+import authApi from "../../api/authApi";
 
 export const useAuth = () => {
   const [isLoading, setIsLoading] = useState(false);

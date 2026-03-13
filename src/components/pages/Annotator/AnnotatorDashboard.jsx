@@ -2,14 +2,12 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, XCircle, FolderOpen, Filter, Clock, Trophy, FileText, Headphones, Image as ImageIcon, Loader2 } from 'lucide-react';
 
-// Import các Hook API
 import { useTasks } from '../../../hooks/Annotator/useTasks';
 import { useReputation } from '../../../hooks/Annotator/useReputation';
 import { useStartTask } from '../../../hooks/Annotator/useStartTask';
 import { useResubmitTask } from '../../../hooks/Annotator/useResubmitTask';
 import { useDisputeTask } from '../../../hooks/Annotator/useDisputeTask';
 
-// Import Modal Khiếu nại
 import DisputeModal from './Workspace/DisputeModal';
 
 const TYPE_ICONS = {
@@ -24,7 +22,7 @@ const STATUS_NAME = {
   InProgress: 'Đang Thực Hiện',
   PendingReview: 'Đang Duyệt',
   Rejected: 'Từ Chối',
-  Done: 'Hoàn Thành',
+  Approved: 'Hoàn Thành',
 };
 
 const STATUS_STYLES = {
@@ -32,12 +30,12 @@ const STATUS_STYLES = {
   InProgress: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
   PendingReview: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
   Rejected: 'bg-red-500/20 text-red-400 border-red-500/30',
-  Done: 'bg-green-500/20 text-green-400 border-green-500/30',
+  Approved: 'bg-green-500/20 text-green-400 border-green-500/30',
 };
 
 const ACTION_STYLES = {
   New: { label: 'Bắt đầu', cls: 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20' },
-  Rejected: { label: 'Sửa lỗi ngay', cls: 'bg-red-600 hover:bg-red-500 shadow-red-500/20' },
+  Rejected: { label: 'Sửa lỗi', cls: 'bg-red-600 hover:bg-red-500 shadow-red-500/20' },
   Done: { label: 'Xem lại', cls: 'bg-slate-700 hover:bg-slate-600 border border-slate-600' },
   default: { label: 'Tiếp tục', cls: 'bg-yellow-600 hover:bg-yellow-500 shadow-yellow-500/20' },
 };
@@ -49,40 +47,19 @@ const STAT_CARDS = [
 ];
 
 const FILTERS = [
-  {
-    name: "Tất cả",
-    status: "All"
-  },
-  {
-    name: "Mới",
-    status: "New"
-  },
-  {
-    name: "Đang Thực Hiện",
-    status: "InProgress"
-  },
-  {
-    name: "Đang duyệt",
-    status: "PendingReview"
-  },
-  {
-    name: "Từ Chối",
-    status: "Rejected"
-  },
-  {
-    name: "Hoàn Thành",
-    status: "Done"
-  }
+  { name: "Tất cả", status: "All" },
+  { name: "Mới", status: "New" },
+  { name: "Đang Thực Hiện", status: "InProgress" },
+  { name: "Đang duyệt", status: "PendingReview" },
+  { name: "Từ Chối", status: "Rejected" },
+  { name: "Hoàn Thành", status: "Approved" }
 ];
 
 const AnnotatorDashboard = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState('All');
-  
-  // State cho Modal Khiếu Nại
   const [disputeTaskData, setDisputeTaskData] = useState(null);
 
-  // Gọi các Hook API
   const { tasks, loading: loadingTasks, refresh: refreshTasks } = useTasks(null);
   const { currentScore, loading: loadingRep } = useReputation();
   const { start, isStarting } = useStartTask();
@@ -98,13 +75,13 @@ const AnnotatorDashboard = () => {
 
   const stats = useMemo(() => ({
     totalTasks: tasks.length,
-    completedTasks: tasks.filter(t => t.status === 'Done').length,
+    completedTasks: tasks.filter(t => t.status === 'Done' || t.status === 'Approved').length, // Tính cả Approved nếu có
     rejectedTasks: tasks.filter(t => t.status === 'Rejected').length,
   }), [tasks]);
 
-  // --- XỬ LÝ CLICK NÚT CHÍNH ---
   const handleActionClick = async (task) => {
     const taskType = task.type || 'image'; 
+    // SỬA: Nếu là Task Mới thì phải start()
     if (task.status === 'New') {
       try {
         await start(task.taskID);
@@ -113,34 +90,16 @@ const AnnotatorDashboard = () => {
         alert("Không thể bắt đầu Task này. Vui lòng thử lại!");
       }
     } else {
+      // Các trạng thái khác (kể cả Rejected) vào thẳng Workspace
       navigate(`/annotator/workspace/${task.taskID}?type=${taskType}`);
     }
   };
 
-  // --- XỬ LÝ NỘP LẠI (RESUBMIT) ---
-  const handleResubmit = async (task) => {
-    if (task.currentRound >= 3) {
-      alert("Bạn đã hết lượt nộp lại (Tối đa 3 lần) cho Task này.");
-      return;
-    }
-    const isConfirm = window.confirm(`Bạn có chắc chắn muốn nộp lại Task này không? (Lần nộp thứ ${task.currentRound + 1}/3)`);
-    if (isConfirm) {
-      try {
-        await resubmit(task.taskID);
-        alert("Đã nộp lại bài thành công! Vui lòng chờ Reviewer chấm điểm.");
-        refreshTasks(); // Tải lại danh sách Task
-      } catch (err) {
-        alert(err?.response?.data || "Không thể nộp lại bài. Vui lòng kiểm tra xem bạn đã sửa hết lỗi chưa.");
-      }
-    }
-  };
-
-  // --- XỬ LÝ KHIẾU NẠI (DISPUTE) ---
   const handleDisputeSubmit = async (reason) => {
     try {
       await dispute(disputeTaskData.taskID, reason);
       alert("Đã gửi khiếu nại thành công! Quản lý sẽ xem xét lại kết quả của bạn.");
-      refreshTasks(); // Tải lại danh sách
+      refreshTasks(); 
     } catch (err) {
       alert(err?.response?.data || "Không thể gửi khiếu nại lúc này.");
     }
@@ -154,7 +113,6 @@ const AnnotatorDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200 p-8 relative">
-      {/* Nhúng Modal Khiếu nại vào đây */}
       <DisputeModal 
         isOpen={!!disputeTaskData} 
         onClose={() => setDisputeTaskData(null)}
@@ -162,7 +120,6 @@ const AnnotatorDashboard = () => {
         taskName={disputeTaskData?.taskName}
       />
 
-      {/* Header & Stats (Giữ nguyên như cũ) */}
       <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 className="text-3xl font-bold text-white">Quản Lý Nhiệm Vụ</h1>
         <div className="flex items-center gap-3">
@@ -239,7 +196,7 @@ const AnnotatorDashboard = () => {
 
                   <td className="p-4">
                     <div className="text-sm font-medium text-slate-400">
-                      Lần: <span className="text-white font-bold">{task.currentRound}/3</span>
+                      Lần: <span className="text-white font-bold">{task.currentRound}/4</span>
                     </div>
                   </td>
 
@@ -258,6 +215,7 @@ const AnnotatorDashboard = () => {
 
                   <td className="p-4 text-right">
                     <div className="flex flex-col gap-2 items-end">
+                      {/* SỬA: Nút chức năng chính. */}
                       <button
                         onClick={() => handleActionClick(task)}
                         disabled={isStarting}
@@ -266,23 +224,15 @@ const AnnotatorDashboard = () => {
                         {action.label}
                       </button>
                       
-                      {/* HIỂN THỊ THÊM NÚT NỘP LẠI & KHIẾU NẠI NẾU BỊ REJECT */}
+                      {/* SỬA: Xóa nút "Gửi nộp lại" đi theo đúng ý bạn, 
+                          chỉ giữ nút "Khiếu nại" khi bị Reject vì bạn vẫn cần chức năng này */}
                       {task.status === 'Rejected' && (
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={() => handleResubmit(task)} 
-                            disabled={isResubmitting}
-                            className="text-xs bg-green-600 hover:bg-green-500 px-3 py-1.5 rounded text-white font-medium"
-                          >
-                            Gửi nộp lại
-                          </button>
-                          <button 
-                            onClick={() => setDisputeTaskData(task)} 
-                            className="text-xs bg-amber-600 hover:bg-amber-500 px-3 py-1.5 rounded text-white font-medium"
-                          >
-                            Khiếu nại
-                          </button>
-                        </div>
+                        <button 
+                          onClick={() => setDisputeTaskData(task)} 
+                          className="text-xs text-amber-500 hover:text-amber-400 font-medium underline mt-1"
+                        >
+                          Khiếu nại kết quả
+                        </button>
                       )}
                     </div>
                   </td>

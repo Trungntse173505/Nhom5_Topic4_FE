@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getUnassignedItems, createBatchTask } from "../api/managerApi";
+import { getUnassignedItems, createBatchTask } from "../../api/managerApi";
 
 export const useWorkDistribution = (projectId, onRefresh) => {
   const [unassignedItems, setUnassignedItems] = useState([]);

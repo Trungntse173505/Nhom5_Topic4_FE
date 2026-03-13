@@ -3,7 +3,7 @@ import {
   getProjectsList,
   exportProjectData,
   getExportHistories,
-} from "../api/managerApi";
+} from "../../api/managerApi";
 
 export const useExportData = () => {
   const [projects, setProjects] = useState([]);

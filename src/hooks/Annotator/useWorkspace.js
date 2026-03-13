@@ -4,7 +4,7 @@ import { useItemDetail } from './useItemDetail';
 import { useSaveAnnotation } from './useSaveAnnotation';
 
 export const useWorkspace = (taskId) => {
-  const { taskItems = [], availableLabels = [], loading: loadingTask } = useTaskDetail(taskId);
+  const { taskItems = [], availableLabels = [], taskInfo, loading: loadingTask } = useTaskDetail(taskId);
   const { getItem, loading: loadingItem } = useItemDetail();
   const { save, isSaving } = useSaveAnnotation();
 
@@ -12,6 +12,8 @@ export const useWorkspace = (taskId) => {
   const [selectedTool, setSelectedTool] = useState('Bounding Box');
   const [selectedLabel, setSelectedLabel] = useState('');
   const [annotations, setAnnotations] = useState([]);
+
+  const status = taskInfo?.status;
 
   useEffect(() => {
     if (!currentFileId && taskItems[0]) setCurrentFileId(taskItems[0].itemID);
@@ -24,11 +26,22 @@ export const useWorkspace = (taskId) => {
       const data = await getItem(id);
       setAnnotations((data?.annotations || []).map((ann, idx) => {
         let coords = {};
-        try { coords = typeof ann.annotationData === 'string' ? JSON.parse(ann.annotationData) : (ann.annotationData || {}); } catch {}
+        try { 
+          coords = typeof ann.annotationData === 'string' ? JSON.parse(ann.annotationData) : (ann.annotationData || {}); 
+        } catch {}
+        
+        const isText = ann.field !== 'BoundingBox' && coords.start !== undefined;
+
         return {
-          id: `box-${idx}-${Date.now()}`,
-          x: coords.x || 0, y: coords.y || 0, width: coords.width || 0, height: coords.height || 0,
-          label: ann.content 
+          id: `ann-${idx}-${Date.now()}`,
+          start: coords.start,
+          end: coords.end,
+          text: isText ? ann.content : undefined,
+          x: coords.x || 0, 
+          y: coords.y || 0, 
+          width: coords.width || 0, 
+          height: coords.height || 0,
+          label: isText ? ann.field : ann.content 
         };
       }));
     } catch (err) { console.error("Lỗi đồng bộ:", err); }
@@ -36,21 +49,30 @@ export const useWorkspace = (taskId) => {
 
   useEffect(() => { refreshCurrentItemData(currentFileId); }, [currentFileId, refreshCurrentItemData]);
 
-  // Lưu Annotation
   const handleSave = async () => {
-    if (!currentFileId || isSaving) return;
-    await save(currentFileId, {
-      annotations: annotations.map(({ x, y, width, height, label }) => ({
-        annotationData: JSON.stringify({ x, y, width, height }),
-        content: String(label),
+    if (!currentFileId || isSaving || (status !== 'InProgress' && status !== 'Rejected')) return;
+    
+    const formattedAnnotations = annotations.map((ann) => {
+      if (ann.start !== undefined && ann.end !== undefined) {
+        return {
+          annotationData: JSON.stringify({ start: ann.start, end: ann.end }),
+          content: ann.text || "",
+          field: ann.label || "" 
+        };
+      }
+      
+      return {
+        annotationData: JSON.stringify({ x: ann.x, y: ann.y, width: ann.width, height: ann.height }),
+        content: String(ann.label),
         field: "BoundingBox"
-      }))
+      };
     });
+
+    await save(currentFileId, { annotations: formattedAnnotations });
     await refreshCurrentItemData(currentFileId);
     alert("Đã lưu thành công!");
   };
 
-  // Định dạng lại danh sách file
   const files = useMemo(() => taskItems.map(ti => ({
     id: ti.itemID, name: ti.fileName, url: ti.filePath,
     status: ti.isFlagged ? 'Rejected' : (ti.annotations?.length ? 'Done' : 'New'),
@@ -60,6 +82,7 @@ export const useWorkspace = (taskId) => {
     files, availableLabels, currentFileId, handleSelectFile: setCurrentFileId,
     selectedTool, setSelectedTool, selectedLabel, setSelectedLabel,
     annotations, setAnnotations, isSaving, handleSave,
+    status,
     isLoading: loadingTask || loadingItem, 
     toolbarConfig: ['Vẽ Khung Nhãn']      
   };

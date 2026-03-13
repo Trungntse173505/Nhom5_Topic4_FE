@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { useLabelManagement } from "../../../hooks/useLabelManagement";
-import { useProjectActions } from "../../../hooks/useProjectActions";
+import { useLabelManagement } from "../../../hooks/Manager/useLabelManagement";
+import { useProjectActions } from "../../../hooks/Manager/useProjectActions";
 
 export default function LabelSetEditor({ project, onRefresh }) {
   const { projectId } = useParams();

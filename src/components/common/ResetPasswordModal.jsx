@@ -1,57 +1,26 @@
-import { useMemo, useState } from 'react';
-import { useResetPassword } from '../../hooks/Admin/useResetPassword';
+import { useResetPasswordModal } from '../../hooks/Admin/useResetPasswordModal';
 
 export default function ResetPasswordModal({ open, email, onClose, onSuccess }) {
-  const { resetPassword, loading, error, data, setError } = useResetPassword();
-
-  const [token, setToken] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [touched, setTouched] = useState({ token: false, newPassword: false, confirmPassword: false });
-
-  const emailValue = useMemo(() => String(email || '').trim(), [email]);
-
-  const fieldError = useMemo(() => {
-    const e = {};
-    const tokenValue = String(token || '').trim();
-
-    if (touched.token && !tokenValue) e.token = 'Vui lòng nhập token.';
-    if (touched.newPassword) {
-      if (!newPassword) e.newPassword = 'Vui lòng nhập mật khẩu mới.';
-      else if (String(newPassword).length < 5) e.newPassword = 'Mật khẩu phải có ít nhất 5 ký tự.';
-    }
-    if (touched.confirmPassword) {
-      if (!confirmPassword) e.confirmPassword = 'Vui lòng xác nhận mật khẩu mới.';
-      else if (confirmPassword !== newPassword) e.confirmPassword = 'Mật khẩu xác nhận không khớp.';
-    }
-
-    return e;
-  }, [token, newPassword, confirmPassword, touched]);
-
-  const canSubmit = useMemo(() => {
-    if (!open || loading) return false;
-    if (!emailValue) return false;
-    if (!String(token || '').trim()) return false;
-    if (!String(newPassword || '')) return false;
-    if (confirmPassword !== newPassword) return false;
-    return Object.keys(fieldError).length === 0;
-  }, [open, loading, emailValue, token, newPassword, confirmPassword, fieldError]);
-
-  const successMessage = useMemo(() => {
-    if (!data) return null;
-    return data?.message || data?.Message || 'Đặt lại mật khẩu thành công. Bạn có thể đăng nhập lại.';
-  }, [data]);
-
-  async function onSubmit(e) {
-    e.preventDefault();
-    if (!canSubmit) {
-      setTouched({ token: true, newPassword: true, confirmPassword: true });
-      return;
-    }
-
-    const res = await resetPassword({ email: emailValue, token, newPassword });
-    if (res.success) onSuccess?.(res.data);
-  }
+  const {
+    emailValue,
+    otp,
+    newPassword,
+    confirmPassword,
+    fieldError,
+    canSubmit,
+    loading,
+    error,
+    successMessage,
+    responseFields,
+    close,
+    onBlurOtp,
+    onBlurNewPassword,
+    onBlurConfirmPassword,
+    onChangeOtp,
+    onChangeNewPassword,
+    onChangeConfirmPassword,
+    submit,
+  } = useResetPasswordModal({ open, email, onSuccess, onClose });
 
   if (!open) return null;
 
@@ -60,8 +29,7 @@ export default function ResetPasswordModal({ open, email, onClose, onSuccess }) 
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={() => {
-          setError(null);
-          onClose?.();
+          close();
         }}
       />
 
@@ -70,15 +38,14 @@ export default function ResetPasswordModal({ open, email, onClose, onSuccess }) 
           <div>
             <h2 className="text-lg font-bold text-white">Đặt lại mật khẩu</h2>
             <p className="mt-1 text-xs text-white/50">
-              Nhập token (từ email) và mật khẩu mới cho <span className="text-white/70">{emailValue}</span>.
+              Nhập email, OTP và mật khẩu mới để đặt lại mật khẩu.
             </p>
           </div>
           <button
             type="button"
             className="rounded-lg px-2 py-1 text-xs font-bold text-white/40 hover:text-white/70"
             onClick={() => {
-              setError(null);
-              onClose?.();
+              close();
             }}
             disabled={loading}
             aria-label="Close"
@@ -87,25 +54,35 @@ export default function ResetPasswordModal({ open, email, onClose, onSuccess }) 
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
+        <form onSubmit={submit} className="mt-6 space-y-4">
           <div>
             <input
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              onBlur={() => setTouched((t) => ({ ...t, token: true }))}
+              value={emailValue}
               type="text"
-              placeholder="Token"
-              className={`w-full rounded-xl border bg-white/[0.03] px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-white/20
-                ${fieldError.token ? 'border-rose-500/50' : 'border-white/10 focus:border-blue-500/50 focus:ring-blue-500/10 focus:ring-4'}`}
+              placeholder="Email"
+              disabled
+              className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/70 outline-none placeholder:text-white/20 opacity-80 cursor-not-allowed"
             />
-            {fieldError.token && <p className="mt-2 text-xs font-medium text-rose-400">{fieldError.token}</p>}
+          </div>
+
+          <div>
+            <input
+              value={otp}
+              onChange={(e) => onChangeOtp(e.target.value)}
+              onBlur={onBlurOtp}
+              type="text"
+              placeholder="OTP"
+              className={`w-full rounded-xl border bg-white/[0.03] px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-white/20
+                ${fieldError.otp ? 'border-rose-500/50' : 'border-white/10 focus:border-blue-500/50 focus:ring-blue-500/10 focus:ring-4'}`}
+            />
+            {fieldError.otp && <p className="mt-2 text-xs font-medium text-rose-400">{fieldError.otp}</p>}
           </div>
 
           <div>
             <input
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              onBlur={() => setTouched((t) => ({ ...t, newPassword: true }))}
+              onChange={(e) => onChangeNewPassword(e.target.value)}
+              onBlur={onBlurNewPassword}
               type="password"
               placeholder="Mật khẩu mới"
               className={`w-full rounded-xl border bg-white/[0.03] px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-white/20
@@ -119,8 +96,8 @@ export default function ResetPasswordModal({ open, email, onClose, onSuccess }) 
           <div>
             <input
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              onBlur={() => setTouched((t) => ({ ...t, confirmPassword: true }))}
+              onChange={(e) => onChangeConfirmPassword(e.target.value)}
+              onBlur={onBlurConfirmPassword}
               type="password"
               placeholder="Xác nhận mật khẩu mới"
               className={`w-full rounded-xl border bg-white/[0.03] px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-white/20
@@ -142,6 +119,29 @@ export default function ResetPasswordModal({ open, email, onClose, onSuccess }) 
             </p>
           )}
 
+          {successMessage && responseFields && (responseFields.email || responseFields.otp || responseFields.password) && (
+            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 text-xs text-white/70 space-y-2">
+              {responseFields.email && (
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-white/40">Email</span>
+                  <span className="font-medium text-white/80 break-all">{responseFields.email}</span>
+                </div>
+              )}
+              {responseFields.otp && (
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-white/40">OTP</span>
+                  <span className="font-medium text-white/80 break-all">{responseFields.otp}</span>
+                </div>
+              )}
+              {responseFields.password && (
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-white/40">Password</span>
+                  <span className="font-medium text-white/80 break-all">{responseFields.password}</span>
+                </div>
+              )}
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={!canSubmit}
@@ -154,8 +154,7 @@ export default function ResetPasswordModal({ open, email, onClose, onSuccess }) 
             type="button"
             className="w-full rounded-xl border border-white/10 bg-white/[0.02] py-3 text-xs font-bold text-white/60 hover:bg-white/[0.04] disabled:opacity-50"
             onClick={() => {
-              setError(null);
-              onClose?.();
+              close();
             }}
             disabled={loading}
           >
@@ -166,4 +165,3 @@ export default function ResetPasswordModal({ open, email, onClose, onSuccess }) 
     </div>
   );
 }
-

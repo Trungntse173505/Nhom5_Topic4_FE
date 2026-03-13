@@ -5,7 +5,7 @@ import {
   importLabelsToProject,
   createCustomLabel,
   deleteProjectLabel,
-} from "../api/managerApi";
+} from "../../api/managerApi";
 
 export const useLabelManagement = (projectId) => {
   const [libraryLabels, setLibraryLabels] = useState([]); // Nhãn mẫu
