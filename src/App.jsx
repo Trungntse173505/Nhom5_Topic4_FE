@@ -119,6 +119,7 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={["reviewer"]} />}>        
           <Route path="/reviewer" element={<ReviewerLayout />}>
           <Route index element={<ReviewerDashboard />} />
+          <Route path="dashboard" element={<ReviewerDashboard />} />
           <Route path="/reviewer/workspace/:taskId" element={<ReviewerWorkspace />} />
           <Route path="disputes" element={<ReviewerDisputeList />} />
             <Route path="disputes/:id" element={<ReviewerDisputeDetail />} />

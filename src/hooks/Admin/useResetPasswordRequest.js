@@ -3,7 +3,7 @@ import authResetPasswordApi from '../../api/authResetPasswordApi';
 
 const buildPayload = ({ email }) => {
   const value = String(email ?? '').trim();
-  return { email: value, Email: value };
+  return { email: value };
 };
 
 export const useResetPasswordRequest = () => {
@@ -37,4 +37,3 @@ export const useResetPasswordRequest = () => {
 
   return { requestResetPassword, loading, error, data, setError };
 };
-

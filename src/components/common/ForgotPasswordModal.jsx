@@ -15,11 +15,11 @@ export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
         forgot.setError(val);
     };
 
-    const successMessage = useMemo(() => {
-        const data = forgot.data;
-        if (!data) return null;
-        return data?.message || data?.Message || 'Đã gửi token. Vui lòng kiểm tra email.';
-    }, [forgot.data]);
+  const successMessage = useMemo(() => {
+    const data = forgot.data;
+    if (!data) return null;
+    return data?.message || data?.Message || 'Đã gửi OTP. Vui lòng kiểm tra email.';
+  }, [forgot.data]);
 
     const emailValue = useMemo(() => String(email || '').trim(), [email]);
     const isEmailValid = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue), [emailValue]);
@@ -70,7 +70,7 @@ export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
                     <div>
                         <h2 className="text-lg font-bold text-white">Quên mật khẩu</h2>
                         <p className="mt-1 text-xs text-white/50">
-                            Nhập email để hệ thống gửi token đặt lại mật khẩu về email của bạn.
+                            Nhập email để hệ thống gửi OTP đặt lại mật khẩu về email của bạn.
                         </p>
                     </div>
                     <button
@@ -120,7 +120,7 @@ export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
                             onClick={() => setResetOpen(true)}
                             disabled={loading || !emailValue}
                         >
-                            Mình đã có token → Đặt lại mật khẩu
+                            Mình đã có OTP → Đặt lại mật khẩu
                         </button>
                     )}
                     <button

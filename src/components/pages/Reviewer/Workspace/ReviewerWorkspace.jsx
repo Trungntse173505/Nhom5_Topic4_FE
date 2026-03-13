@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import ReviewerSidebarLeft from "./ReviewerSidebarLeft";
-import ReviewerSidebarRight from "./ReviewerSidebarRight";
-import ReviewerCanvas from "./ReviewerCanvas";
-// 1. IMPORT CÁI CANVAS VIDEO VỪA TẠO VÀO
-import ReviewerVideoCanvas from "./ReviewerVideoCanvas";
-import { LogOut, Loader2, ArrowLeft } from "lucide-react";
-import { useTaskDetail } from "../../../../hooks/Reviewer/useTaskDetail";
-import { useReviewerActions } from "../../../../hooks/Reviewer/useReviewActions";
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import ReviewerSidebarLeft from './ReviewerSidebarLeft';
+import ReviewerSidebarRight from './ReviewerSidebarRight';
+import ReviewerCanvas from './ReviewerCanvas';
+import ReviewerTextViewer from "./ReviewerTextViewer";
+import ReviewerAudioViewer from "./ReviewerAudioViewer";
+import { LogOut, Loader2, ArrowLeft, Send, CheckCircle, XCircle } from 'lucide-react';
+import { useEffect } from "react";
+import { useTaskDetail } from '../../../../hooks/Reviewer/useTaskDetail';
+import { useReviewerActions } from '../../../../hooks/Reviewer/useReviewActions';
 
 const ReviewerWorkspace = () => {
   const params = useParams();
@@ -25,12 +26,11 @@ const ReviewerWorkspace = () => {
     setActiveBoxId(null);
   }, [currentImageIndex]);
 
-  if (isLoading)
-    return (
-      <div className="flex h-screen bg-[#0f172a] items-center justify-center">
-        <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
-      </div>
-    );
+  if (isLoading) return (
+    <div className="flex h-screen bg-[#0f172a] items-center justify-center">
+      <Loader2 className="animate-spin text-blue-500 w-8 h-8" />
+    </div>
+  );
 
   if (error || !taskDetail)
     return (
@@ -47,6 +47,18 @@ const ReviewerWorkspace = () => {
 
   const currentItem = taskDetail.items?.[currentImageIndex];
 
+  // HIỂN THỊ AUDIO/TEXT TASK TƯƠNG TỰ ANNOTATOR (không thay đổi UI hiện có của Image)
+  const __filePathLower = String(currentItem?.filePath || "").toLowerCase();
+  const __cleanPath = __filePathLower.split("?")[0].split("#")[0];
+  const isAudioTask =
+    __cleanPath.includes(".mp3") ||
+    __cleanPath.includes(".wav") ||
+    __cleanPath.includes(".ogg");
+  const isTextTask =
+    __cleanPath.includes(".txt") ||
+    __cleanPath.includes(".csv") ||
+    __cleanPath.includes(".json");
+
   // 2. LOGIC PHÂN BIỆT ẢNH HAY VIDEO
   const isVideoProject =
     taskDetail.projectType === "Video" ||
@@ -56,10 +68,7 @@ const ReviewerWorkspace = () => {
     <div className="flex flex-col h-screen bg-[#0f172a] text-slate-200">
       <header className="flex justify-between items-center px-6 py-3 border-b border-slate-800 bg-[#1e293b]">
         <div className="flex items-center gap-4 flex-1 text-left">
-          <button
-            onClick={() => navigate("/reviewer")}
-            className="text-slate-400 hover:text-white transition-colors"
-          >
+          <button onClick={() => navigate('/reviewer/dashboard')} className="text-slate-400 hover:text-white transition-colors">
             <ArrowLeft size={20} />
           </button>
           <div>
@@ -78,10 +87,7 @@ const ReviewerWorkspace = () => {
             Đang duyệt bài
           </div>
           <div className="w-px h-6 bg-slate-700 mx-1"></div>
-          <button
-            onClick={() => navigate("/reviewer")}
-            className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
-          >
+          <button onClick={() => navigate('/reviewer/dashboard')} className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors">
             <LogOut size={20} />
           </button>
         </div>
@@ -99,28 +105,32 @@ const ReviewerWorkspace = () => {
         <main className="flex-1 overflow-hidden relative flex flex-col bg-[#0b1220] p-4">
           <div className="bg-[#1e293b] rounded-2xl border border-slate-800 flex-1 overflow-hidden">
             {currentItem ? (
-              // 3. NẾU LÀ VIDEO THÌ GỌI VIDEO CANVAS, KHÔNG THÌ GỌI IMAGE CANVAS
-              isVideoProject ? (
-                <ReviewerVideoCanvas
-                  currentItem={currentItem}
-                  toggleAnnotationApproval={toggleAnnotationApproval}
-                  activeBoxId={activeBoxId}
-                  setActiveBoxId={setActiveBoxId}
-                />
-              ) : (
-                <ReviewerCanvas
-                  currentItem={currentItem}
-                  toggleAnnotationApproval={toggleAnnotationApproval}
-                  activeBoxId={activeBoxId}
-                  setActiveBoxId={setActiveBoxId}
-                />
-              )
+              <ReviewerCanvas
+                currentItem={currentItem}
+                toggleAnnotationApproval={toggleAnnotationApproval}
+              />
             ) : (
-              <div className="h-full flex items-center justify-center text-slate-500">
-                Không có dữ liệu nào
-              </div>
+              <div className="h-full flex items-center justify-center text-slate-500">Không có ảnh nào</div>
             )}
           </div>
+
+          {/* Overlay cho Audio/Text để hiển thị như task Image (giữ nguyên layout 3 cột) */}
+          {(isAudioTask || isTextTask) && currentItem && (
+            <div className="absolute inset-4">
+              <div className="bg-[#1e293b] rounded-2xl border border-slate-800 h-full overflow-hidden">
+                {isTextTask ? (
+                  <ReviewerTextViewer
+                    currentItem={currentItem}
+                    activeAnnotationId={activeBoxId}
+                    setActiveAnnotationId={setActiveBoxId}
+                    availableLabels={taskDetail?.availableLabels || []}
+                  />
+                ) : (
+                  <ReviewerAudioViewer currentItem={currentItem} />
+                )}
+              </div>
+            </div>
+          )}
         </main>
 
         {/* SIDEBAR PHẢI */}
