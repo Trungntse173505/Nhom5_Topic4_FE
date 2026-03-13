@@ -50,7 +50,7 @@ export const useWorkspace = (taskId) => {
   useEffect(() => { refreshCurrentItemData(currentFileId); }, [currentFileId, refreshCurrentItemData]);
 
   const handleSave = async () => {
-    if (!currentFileId || isSaving || status !== 'InProgress') return;
+    if (!currentFileId || isSaving || (status !== 'InProgress' && status !== 'Rejected')) return;
     
     const formattedAnnotations = annotations.map((ann) => {
       if (ann.start !== undefined && ann.end !== undefined) {

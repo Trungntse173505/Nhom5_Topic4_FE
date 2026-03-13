@@ -38,7 +38,8 @@ const AnnotatorWorkspace = () => {
   const { submit } = useSubmitTask();
   const { flag } = useFlagItem();
 
-  const canEdit = status === 'InProgress';
+  // SỬA: Cho phép sửa (canEdit) khi trạng thái là Đang làm HOẶC Bị từ chối
+  const canEdit = ['InProgress', 'Rejected'].includes(status);
 
   const handleFlagClick = async () => {
     if (!canEdit || !currentFileId || !window.confirm("File này bị mờ/hỏng. Bạn có chắc muốn báo lỗi?")) return;
@@ -53,6 +54,7 @@ const AnnotatorWorkspace = () => {
   const handleSubmitClick = async () => {
     if (!canEdit || !window.confirm("Bạn có chắc chắn muốn NỘP BÀI?")) return;
     try {
+      // Vì status là Rejected (làm lại) hoặc InProgress (làm mới), ta gọi submit bình thường
       await submit(activeTaskId);
       alert("🎉 Chúc mừng! Bạn đã nộp bài thành công.");
       navigate('/annotator'); 
@@ -82,7 +84,7 @@ const AnnotatorWorkspace = () => {
         </div>
       );
     }
-    const props = { selectedTool, selectedLabel, annotations, setAnnotations, fileData, availableLabels };
+    const props = { selectedTool, selectedLabel, annotations, setAnnotations, fileData, availableLabels, readOnly: !canEdit };
     if (actualType === 'video') return <VideoCanvas {...props} videoUrl={fileData?.url} />;
     if (actualType === 'text') return <TextEditor {...props} />;
     if (actualType === 'audio') return <AudioEditor {...props} />;
@@ -96,7 +98,6 @@ const AnnotatorWorkspace = () => {
       <header className="flex justify-between items-center px-4 py-3 border-b border-gray-700 bg-gray-800">
         <div className="flex-1 flex items-center gap-2">
            <span className="font-bold text-gray-400 text-sm uppercase">Không gian làm việc</span>
-           {/* Badge hiển thị status để debug */}
            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${canEdit ? 'bg-green-600/20 text-green-400' : 'bg-red-600/20 text-red-400'}`}>
              {status || "N/A"}
            </span>
