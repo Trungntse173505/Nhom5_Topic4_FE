@@ -64,5 +64,3 @@ const ReviewerAudioViewer = ({ currentItem }) => {
 };
 
 export default ReviewerAudioViewer;
-
-fg

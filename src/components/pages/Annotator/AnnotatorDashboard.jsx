@@ -22,7 +22,7 @@ const STATUS_NAME = {
   InProgress: 'Đang Thực Hiện',
   PendingReview: 'Đang Duyệt',
   Rejected: 'Từ Chối',
-  Done: 'Hoàn Thành',
+  Approved: 'Hoàn Thành',
 };
 
 const STATUS_STYLES = {
@@ -30,7 +30,7 @@ const STATUS_STYLES = {
   InProgress: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
   PendingReview: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
   Rejected: 'bg-red-500/20 text-red-400 border-red-500/30',
-  Done: 'bg-green-500/20 text-green-400 border-green-500/30',
+  Approved: 'bg-green-500/20 text-green-400 border-green-500/30',
 };
 
 const ACTION_STYLES = {
@@ -52,7 +52,7 @@ const FILTERS = [
   { name: "Đang Thực Hiện", status: "InProgress" },
   { name: "Đang duyệt", status: "PendingReview" },
   { name: "Từ Chối", status: "Rejected" },
-  { name: "Hoàn Thành", status: "Done" }
+  { name: "Hoàn Thành", status: "Approved" }
 ];
 
 const AnnotatorDashboard = () => {

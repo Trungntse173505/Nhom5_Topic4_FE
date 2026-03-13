@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useTasks } from "../../../hooks/Reviewer/useTasks";
 import { useScore } from "../../../hooks/Reviewer/useScore";
+import { AuroraBackground } from "../../common/aurora-background";
 
 const TYPE_ICONS = {
   text: <FileText size={16} className="text-blue-400" />,

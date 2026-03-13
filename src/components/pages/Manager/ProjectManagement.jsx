@@ -8,7 +8,7 @@ import { CardSpotlight } from "../../common/card-spotlight";
 import { AnimatedButton } from "../../common/AnimatedButton";
 import { AuroraBackground } from "../../common/aurora-background";
 // IMPORT Hook lấy API thống kê
-import { useProjectStats } from "../../../hooks/useProjectStats";
+import { useProjectStats } from "../../../hooks/Manager/useProjectStats";
 
 // COMPONENT CON: Gọi API Stats và hiển thị thẻ Dự án
 const ProjectCardItem = ({ proj, navigate }) => {
