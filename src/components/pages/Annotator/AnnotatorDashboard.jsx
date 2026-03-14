@@ -113,7 +113,7 @@ const AnnotatorDashboard = () => {
 
       <div className="bg-[#1e293b] border border-slate-700 rounded-t-2xl p-4 flex items-center justify-between border-b-0">
         <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-          <Filter size={20} className="text-blue-400" /> Danh Sách Task
+          <Filter size={20} className="text-blue-400" /> Danh Sách Nhiệm Vụ
         </h2>
         <div className="flex gap-2">
           {FILTERS.map(status => (
