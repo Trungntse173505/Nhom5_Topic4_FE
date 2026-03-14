@@ -6,7 +6,9 @@ import { useSaveAnnotation } from './useSaveAnnotation';
 export const useWorkspace = (taskId) => {
   const { taskItems = [], availableLabels = [], taskInfo, loading: loadingTask } = useTaskDetail(taskId);
   const { getItem, loading: loadingItem } = useItemDetail();
-  const { save, isSaving } = useSaveAnnotation();
+
+  const { save } = useSaveAnnotation(); 
+  const [isManualSaving, setIsManualSaving] = useState(false);
 
   const [currentFileId, setCurrentFileId] = useState(null);
   const [selectedTool, setSelectedTool] = useState('Bounding Box');
@@ -20,7 +22,6 @@ export const useWorkspace = (taskId) => {
     if (!selectedLabel && availableLabels[0]) setSelectedLabel(availableLabels[0].name);
   }, [taskItems, availableLabels, currentFileId, selectedLabel]);
 
-  // Lấy dữ liệu file (bao gồm annotation cũ)
   const refreshCurrentItemData = useCallback(async (id) => {
     if (!id) return;
     try {
@@ -50,10 +51,8 @@ export const useWorkspace = (taskId) => {
 
   useEffect(() => { refreshCurrentItemData(currentFileId); }, [currentFileId, refreshCurrentItemData]);
 
-  const handleSave = async (isSilent = false) => {
-    if (!currentFileId || isSaving || (status !== 'InProgress' && status !== 'Rejected')) return;
-    
-    const formattedAnnotations = annotations.map((ann) => {
+  const formatAnnotations = (anns) => {
+    return anns.map((ann) => {
       if (ann.start !== undefined && ann.end !== undefined) {
         return {
           annotationData: JSON.stringify({ start: ann.start, end: ann.end }),
@@ -61,32 +60,45 @@ export const useWorkspace = (taskId) => {
           field: ann.label || "" 
         };
       }
-      
       return {
         annotationData: JSON.stringify({ x: ann.x, y: ann.y, width: ann.width, height: ann.height }),
         content: String(ann.label),
         field: "BoundingBox"
       };
     });
+  };
 
-    await save(currentFileId, { annotations: formattedAnnotations });
-    await refreshCurrentItemData(currentFileId);
+  const handleSave = async () => {
+    if (!currentFileId || isManualSaving || (status !== 'InProgress' && status !== 'Rejected')) return;
     
-    // Nếu KHÔNG PHẢI lưu ngầm thì mới hiện thông báo
-    if (!isSilent) {
+    setIsManualSaving(true); 
+    try {
+      const formatted = formatAnnotations(annotations);
+      await save(currentFileId, { annotations: formatted });
+      await refreshCurrentItemData(currentFileId);
       alert("Đã lưu thành công!");
+    } catch (error) {
+      alert("Lỗi khi lưu dữ liệu!");
+    } finally {
+      setIsManualSaving(false);
     }
   };
 
-  const handleSelectFile = async (newFileId) => {
+  const handleSelectFile = (newFileId) => {
     if (newFileId === currentFileId) return;
 
     if (status === 'InProgress' || status === 'Rejected') {
-      try {
-        await handleSave(true); 
-      } catch (error) {
-        console.error("Lỗi khi tự động lưu ngầm:", error);
-      }
+      const idToSave = currentFileId;
+      const annotationsToSave = [...annotations];
+
+      (async () => {
+        try {
+          const formatted = formatAnnotations(annotationsToSave);
+          await save(idToSave, { annotations: formatted });
+        } catch (error) {
+          console.error("Lỗi khi lưu ngầm file:", idToSave, error);
+        }
+      })();
     }
 
     setCurrentFileId(newFileId);
@@ -108,7 +120,8 @@ export const useWorkspace = (taskId) => {
     setSelectedLabel,
     annotations, 
     setAnnotations, 
-    isSaving, 
+    isSaving: isManualSaving, 
+    
     handleSave,
     status,
     isLoading: loadingTask || loadingItem, 

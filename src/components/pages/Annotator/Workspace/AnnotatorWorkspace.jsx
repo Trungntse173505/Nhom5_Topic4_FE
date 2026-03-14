@@ -93,18 +93,6 @@ const AnnotatorWorkspace = () => {
 
   if (!activeTaskId) return <div className="flex items-center justify-center h-screen bg-gray-900 text-white">Lỗi ID Task.</div>;
 
-  const handleSwitchFile = async (newFileId) => {
-    if (newFileId === currentFileId) return;
-    if (canEdit) {
-      try {m
-        await handleSave(true); 
-      } catch (error) {
-        console.error("Lỗi khi auto-save:", error);
-      }
-    }
-    handleSelectFile(newFileId);
-  };
-
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-gray-200">
       <header className="flex justify-between items-center px-4 py-3 border-b border-gray-700 bg-gray-800">
@@ -158,7 +146,7 @@ const AnnotatorWorkspace = () => {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        <SidebarLeft files={files} currentItemId={currentFileId} onSelectItem={handleSwitchFile} taskStatus={status} />
+        <SidebarLeft files={files} currentItemId={currentFileId} onSelectItem={handleSelectFile} taskStatus={status} />
         <main className="flex-1 overflow-hidden relative flex flex-col bg-[#0b1220]">{renderEditor()}</main>
         <SidebarRight availableLabels={availableLabels} selectedLabel={selectedLabel} setSelectedLabel={setSelectedLabel} actualType={actualType} annotations={annotations} setAnnotations={setAnnotations} />
       </div>
