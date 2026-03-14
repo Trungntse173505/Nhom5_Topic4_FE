@@ -20,6 +20,7 @@ export const useWorkspace = (taskId) => {
     if (!selectedLabel && availableLabels[0]) setSelectedLabel(availableLabels[0].name);
   }, [taskItems, availableLabels, currentFileId, selectedLabel]);
 
+  // Lấy dữ liệu file (bao gồm annotation cũ)
   const refreshCurrentItemData = useCallback(async (id) => {
     if (!id) return;
     try {
@@ -49,7 +50,7 @@ export const useWorkspace = (taskId) => {
 
   useEffect(() => { refreshCurrentItemData(currentFileId); }, [currentFileId, refreshCurrentItemData]);
 
-  const handleSave = async () => {
+  const handleSave = async (isSilent = false) => {
     if (!currentFileId || isSaving || (status !== 'InProgress' && status !== 'Rejected')) return;
     
     const formattedAnnotations = annotations.map((ann) => {
@@ -70,7 +71,25 @@ export const useWorkspace = (taskId) => {
 
     await save(currentFileId, { annotations: formattedAnnotations });
     await refreshCurrentItemData(currentFileId);
-    alert("Đã lưu thành công!");
+    
+    // Nếu KHÔNG PHẢI lưu ngầm thì mới hiện thông báo
+    if (!isSilent) {
+      alert("Đã lưu thành công!");
+    }
+  };
+
+  const handleSelectFile = async (newFileId) => {
+    if (newFileId === currentFileId) return;
+
+    if (status === 'InProgress' || status === 'Rejected') {
+      try {
+        await handleSave(true); 
+      } catch (error) {
+        console.error("Lỗi khi tự động lưu ngầm:", error);
+      }
+    }
+
+    setCurrentFileId(newFileId);
   };
 
   const files = useMemo(() => taskItems.map(ti => ({
@@ -79,9 +98,18 @@ export const useWorkspace = (taskId) => {
   })), [taskItems]);
 
   return {
-    files, availableLabels, currentFileId, handleSelectFile: setCurrentFileId,
-    selectedTool, setSelectedTool, selectedLabel, setSelectedLabel,
-    annotations, setAnnotations, isSaving, handleSave,
+    files, 
+    availableLabels, 
+    currentFileId, 
+    handleSelectFile, 
+    selectedTool, 
+    setSelectedTool, 
+    selectedLabel, 
+    setSelectedLabel,
+    annotations, 
+    setAnnotations, 
+    isSaving, 
+    handleSave,
     status,
     isLoading: loadingTask || loadingItem, 
     toolbarConfig: ['Vẽ Khung Nhãn']      
