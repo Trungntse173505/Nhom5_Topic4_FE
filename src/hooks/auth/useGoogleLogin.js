@@ -8,10 +8,9 @@ export const useGoogleLogin = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState(null);
   const navigate = useNavigate();
-  
-  // CHỐT CHẶN BẢO VỆ GỌI API 2 LẦN
-  const isLoggingIn = useRef(false); 
+  const isLoggingIn = useRef(false);
 
+  // Map đúng các trang theo Role như hệ thống của bạn
   const roleToPath = {
     admin: '/admin',
     manager: '/manager',
@@ -22,79 +21,65 @@ export const useGoogleLogin = () => {
   const loginWithGoogle = async () => {
     setIsGoogleLoading(true);
     setGoogleError(null);
-    isLoggingIn.current = false; // Reset lại chốt
-
-    const { error } = await supabase.auth.signInWithOAuth({
+    isLoggingIn.current = false;
+    await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: window.location.origin + "/login", 
-      },
+      options: { redirectTo: window.location.origin + "/login" },
     });
-
-    if (error) {
-      setGoogleError("Không thể kết nối với Google.");
-      setIsGoogleLoading(false);
-    }
   };
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === "SIGNED_IN" && session) {
-          
-          // NẾU ĐÃ GỌI API RỒI THÌ ĐÁ VĂNG LẦN GỌI THỨ 2 CỦA REACT
-          if (isLoggingIn.current) return; 
-          isLoggingIn.current = true; // Sập chốt
-
+          if (isLoggingIn.current) return;
+          isLoggingIn.current = true;
           setIsGoogleLoading(true);
-          setGoogleError(null);       
+
           try {
             const googleToken = session.access_token;
+            // axiosClient đã bóc sẵn response.data rồi nên apiRes chính là {success, data...}
             const apiRes = await authApi.loginAuthgg({ token: googleToken });
             
-            const raw = apiRes?.data ?? apiRes;
-            const isSuccess = raw?.success === true || raw?.Success === true;
+            // Logic bóc tách "chống đạn" giống hệt useLogin của bạn
+            const data = apiRes?.data ?? apiRes;
+            const token = data?.token || apiRes?.token;
+            const user = data?.user || apiRes?.user;
+            
+            // Kiểm tra xem có Token hệ thống chưa
+            if (token && user) {
+              // 1. Lưu token hệ thống
+              localStorage.setItem("token", token);
+              
+              // 2. Lưu User theo đúng định dạng id, role, fullName mà App bạn cần
+              const finalUser = {
+                id: user.userId || user.UserId || user.id,
+                role: user.roleName || user.RoleName || user.role,
+                fullName: user.fullName || user.FullName || user.name
+              };
+              localStorage.setItem("user", JSON.stringify(finalUser));
 
-            if (isSuccess) {
-              const payloadData = raw?.data ?? raw;
-              const token = payloadData?.token || payloadData?.Token;
-              const user = payloadData?.user || payloadData?.User;
+              // 3. Firebase Presence (Đèn xanh Online)
+              try {
+                if (finalUser.id && finalUser.role) {
+                  await updateUserPresence(finalUser.id, finalUser.role, true);
+                }
+              } catch (e) {}
 
-              if (token && user) {
-                // 1. Lưu token hệ thống
-                localStorage.setItem("token", token);
-                
-                // 2. Ép cấu trúc User
-                const finalUser = {
-                  id: user.userId || user.UserId || user.id,
-                  role: user.roleName || user.RoleName || user.role,
-                  fullName: user.fullName || user.FullName || user.name
-                };
-                localStorage.setItem("user", JSON.stringify(finalUser));
+              // 4. Thoát Supabase sau khi đã lấy xong Token BE
+              setTimeout(() => supabase.auth.signOut(), 1000);
 
-                // 3. Bật đèn Firebase
-                try {
-                  if (finalUser.id && finalUser.role) {
-                    await updateUserPresence(finalUser.id, finalUser.role, true);
-                  }
-                } catch (e) {}
-
-                // 4. Delay SignOut lại một chút để không phá vỡ luồng đang chạy
-                setTimeout(() => supabase.auth.signOut(), 1000);
-
-                // 5. Đá về đúng trang
-                const targetPath = roleToPath[String(finalUser.role || '').toLowerCase()] || '/';
-                navigate(targetPath);
-              }
+              // 5. Chuyển về đúng trang của Role
+              const targetPath = roleToPath[String(finalUser.role || '').toLowerCase()] || '/admin';
+              navigate(targetPath);
+              
             } else {
-              setGoogleError(raw?.message || raw?.Message || "Xác thực thất bại từ hệ thống.");
-              isLoggingIn.current = false; // Mở chốt nếu lỗi
-              await supabase.auth.signOut();
+              throw new Error(apiRes?.message || "Hệ thống không trả về Token.");
             }
           } catch (error) {
             console.error("Google Login Error:", error);
-            setGoogleError("Lỗi hệ thống trong quá trình đăng nhập.");
-            isLoggingIn.current = false; // Mở chốt nếu lỗi
+            setGoogleError(error.response?.data?.message || "Tài khoản chưa được Admin cấp phép.");
+            isLoggingIn.current = false;
             await supabase.auth.signOut(); 
           } finally {
             setIsGoogleLoading(false);
@@ -102,14 +87,8 @@ export const useGoogleLogin = () => {
         }
       }
     );
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
+    return () => authListener.subscription.unsubscribe();
   }, [navigate]);
 
-  return {
-    loginWithGoogle,
-    isGoogleLoading,
-    googleError,
-  };
+  return { loginWithGoogle, isGoogleLoading, googleError };
 };
