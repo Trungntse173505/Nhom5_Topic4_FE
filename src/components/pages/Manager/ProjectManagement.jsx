@@ -5,84 +5,6 @@ import authApi from "../../../api/authApi";
 import { CardSpotlight } from "../../common/card-spotlight";
 import { AnimatedButton } from "../../common/AnimatedButton";
 import { AuroraBackground } from "../../common/aurora-background";
-// IMPORT Hook lấy API thống kê
-import { useProjectStats } from "../../../hooks/useProjectStats";
-
-// COMPONENT CON: Gọi API Stats và hiển thị thẻ Dự án
-const ProjectCardItem = ({ proj, navigate }) => {
-  // Gọi API lấy thống kê riêng cho Project này
-  const { stats, isLoadingStats } = useProjectStats(proj.projectID);
-
-  // MÓC ĐÚNG KEY TỪ API SWAGGER SẾP VỪA ĐƯA
-  const totalItems =
-    stats?.totalItems || proj.totalDataItems || proj.totalItems || 0;
-  const labeledItems = stats?.completedItems || proj.completedItems || 0;
-
-  // Lấy key rateComplete, làm tròn 64.71 -> 65
-  let progressRate = 0;
-  if (stats?.rateComplete !== undefined) {
-    progressRate = Math.round(stats.rateComplete);
-  } else if (totalItems > 0) {
-    progressRate = Math.round((labeledItems / totalItems) * 100);
-  }
-  // Chốt chặn an toàn
-  progressRate = Math.min(Math.max(progressRate, 0), 100);
-
-  return (
-    <CardSpotlight
-      onClick={() => navigate(`/manager/projects/${proj.projectID}`)}
-      className="rounded-xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-6 shadow-sm hover:border-white/10 transition-colors cursor-pointer flex flex-col justify-between"
-    >
-      <div>
-        <div className="flex justify-between items-start mb-4">
-          <h3 className="text-lg font-semibold text-white group-hover/spotlight:text-blue-400 transition-colors line-clamp-1 pr-2">
-            {proj.projectName || "Dự án không tên"}
-          </h3>
-          <span
-            className={`px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${
-              proj.status === "Open" || proj.status === "Active"
-                ? "bg-emerald-500/10 text-emerald-400"
-                : "bg-gray-500/10 text-gray-400"
-            }`}
-          >
-            {proj.status === "Open" || proj.status === "Active"
-              ? "Đang mở"
-              : "Đã đóng"}
-          </span>
-        </div>
-        <div className="text-sm text-gray-400 mb-6">
-          Loại:{" "}
-          <span className="text-gray-200 font-medium">
-            {proj.projectType || "Không xác định"}
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-auto">
-        <div className="flex justify-between text-xs mb-2 text-gray-400 font-medium">
-          <span>Tiến độ</span>
-          {isLoadingStats ? (
-            <span className="animate-pulse">Đang tải...</span>
-          ) : (
-            <span className={progressRate === 100 ? "text-emerald-400" : ""}>
-              {progressRate}% ({labeledItems}/{totalItems})
-            </span>
-          )}
-        </div>
-        <div className="w-full bg-[#0B1120] h-1.5 rounded-full overflow-hidden border border-white/5">
-          <div
-            className={`h-full rounded-full transition-all duration-1000 ease-out ${
-              proj.status === "Open" || proj.status === "Active"
-                ? "bg-[#10B981]"
-                : "bg-gray-500"
-            }`}
-            style={{ width: `${progressRate}%` }}
-          ></div>
-        </div>
-      </div>
-    </CardSpotlight>
-  );
-};
 
 export default function ProjectManagement() {
   const navigate = useNavigate();
@@ -268,17 +190,82 @@ export default function ProjectManagement() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {filteredProjects.map((proj) => (
-                <ProjectCardItem
-                  key={proj.projectID || Math.random()}
-                  proj={proj}
-                  navigate={navigate}
-                />
-              ))}
+              {filteredProjects.map((proj) => {
+                // ĐÃ FIX: Biến projects giờ đã ngậm đầy đủ data nhờ Hook xịn
+                const totalItems = proj.totalDataItems || 0;
+                const labeledItems = proj.completedItems || 0;
+
+                let progressRate = 0;
+                if (proj.rateComplete !== undefined) {
+                  progressRate = Math.round(proj.rateComplete);
+                } else if (totalItems > 0) {
+                  progressRate = Math.round((labeledItems / totalItems) * 100);
+                }
+                progressRate = Math.min(Math.max(progressRate, 0), 100);
+
+                return (
+                  <CardSpotlight
+                    key={proj.projectID || Math.random()}
+                    onClick={() =>
+                      navigate(`/manager/projects/${proj.projectID}`)
+                    }
+                    className="rounded-xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-6 shadow-sm hover:border-white/10 transition-colors cursor-pointer flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-lg font-semibold text-white group-hover/spotlight:text-blue-400 transition-colors line-clamp-1 pr-2">
+                          {proj.projectName || "Dự án không tên"}
+                        </h3>
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${
+                            proj.status === "Open" || proj.status === "Active"
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : "bg-gray-500/10 text-gray-400"
+                          }`}
+                        >
+                          {proj.status === "Open" || proj.status === "Active"
+                            ? "Đang mở"
+                            : "Đã đóng"}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-400 mb-6">
+                        Loại:{" "}
+                        <span className="text-gray-200 font-medium">
+                          {proj.projectType || "Không xác định"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-auto">
+                      <div className="flex justify-between text-xs mb-2 text-gray-400 font-medium">
+                        <span>Tiến độ</span>
+                        <span
+                          className={
+                            progressRate === 100 ? "text-emerald-400" : ""
+                          }
+                        >
+                          {progressRate}% ({labeledItems}/{totalItems})
+                        </span>
+                      </div>
+                      <div className="w-full bg-[#0B1120] h-1.5 rounded-full overflow-hidden border border-white/5">
+                        <div
+                          className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                            proj.status === "Open" || proj.status === "Active"
+                              ? "bg-[#10B981]"
+                              : "bg-gray-500"
+                          }`}
+                          style={{ width: `${progressRate}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </CardSpotlight>
+                );
+              })}
             </div>
           )}
         </main>
 
+        {/* MODAL TẠO DỰ ÁN */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
             <div className="bg-[#151D2F] border border-white/10 rounded-xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">

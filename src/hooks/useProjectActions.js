@@ -41,6 +41,7 @@ export const useProjectActions = (projectId) => {
   // 3. Cập nhật Guideline
   const handleUpdateGuideline = async (guidelineUrl, onSuccess) => {
     try {
+      await updateProjectGuideline(projectId, { url: null });
       setIsActionLoading(true);
       await updateProjectGuideline(projectId, guidelineUrl);
       alert("Cập nhật tài liệu hướng dẫn thành công!");

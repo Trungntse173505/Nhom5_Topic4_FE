@@ -47,6 +47,7 @@ export default function LabelSetEditor({ project, onRefresh }) {
       defaultColor: newLabel.color,
       customName: newLabel.name,
       colorCode: newLabel.color,
+      url: "",
     };
 
     const success = await createCustom(payload);
