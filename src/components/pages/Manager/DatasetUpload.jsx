@@ -7,7 +7,6 @@ import { CardContainer, CardBody, CardItem } from "../../common/3d-card";
 // Bổ sung import cái nút Animated cực mượt mới tạo
 import { AnimatedButton } from "../../common/AnimatedButton";
 
-// ĐÃ SỬA: Nhận thêm prop `project` từ ManagerDashboard truyền qua
 export default function DatasetUpload({ project }) {
   const { projectId: paramProjectId } = useParams();
   const location = useLocation();
@@ -19,7 +18,7 @@ export default function DatasetUpload({ project }) {
 
   const fileInputRef = useRef(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [fileType, setFileType] = useState("Pic"); // Mặc định ban đầu
+  const [fileType, setFileType] = useState("Pic");
 
   // TỰ ĐỘNG MAP LOẠI DATA CỦA DỰ ÁN VÀO KHUNG UPLOAD
   useEffect(() => {
@@ -33,6 +32,8 @@ export default function DatasetUpload({ project }) {
         setFileType("Audio");
       } else if (type.includes("text")) {
         setFileType("Text");
+      } else if (type.includes("mixed")) {
+        setFileType("Mixed"); // ĐÃ THÊM: Xử lý case Mixed
       }
     }
   }, [project]);
@@ -48,6 +49,9 @@ export default function DatasetUpload({ project }) {
         return "audio/*";
       case "Text":
         return "text/*,.json,.csv";
+      case "Mixed":
+        // ĐÃ THÊM: Gom tất cả các đuôi được phép cho Mixed
+        return "image/*,video/*,audio/*,text/*,.json,.csv";
       default:
         return "*/*";
     }
@@ -64,6 +68,9 @@ export default function DatasetUpload({ project }) {
         return "Hỗ trợ: MP3, WAV, OGG...";
       case "Text":
         return "Hỗ trợ: TXT, CSV, JSON...";
+      case "Mixed":
+        // ĐÃ THÊM: Nhắc nhở cho Mixed
+        return "Hỗ trợ: Ảnh, Video, Audio, Văn bản...";
       default:
         return "Supported files...";
     }
@@ -73,7 +80,7 @@ export default function DatasetUpload({ project }) {
     if (e.target.files && e.target.files.length > 0) {
       const files = Array.from(e.target.files);
 
-      // KIỂM TRA NGHIÊM NGẶT LOẠI FILE (LỚP BẢO VỆ SỐ 2)
+      // KIỂM TRA NGHIÊM NGẶT LOẠI FILE
       const isValid = files.every((file) => {
         if (fileType === "Pic") return file.type.startsWith("image/");
         if (fileType === "Video") return file.type.startsWith("video/");
@@ -84,6 +91,17 @@ export default function DatasetUpload({ project }) {
             file.name.endsWith(".json") ||
             file.name.endsWith(".csv")
           );
+        // ĐÃ THÊM: Với Mixed, cho phép lọt khe 4 loại cơ bản trên, chặn mấy file rác (như .exe)
+        if (fileType === "Mixed") {
+          return (
+            file.type.startsWith("image/") ||
+            file.type.startsWith("video/") ||
+            file.type.startsWith("audio/") ||
+            file.type.startsWith("text/") ||
+            file.name.endsWith(".json") ||
+            file.name.endsWith(".csv")
+          );
+        }
         return true;
       });
 
@@ -91,7 +109,6 @@ export default function DatasetUpload({ project }) {
         alert(
           `Lỗi: Vui lòng chỉ chọn đúng định dạng file cho loại dữ liệu "${fileType}" của dự án này!`,
         );
-        // Reset lại input
         if (fileInputRef.current) fileInputRef.current.value = "";
         return;
       }
@@ -145,6 +162,8 @@ export default function DatasetUpload({ project }) {
               <option value="Text">Text (Văn bản)</option>
               <option value="Audio">Audio (Âm thanh)</option>
               <option value="Video">Video</option>
+              {/* ĐÃ THÊM: Option Mixed */}
+              <option value="Mixed">Mixed (Hỗn hợp)</option>
             </select>
             <p className="text-[10px] text-rose-400/80 mt-1 italic text-right">
               * Cố định theo dự án
