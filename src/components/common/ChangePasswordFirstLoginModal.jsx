@@ -40,9 +40,7 @@ export default function ChangePasswordFirstLoginModal({
     const res = await changePasswordFirstLogin({ oldPassword, newPassword });
     if (res.success) {
       const msg =
-        res?.data?.message ||
-        res?.data?.Message ||
-        'Đổi mật khẩu thành công. Bạn sẽ được chuyển tiếp ngay.';
+        res?.data?.message ?? 'Đổi mật khẩu thành công. ';
 
       window.alert(msg);
       onSuccess?.({ data: res.data, newPassword });

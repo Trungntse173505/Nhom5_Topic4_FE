@@ -7,7 +7,7 @@ const FormField = ({ label, isSelect, wrapperClass = "", children, ...props }) =
     <div className={`bg-white/5 p-4 rounded-xl ${wrapperClass}`}>
         <label className="text-white/40 block mb-1 text-sm">{label}</label>
         {isSelect ? (
-            <select {...props} className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20">{children}</select>
+            <select {...props} className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20 select-dark">{children}</select>
         ) : (
             <input {...props} className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20" />
         )}
@@ -260,7 +260,7 @@ export default function UserList() {
                                 <td className="px-6 py-4 text-center">
                                     <select
                                         value={user.role} onChange={(e) => handleAssignRole(user, e.target.value)} disabled={isBusy || assigningRoleId === user.id} title="Đổi vai trò"
-                                        className="text-xs font-semibold text-blue-300 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20 hover:border-blue-500/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                        className="text-xs font-semibold text-blue-300 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20 hover:border-blue-500/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed select-dark"
                                     >
                                         <option value="ADMIN">ADMIN</option>
                                         <option value="MANAGER">MANAGER</option>

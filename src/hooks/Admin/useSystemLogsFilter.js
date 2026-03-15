@@ -146,13 +146,10 @@ export default function useSystemLogsFilter() {
     }, [loading, pageNumber, normalizedLogs.length, totalCount]);
 
     return {
-        logs,
         normalizedLogs,
         loading,
         error,
-        pageNumber,
         pageSize,
-        totalCount,
         canGoPrev,
         canGoNext,
         draftFromTime,

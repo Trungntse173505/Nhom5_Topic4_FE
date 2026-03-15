@@ -121,8 +121,6 @@ export const useResetPasswordModal = ({ open, email, onSuccess, onClose }) => {
     error,
     successMessage,
     responseFields,
-    setError,
-    reset,
     close,
     onBlurOtp,
     onBlurNewPassword,

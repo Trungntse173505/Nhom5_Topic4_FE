@@ -168,8 +168,6 @@ export const useAdminRoles = () => {
 
   return {
     roles,
-    rolesRaw: rolesState.raw,
-    rolesListRaw: rolesState.listRaw,
     rolesLoading,
     rolesError,
     refreshRoles,
