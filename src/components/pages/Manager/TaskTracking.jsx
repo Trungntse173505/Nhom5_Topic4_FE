@@ -1,11 +1,15 @@
 import React, { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom"; // Thêm useNavigate để tiện chuyển tab
 import { useTaskTracking } from "../../../hooks/useTaskTracking";
+// ĐÃ THÊM: Import Hook Label để kiểm tra xem đã có nhãn chưa
+import { useLabelManagement } from "../../../hooks/useLabelManagement";
 
-export default function TaskTracking({ project }) {
+export default function TaskTracking({ project, setActiveTab }) {
   const { projectId: paramId } = useParams();
   const projectId = paramId || project?.projectID || project?.id;
+  const navigate = useNavigate();
 
+  // Gọi Hook theo dõi Task
   const {
     tasks,
     annotators,
@@ -16,6 +20,10 @@ export default function TaskTracking({ project }) {
     reassignTask,
     revoke,
   } = useTaskTracking(projectId);
+
+  // ĐÃ THÊM: Gọi Hook lấy danh sách Nhãn Dự án hiện tại
+  const { projectLabels, isLoading: isLabelLoading } =
+    useLabelManagement(projectId);
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -67,6 +75,40 @@ export default function TaskTracking({ project }) {
     }
   };
 
+  // ĐÃ THÊM: Hàm xử lý mở Modal phân công với điều kiện RÀNG BUỘC
+  const handleOpenAssignModal = (targetId, task, isUnassigned) => {
+    if (!targetId) return alert("Task này chưa có ID, không thể thao tác!");
+
+    // RÀNG BUỘC CHÍNH Ở ĐÂY: Nếu mảng Nhãn trống trơn -> Khóa mõm
+    if (!projectLabels || projectLabels.length === 0) {
+      if (
+        window.confirm(
+          "Cảnh báo: Dự án này chưa có Bộ Nhãn (Label) nào!\nNhân sự sẽ không thể làm việc nếu không có nhãn. Bạn có muốn chuyển sang mục 'Chỉnh sửa Bộ nhãn' để thêm không?",
+        )
+      ) {
+        // Nếu sếp có truyền setActiveTab từ ManagerDashboard vào thì xài, không thì dùng navigate
+        if (setActiveTab) {
+          setActiveTab("labels");
+        } else {
+          // Fallback
+          alert(
+            "Vui lòng vào mục 'Chỉnh sửa Bộ nhãn' ở thanh menu trên cùng để thêm nhãn trước!",
+          );
+        }
+      }
+      return; // Dừng luôn, không cho mở Modal
+    }
+
+    // Nếu đã có nhãn thì cho mở Modal bình thường
+    setReassignModal({
+      show: true,
+      taskId: targetId,
+      annotatorId: task.annotatorID || "",
+      reviewerId: task.reviewerID || "",
+      isFirstAssign: isUnassigned,
+    });
+  };
+
   return (
     <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm relative">
       <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
@@ -86,6 +128,14 @@ export default function TaskTracking({ project }) {
           />
         </div>
       </div>
+
+      {/* Hiển thị cảnh báo nhỏ nếu chưa có nhãn */}
+      {!isLabelLoading && projectLabels.length === 0 && (
+        <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm flex items-center gap-2">
+          <span>⚠️</span> <strong>Lưu ý:</strong> Vui lòng tạo Bộ nhãn (Label)
+          trước khi thực hiện giao Task cho nhân sự.
+        </div>
+      )}
 
       <div className="overflow-x-auto min-h-[300px]">
         {isLoading ? (
@@ -123,7 +173,6 @@ export default function TaskTracking({ project }) {
 
                   const isUnassigned = !task.annotatorID;
 
-                  // TỰ ĐỘNG DÒ TÊN TỪ DANH SÁCH CÓ SẴN (Phòng hờ BE quên trả tên)
                   const matchedAnn = annotators.find(
                     (a) => a.userID === task.annotatorID,
                   );
@@ -131,7 +180,6 @@ export default function TaskTracking({ project }) {
                     (r) => r.userID === task.reviewerID,
                   );
 
-                  // Bọc lót 3 lớp để đảm bảo không bao giờ hiện lỗi
                   const annName = isUnassigned
                     ? "Chưa giao"
                     : task.annotatorName ||
@@ -235,20 +283,13 @@ export default function TaskTracking({ project }) {
                         </button>
 
                         <button
-                          onClick={() => {
-                            if (!targetId)
-                              return alert(
-                                "Task này chưa có ID, không thể thao tác!",
-                              );
-                            setReassignModal({
-                              show: true,
-                              taskId: targetId,
-                              annotatorId: task.annotatorID || "",
-                              reviewerId: task.reviewerID || "",
-                              isFirstAssign: isUnassigned,
-                            });
-                          }}
-                          disabled={isActionLoading || !targetId}
+                          // ĐÃ SỬA: Gọi hàm kiểm tra điều kiện trước khi giao việc
+                          onClick={() =>
+                            handleOpenAssignModal(targetId, task, isUnassigned)
+                          }
+                          disabled={
+                            isActionLoading || !targetId || isLabelLoading
+                          }
                           className={`text-xs px-3 py-1.5 rounded transition-colors disabled:opacity-50 ${isUnassigned ? "bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-bold" : "bg-white/5 hover:bg-white/10 text-gray-300"}`}
                         >
                           {isUnassigned ? "Assign" : "Reassign"}
@@ -316,7 +357,6 @@ export default function TaskTracking({ project }) {
                     Gợi ý Annotator <span className="text-rose-500">*</span>
                   </h4>
                 </div>
-
                 <div className="space-y-3">
                   {annotators.length === 0 ? (
                     <div className="text-sm text-gray-500 italic p-4 border border-dashed border-white/10 rounded-xl text-center">
@@ -334,11 +374,7 @@ export default function TaskTracking({ project }) {
                               annotatorId: u.userID,
                             })
                           }
-                          className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                            isSelected
-                              ? "bg-blue-500/10 border-blue-500"
-                              : "bg-[#0B1120] border-white/5 hover:border-white/20"
-                          }`}
+                          className={`p-4 rounded-xl border cursor-pointer transition-all ${isSelected ? "bg-blue-500/10 border-blue-500" : "bg-[#0B1120] border-white/5 hover:border-white/20"}`}
                         >
                           <div className="flex justify-between items-start">
                             <div>
@@ -372,27 +408,17 @@ export default function TaskTracking({ project }) {
                     Gợi ý Reviewer (Tùy chọn)
                   </h4>
                 </div>
-
                 <div className="space-y-3">
-                  {/* Tùy chọn: Không chọn Reviewer */}
                   <div
                     onClick={() =>
-                      setReassignModal({
-                        ...reassignModal,
-                        reviewerId: "",
-                      })
+                      setReassignModal({ ...reassignModal, reviewerId: "" })
                     }
-                    className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                      reassignModal.reviewerId === ""
-                        ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400"
-                        : "bg-[#0B1120] border-white/5 hover:border-white/20 text-gray-400"
-                    }`}
+                    className={`p-4 rounded-xl border cursor-pointer transition-all ${reassignModal.reviewerId === "" ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400" : "bg-[#0B1120] border-white/5 hover:border-white/20 text-gray-400"}`}
                   >
                     <div className="font-medium text-sm">
                       -- Không cần kiểm duyệt --
                     </div>
                   </div>
-
                   {reviewers.map((u) => {
                     const isSelected = reassignModal.reviewerId === u.userID;
                     return (
@@ -404,11 +430,7 @@ export default function TaskTracking({ project }) {
                             reviewerId: u.userID,
                           })
                         }
-                        className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                          isSelected
-                            ? "bg-purple-500/10 border-purple-500"
-                            : "bg-[#0B1120] border-white/5 hover:border-white/20"
-                        }`}
+                        className={`p-4 rounded-xl border cursor-pointer transition-all ${isSelected ? "bg-purple-500/10 border-purple-500" : "bg-[#0B1120] border-white/5 hover:border-white/20"}`}
                       >
                         <div className="flex justify-between items-start">
                           <div>
