@@ -7,7 +7,6 @@ const buildErrorMessage = (err) => {
 
   const message =
     data?.message ||
-    data?.Message ||
     data?.detail ||
     data?.title ||
     data?.error ||

@@ -5,7 +5,6 @@ const extractErrorMessage = (err, fallback) => {
   const data = err?.response?.data;
   const msg =
     data?.message ||
-    data?.Message ||
     (typeof data === 'string' ? data : null) ||
     null;
   if (msg) return String(msg);

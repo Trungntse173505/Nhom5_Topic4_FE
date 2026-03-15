@@ -35,7 +35,7 @@ axiosClient.interceptors.response.use(
       const { status, data } = error.response;
 
       if (!isSilent) {
-        console.error(`Lỗi hệ thống (${status}):`, data?.message || data?.Message || "Đã có lỗi xảy ra");
+        console.error(`Lỗi hệ thống (${status}):`, data?.message || "Đã có lỗi xảy ra");
       }
 
       if (status === 401) {

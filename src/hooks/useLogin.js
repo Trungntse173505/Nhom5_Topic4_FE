@@ -136,7 +136,6 @@ export const useLogin = () => {
       setLoading(false);
       const errMsg =
         err.response?.data?.message ||
-        err.response?.data?.Message ||
         "Đăng nhập thất bại. Kiểm tra lại kết nối Azure.";
       setError(errMsg);
       return { success: false, error: errMsg };

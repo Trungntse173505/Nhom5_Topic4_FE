@@ -60,7 +60,7 @@ export const useResetPasswordModal = ({ open, email, onSuccess, onClose }) => {
 
   const successMessage = useMemo(() => {
     if (!data) return null;
-    return data?.message || data?.Message || 'Đặt lại mật khẩu thành công. Bạn có thể đăng nhập lại.';
+    return data?.message ?? 'Đặt lại mật khẩu thành công. Bạn có thể đăng nhập lại.';
   }, [data]);
 
   const responseFields = useMemo(() => {
@@ -98,10 +98,7 @@ export const useResetPasswordModal = ({ open, email, onSuccess, onClose }) => {
 
       const res = await resetPassword({ email: emailValue, otp, newPassword });
       if (res.success) {
-        const msg =
-          res?.data?.message ||
-          res?.data?.Message ||
-          'Đặt lại mật khẩu thành công. Bạn có thể đăng nhập lại.';
+        const msg = res?.data?.message ?? 'Đặt lại mật khẩu thành công. Bạn có thể đăng nhập lại.';
         window.alert(msg);
         onSuccess?.(res.data);
       }

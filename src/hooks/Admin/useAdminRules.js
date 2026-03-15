@@ -15,7 +15,7 @@ export const useAdminRules = () => {
     try {
       const response = await adminRuleApi.getAllRules();
       // axiosClient thường trả thẳng data, tuỳ cấu hình của bạn
-      setRules(response.data || response); 
+      setRules(response.data || response);
     } catch (err) {
       setError(err.message || 'Đã có lỗi xảy ra khi tải danh sách Rules');
       console.error('Fetch rules failed:', err);
@@ -30,14 +30,14 @@ export const useAdminRules = () => {
     setError(null);
     try {
       await adminRuleApi.updateRule(ruleId, updatedData);
-      
+
       // Cập nhật lại state local (giao diện) ngay sau khi API thành công
       setRules((prevRules) =>
         prevRules.map((rule) =>
           rule.ruleID === ruleId ? { ...rule, ...updatedData } : rule
         )
       );
-      
+
       return { success: true };
     } catch (err) {
       const errMsg = err.message || 'Cập nhật Rule thất bại';
