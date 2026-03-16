@@ -5,7 +5,7 @@ const ABSTRACT_API_KEY =
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export const verifyRealEmail = async (email) => {
+export const checkEmailExists = async (email) => {
   // 1. Kiểm tra định dạng cơ bản trước (để tiết kiệm lượt gọi API)
   if (!EMAIL_REGEX.test(email)) {
     return { isValid: false, message: 'Định dạng email không hợp lệ.' };
@@ -21,7 +21,7 @@ export const verifyRealEmail = async (email) => {
 
   try {
     const response = await fetch(
-      `https://emailvalidation.abstractapi.com/v1/?api_key=${ABSTRACT_API_KEY}&email=${encodeURIComponent(email)}`
+      `https://emailreputation.abstractapi.com/v1/?api_key=${ABSTRACT_API_KEY}&email=${encodeURIComponent(email)}`
     );
     const data = await response.json();
 
@@ -34,20 +34,47 @@ export const verifyRealEmail = async (email) => {
       return { isValid: false, message: msg };
     }
 
-    // 2. Kiểm tra phản hồi từ Server Email (SMTP)
-    if (data.deliverability === 'UNDELIVERABLE') {
-      return { isValid: false, message: 'Email này không tồn tại trên thực tế.' };
-    }
+    // 2. Đánh giá tồn tại dựa trên các trường trả về (hỗ trợ cả schema Email Validation và Email Reputation)
+    const deliverabilityRaw =
+      data?.deliverability ||
+      data?.email_deliverability?.status ||
+      data?.email_reputation?.deliverability;
 
-    // 3. Kiểm tra xem có phải email rác (10 phút) không
-    if (data?.is_disposable_email?.value === true) {
+    const isDeliverable = String(deliverabilityRaw || '').toUpperCase() === 'DELIVERABLE';
+
+    const smtpOk =
+      data?.is_smtp_valid?.value === true ||
+      data?.email_deliverability?.is_smtp_valid === true ||
+      data?.email_reputation?.is_smtp_valid === true;
+
+    const formatOk =
+      data?.is_valid_format?.value === true ||
+      data?.email_deliverability?.is_format_valid === true;
+
+    const disposable =
+      data?.is_disposable_email?.value === true ||
+      data?.email_quality?.is_disposable === true ||
+      data?.email_reputation?.is_disposable === true;
+
+    if (disposable) {
       return { isValid: false, message: 'Vui lòng không sử dụng email ảo.' };
     }
 
-    return { isValid: true, message: 'Email hợp lệ.' };
+    if (isDeliverable || smtpOk) {
+      return { isValid: true, message: 'Email này tồn tại thật!' };
+    }
+
+    if (formatOk) {
+      return { isValid: false, message: 'Email có định dạng đúng nhưng không xác nhận được tồn tại trên máy chủ.' };
+    }
+
+    return { isValid: false, message: 'Email này có vẻ không tồn tại trên hệ thống mail.' };
   } catch (error) {
     // Nếu API lỗi (hết quota, mất mạng), chặn để tránh tạo user sai
     console.error('Email Verification Error:', error);
     return { isValid: false, message: 'Không thể xác thực email. Vui lòng thử lại.' };
   }
 };
+
+// Giữ hàm cũ để tương thích với các nơi đã gọi
+export const verifyRealEmail = checkEmailExists;
