@@ -14,8 +14,13 @@ const RULENAME_MAP = {
 const FormField = ({ label, isSelect, wrapperClass = "", children, ...props }) => (
     <div className={`bg-white/5 p-4 rounded-xl ${wrapperClass}`}>
         <label className="text-white/40 block mb-1 text-sm font-bold">{label}</label>
-        {isSelect 
-            ? <select {...props} className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20 outline-none focus:border-blue-500 transition-all">{children}</select>
+        {isSelect
+            ? <select
+                {...props}
+                className="admin-rules-select w-full bg-white/10 text-white rounded-lg p-2 border border-white/20 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/40 transition-all"
+            >
+                {children}
+            </select>
             : <input {...props} className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20 outline-none focus:border-blue-500 transition-all" />
         }
     </div>
@@ -24,6 +29,16 @@ const FormField = ({ label, isSelect, wrapperClass = "", children, ...props }) =
 export default function AdminRules() {
     const { rules, loading, error, isUpdating, fetchRules, updateRule } = useAdminRules();
     const [editForm, setEditForm] = useState(null);
+    const selectCss = `
+      .admin-rules-select {
+        background-color: rgba(255,255,255,0.08);
+        color: #fff;
+      }
+      .admin-rules-select option {
+        background-color: #1f2432;
+        color: #fff;
+      }
+    `;
 
     // --- HÀM HELPER & LOGIC ---
     const getBadgeClass = (cat = '') => {
@@ -43,15 +58,16 @@ export default function AdminRules() {
     const closeEdit = () => !isUpdating && setEditForm(null);
 
     const handleSaveEdit = async () => {
-        if (isUpdating) return; 
+        if (isUpdating) return;
         const { ruleID, value, description, isActive } = editForm;
         const res = await updateRule(ruleID, { value: Number(value), description, isActive });
-        
+
         res.success ? setEditForm(null) : alert(`Lỗi: ${res.error}`);
     };
 
     return (
         <div className="p-6 min-h-screen bg-[#050B1A] text-white font-sans">
+            <style>{selectCss}</style>
             {/* HEADER */}
             <div className="flex items-center justify-between gap-4 mb-8">
                 <div>
@@ -89,7 +105,7 @@ export default function AdminRules() {
                                         <div className="text-sm font-bold text-white/90">{RULENAME_MAP[rule.ruleName] || rule.ruleName}</div>
                                         <div className="text-xs text-white/40 mt-1 line-clamp-1" title={rule.description}>{rule.description}</div>
                                     </td>
-                                    
+
                                     <td className="px-6 py-4 text-center">
                                         <span className={`text-[10px] font-bold px-3 py-1 rounded-full border ${getBadgeClass(rule.category)}`}>
                                             {CATEGORY_MAP[rule.category] || rule.category?.toUpperCase()}
@@ -109,7 +125,10 @@ export default function AdminRules() {
                                     </td>
 
                                     <td className="px-6 py-4 text-right">
-                                        <button onClick={() => setEditForm({ ...rule })} className="text-xs bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-lg border border-white/5 transition-colors font-bold">
+                                        <button
+                                            onClick={() => setEditForm({ ...rule })}
+                                            className="text-xs px-4 py-2 rounded-lg font-bold text-white bg-blue-700 hover:bg-blue-600 active:bg-blue-500 shadow-lg shadow-blue-900/50 border border-blue-400/40 transition-transform transition-colors duration-150 hover:-translate-y-0.5 active:translate-y-0"
+                                        >
                                             Chỉnh sửa
                                         </button>
                                     </td>
@@ -125,12 +144,12 @@ export default function AdminRules() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={closeEdit}></div>
                     <div className="relative bg-[#0A1225] border border-white/10 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in duration-200">
-                        
+
                         <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                             <h2 className="text-xl font-bold text-blue-400">Chỉnh sửa Quy tắc</h2>
                             <button onClick={closeEdit} disabled={isUpdating} className="text-white/40 hover:text-white text-2xl transition-colors disabled:opacity-50">✕</button>
                         </div>
-                        
+
                         <div className="p-8 space-y-4">
                             <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-4 mb-4">
                                 <p className="text-xs text-blue-400/60 font-bold mb-1">Quy tắc: {RULENAME_MAP[editForm.ruleName] || editForm.ruleName}</p>
@@ -146,7 +165,7 @@ export default function AdminRules() {
                                 </FormField>
                             </div>
                         </div>
-                        
+
                         <div className="px-8 py-6 bg-white/[0.02] border-t border-white/5 flex gap-3">
                             <button onClick={handleSaveEdit} disabled={isUpdating} className="flex-1 bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                 {isUpdating ? 'Đang lưu...' : 'Lưu thay đổi'}
