@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import ManagerLayout from "./ManagerLayout";
 import DatasetUpload from "./DatasetUpload";
@@ -18,6 +18,64 @@ import { useProjectStats } from "../../../hooks/useProjectStats";
 // Import cái card ảo ma Spotlight
 import { CardSpotlight } from "../../common/card-spotlight";
 
+// =====================================================================
+// BÍ KÍP 3: ĐÓNG BĂNG TỪNG DÒNG PERFORMANCE (Chống lag khi có 100 ông Annotator)
+// =====================================================================
+const PerformanceRowItem = React.memo(({ perf, allUsers }) => {
+  const uid = perf.userId;
+  const matchedUser = allUsers.find(
+    (u) => u.userID === uid || u.userId === uid || u.id === uid,
+  );
+  const name =
+    matchedUser?.fullName || `Người dùng #${uid?.substring(0, 5) || "N/A"}`;
+
+  const total = perf.totalTasks || 0;
+  const approved = perf.approvedTasks || 0;
+  const rejectRate = perf.rejectRate || 0;
+
+  return (
+    <div className="bg-[#0B1120] border border-white/5 p-4 rounded-xl hover:border-white/10 transition-colors relative z-10">
+      <div className="flex justify-between items-center mb-2">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-sm">
+            {name.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white">{name}</p>
+            <p className="text-xs text-gray-500">
+              Tỉ lệ sai sót:{" "}
+              <span
+                className={
+                  rejectRate > 20
+                    ? "text-rose-400 font-bold"
+                    : "text-emerald-400"
+                }
+              >
+                {rejectRate}%
+              </span>
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-sm font-bold text-blue-400">
+            {approved} / {total}
+          </p>
+          <p className="text-[10px] text-gray-500 uppercase tracking-wider">
+            Đã duyệt / Tổng
+          </p>
+        </div>
+      </div>
+
+      <div className="w-full bg-[#151D2F] h-1.5 rounded-full mt-2 overflow-hidden border border-white/5">
+        <div
+          className="bg-blue-500 h-full rounded-full transition-all duration-1000 ease-out"
+          style={{ width: `${total > 0 ? (approved / total) * 100 : 0}%` }}
+        ></div>
+      </div>
+    </div>
+  );
+});
+
 const OverviewContent = ({ project, projectId, allUsers }) => {
   const { stats, performance, isLoadingStats } = useProjectStats(projectId);
 
@@ -25,7 +83,6 @@ const OverviewContent = ({ project, projectId, allUsers }) => {
     stats?.totalItems || stats?.totalDataItems || project?.totalDataItems || 0;
   const labeledItems = stats?.labeledItems || stats?.completedItems || 0;
 
-  // ĐÃ FIX 1: TỰ TÍNH PHẦN TRĂM BẰNG TAY (Ép chuẩn bằng số lượng thực tế)
   let progressRate = 0;
   if (totalItems > 0) {
     progressRate = Math.round((labeledItems / totalItems) * 100);
@@ -60,21 +117,18 @@ const OverviewContent = ({ project, projectId, allUsers }) => {
         </span>
       </div>
 
-      {/* --- 4 THẺ THỐNG KÊ (ĐÃ GẮN CARD SPOTLIGHT) --- */}
+      {/* --- 4 THẺ THỐNG KÊ --- */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* THẺ 1: TỔNG SỐ LƯỢNG */}
         <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm relative overflow-hidden">
           <h3 className="text-gray-400 text-sm font-medium relative z-10 group-hover/spotlight:text-white transition-colors">
             Tổng số lượng (Items)
           </h3>
-          {/* ĐÃ FIX 2: Bỏ thanh gạch ngang ở đây, margin-bottom về 0 */}
           <p className="text-4xl font-bold text-white mt-3 relative z-10">
             {totalItems}
           </p>
           <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/5 rounded-full blur-xl pointer-events-none"></div>
         </CardSpotlight>
 
-        {/* THẺ 2: ĐÃ GÁN NHÃN */}
         <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm">
           <h3 className="text-gray-400 text-sm font-medium group-hover/spotlight:text-white transition-colors">
             Đã gán nhãn
@@ -87,7 +141,6 @@ const OverviewContent = ({ project, projectId, allUsers }) => {
           </p>
         </CardSpotlight>
 
-        {/* THẺ 3: TIẾN ĐỘ DỰ ÁN */}
         <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col justify-between">
           <div>
             <h3 className="text-gray-400 text-sm font-medium group-hover/spotlight:text-white transition-colors">
@@ -110,7 +163,6 @@ const OverviewContent = ({ project, projectId, allUsers }) => {
           </div>
         </CardSpotlight>
 
-        {/* THẺ 4: LOẠI HÌNH */}
         <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm">
           <h3 className="text-gray-400 text-sm font-medium group-hover/spotlight:text-white transition-colors">
             Loại hình dự án
@@ -122,9 +174,8 @@ const OverviewContent = ({ project, projectId, allUsers }) => {
         </CardSpotlight>
       </div>
 
-      {/* --- 2 KHỐI LỚN BÊN DƯỚI (ĐÃ GẮN CARD SPOTLIGHT) --- */}
+      {/* --- 2 KHỐI LỚN BÊN DƯỚI --- */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Khối Thông tin dự án */}
         <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-8 shadow-sm h-fit">
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-white group-hover/spotlight:text-blue-400 transition-colors">
@@ -150,7 +201,6 @@ const OverviewContent = ({ project, projectId, allUsers }) => {
           </div>
         </CardSpotlight>
 
-        {/* Khối Năng suất nhân sự */}
         <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col h-[400px]">
           <div className="mb-6 flex justify-between items-center">
             <div>
@@ -177,70 +227,9 @@ const OverviewContent = ({ project, projectId, allUsers }) => {
                 </p>
               </div>
             ) : (
-              performance.map((perf, idx) => {
-                const uid = perf.userId;
-
-                const matchedUser = allUsers.find(
-                  (u) => u.userID === uid || u.userId === uid || u.id === uid,
-                );
-
-                const name =
-                  matchedUser?.fullName ||
-                  `Người dùng #${uid?.substring(0, 5) || "N/A"}`;
-
-                const total = perf.totalTasks || 0;
-                const approved = perf.approvedTasks || 0;
-                const rejectRate = perf.rejectRate || 0;
-
-                return (
-                  <div
-                    key={idx}
-                    className="bg-[#0B1120] border border-white/5 p-4 rounded-xl hover:border-white/10 transition-colors relative z-10"
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-sm">
-                          {name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-white">
-                            {name}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Tỉ lệ sai sót:{" "}
-                            <span
-                              className={
-                                rejectRate > 20
-                                  ? "text-rose-400 font-bold"
-                                  : "text-emerald-400"
-                              }
-                            >
-                              {rejectRate}%
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-blue-400">
-                          {approved} / {total}
-                        </p>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-wider">
-                          Đã duyệt / Tổng
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="w-full bg-[#151D2F] h-1.5 rounded-full mt-2 overflow-hidden border border-white/5">
-                      <div
-                        className="bg-blue-500 h-full rounded-full transition-all duration-1000 ease-out"
-                        style={{
-                          width: `${total > 0 ? (approved / total) * 100 : 0}%`,
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                );
-              })
+              performance.map((perf, idx) => (
+                <PerformanceRowItem key={idx} perf={perf} allUsers={allUsers} />
+              ))
             )}
           </div>
         </CardSpotlight>
@@ -254,13 +243,15 @@ export default function ManagerDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
 
   const [project, setProject] = useState(null);
-  const [allUsers, setAllUsers] = useState([]); // Chứa cả Annotator lẫn Reviewer
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const { isActionLoading, handleChangeStatus } = useProjectActions(projectId);
 
-  // GỌI 3 API CÙNG LÚC ĐỂ LẤY FULL DATA TÊN
-  const fetchDetailAndUsers = async () => {
+  // =====================================================================
+  // BÍ KÍP 2: DÙNG useCallback ĐỂ HÀM fetch KHÔNG BỊ RENDER LẠI
+  // =====================================================================
+  const fetchDetailAndUsers = useCallback(async () => {
     try {
       setLoading(true);
       const [projData, annRes, revRes] = await Promise.all([
@@ -272,7 +263,6 @@ export default function ManagerDashboard() {
       const annotators = Array.isArray(annRes) ? annRes : annRes?.data || [];
       const reviewers = Array.isArray(revRes) ? revRes : revRes?.data || [];
 
-      // Gộp 2 mảng lại thành 1 kho từ điển để dò tên
       setProject(projData);
       setAllUsers([...annotators, ...reviewers]);
     } catch (error) {
@@ -280,11 +270,11 @@ export default function ManagerDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]); // Chỉ tạo lại hàm này nếu projectId đổi
 
   useEffect(() => {
     fetchDetailAndUsers();
-  }, [projectId]);
+  }, [fetchDetailAndUsers]);
 
   const renderTabContent = () => {
     if (loading && activeTab === "overview") {

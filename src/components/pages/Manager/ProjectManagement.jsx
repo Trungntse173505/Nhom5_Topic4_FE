@@ -1,10 +1,78 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjectManagement } from "../../../hooks/useProjectManagement";
 import authApi from "../../../api/authApi";
 import { CardSpotlight } from "../../common/card-spotlight";
 import { AnimatedButton } from "../../common/AnimatedButton";
 import { AuroraBackground } from "../../common/aurora-background";
+
+// =====================================================================
+// BÍ KÍP 3: ĐÓNG BĂNG TỪNG THẺ DỰ ÁN
+// (Chống lỗi gõ phím ở Modal làm list dự án bị giật)
+// =====================================================================
+const ProjectCardItem = React.memo(({ proj, onClick }) => {
+  const totalItems = proj.totalDataItems || 0;
+  const labeledItems = proj.completedItems || 0;
+
+  let progressRate = 0;
+  if (proj.rateComplete !== undefined) {
+    progressRate = Math.round(proj.rateComplete);
+  } else if (totalItems > 0) {
+    progressRate = Math.round((labeledItems / totalItems) * 100);
+  }
+  progressRate = Math.min(Math.max(progressRate, 0), 100);
+
+  return (
+    <CardSpotlight
+      onClick={() => onClick(proj.projectID)}
+      className="rounded-xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-6 shadow-sm hover:border-white/10 transition-colors cursor-pointer flex flex-col justify-between"
+    >
+      <div>
+        <div className="flex justify-between items-start mb-4">
+          <h3 className="text-lg font-semibold text-white group-hover/spotlight:text-blue-400 transition-colors line-clamp-1 pr-2">
+            {proj.projectName || "Dự án không tên"}
+          </h3>
+          <span
+            className={`px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${
+              proj.status === "Open" || proj.status === "Active"
+                ? "bg-emerald-500/10 text-emerald-400"
+                : "bg-gray-500/10 text-gray-400"
+            }`}
+          >
+            {proj.status === "Open" || proj.status === "Active"
+              ? "Đang mở"
+              : "Đã đóng"}
+          </span>
+        </div>
+        <div className="text-sm text-gray-400 mb-6">
+          Loại:{" "}
+          <span className="text-gray-200 font-medium">
+            {proj.projectType || "Không xác định"}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-auto">
+        <div className="flex justify-between text-xs mb-2 text-gray-400 font-medium">
+          <span>Tiến độ</span>
+          <span className={progressRate === 100 ? "text-emerald-400" : ""}>
+            {progressRate}% ({labeledItems}/{totalItems})
+          </span>
+        </div>
+        <div className="w-full bg-[#0B1120] h-1.5 rounded-full overflow-hidden border border-white/5">
+          <div
+            className={`h-full rounded-full transition-all duration-1000 ease-out ${
+              proj.status === "Open" || proj.status === "Active"
+                ? "bg-[#10B981]"
+                : "bg-gray-500"
+            }`}
+            style={{ width: `${progressRate}%` }}
+          ></div>
+        </div>
+      </div>
+    </CardSpotlight>
+  );
+});
 
 export default function ProjectManagement() {
   const navigate = useNavigate();
@@ -59,14 +127,31 @@ export default function ProjectManagement() {
     fetchUserProfile();
   }, []);
 
-  const filteredProjects = projects.filter((p) => {
-    if (filter === "All") return true;
-    if (filter === "Open") return p.status === "Open" || p.status === "Active";
-    if (filter === "Closed") return p.status === "Closed";
-    return p.status === filter;
-  });
+  // =====================================================================
+  // BÍ KÍP 1: GHI NHỚ MẢNG DATA BẰNG useMemo
+  // Chỉ tính toán lại khi có dự án mới hoặc đổi filter
+  // =====================================================================
+  const filteredProjects = useMemo(() => {
+    return projects.filter((p) => {
+      if (filter === "All") return true;
+      if (filter === "Open")
+        return p.status === "Open" || p.status === "Active";
+      if (filter === "Closed") return p.status === "Closed";
+      return p.status === filter;
+    });
+  }, [projects, filter]);
 
-  const handleSubmit = async () => {
+  // =====================================================================
+  // BÍ KÍP 2: ĐÓNG BĂNG HÀNH ĐỘNG CLICK VÀ SUBMIT
+  // =====================================================================
+  const handleProjectClick = useCallback(
+    (id) => {
+      navigate(`/manager/projects/${id}`);
+    },
+    [navigate],
+  );
+
+  const handleSubmit = useCallback(async () => {
     if (!formData.name) {
       alert("Vui lòng nhập Tên dự án!");
       return;
@@ -83,7 +168,7 @@ export default function ProjectManagement() {
         guideline: "",
       });
     }
-  };
+  }, [formData, createNewProject]);
 
   return (
     <AuroraBackground className="font-sans relative w-full !justify-start !items-start !p-0">
@@ -190,77 +275,13 @@ export default function ProjectManagement() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {filteredProjects.map((proj) => {
-                // ĐÃ FIX: Biến projects giờ đã ngậm đầy đủ data nhờ Hook xịn
-                const totalItems = proj.totalDataItems || 0;
-                const labeledItems = proj.completedItems || 0;
-
-                let progressRate = 0;
-                if (proj.rateComplete !== undefined) {
-                  progressRate = Math.round(proj.rateComplete);
-                } else if (totalItems > 0) {
-                  progressRate = Math.round((labeledItems / totalItems) * 100);
-                }
-                progressRate = Math.min(Math.max(progressRate, 0), 100);
-
-                return (
-                  <CardSpotlight
-                    key={proj.projectID || Math.random()}
-                    onClick={() =>
-                      navigate(`/manager/projects/${proj.projectID}`)
-                    }
-                    className="rounded-xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-6 shadow-sm hover:border-white/10 transition-colors cursor-pointer flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-lg font-semibold text-white group-hover/spotlight:text-blue-400 transition-colors line-clamp-1 pr-2">
-                          {proj.projectName || "Dự án không tên"}
-                        </h3>
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${
-                            proj.status === "Open" || proj.status === "Active"
-                              ? "bg-emerald-500/10 text-emerald-400"
-                              : "bg-gray-500/10 text-gray-400"
-                          }`}
-                        >
-                          {proj.status === "Open" || proj.status === "Active"
-                            ? "Đang mở"
-                            : "Đã đóng"}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-400 mb-6">
-                        Loại:{" "}
-                        <span className="text-gray-200 font-medium">
-                          {proj.projectType || "Không xác định"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="mt-auto">
-                      <div className="flex justify-between text-xs mb-2 text-gray-400 font-medium">
-                        <span>Tiến độ</span>
-                        <span
-                          className={
-                            progressRate === 100 ? "text-emerald-400" : ""
-                          }
-                        >
-                          {progressRate}% ({labeledItems}/{totalItems})
-                        </span>
-                      </div>
-                      <div className="w-full bg-[#0B1120] h-1.5 rounded-full overflow-hidden border border-white/5">
-                        <div
-                          className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                            proj.status === "Open" || proj.status === "Active"
-                              ? "bg-[#10B981]"
-                              : "bg-gray-500"
-                          }`}
-                          style={{ width: `${progressRate}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </CardSpotlight>
-                );
-              })}
+              {filteredProjects.map((proj) => (
+                <ProjectCardItem
+                  key={proj.projectID || Math.random()}
+                  proj={proj}
+                  onClick={handleProjectClick}
+                />
+              ))}
             </div>
           )}
         </main>
