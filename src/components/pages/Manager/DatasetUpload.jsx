@@ -1,4 +1,10 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { useDatasetUpload } from "../../../hooks/useDatasetUpload";
 
@@ -6,6 +12,60 @@ import { useDatasetUpload } from "../../../hooks/useDatasetUpload";
 import { CardContainer, CardBody, CardItem } from "../../common/3d-card";
 // Bổ sung import cái nút Animated cực mượt mới tạo
 import { AnimatedButton } from "../../common/AnimatedButton";
+
+// =====================================================================
+// BÍ KÍP 3: CÁI VỎ HỘP ĐÓNG BĂNG CHO TỪNG DÒNG DATA (Chống Lag Bảng)
+// =====================================================================
+const DataRowItem = React.memo(({ item }) => {
+  const finalLink = item.filePath || item.fileUrl || item.url || "";
+  const isAssigned = item.isAssigned === true;
+  const statusText = isAssigned ? "Đã giao Task" : "Chưa giao";
+
+  return (
+    <tr className="hover:bg-white/[0.04] transition-colors">
+      <td
+        className="px-4 py-4 text-gray-200 truncate max-w-[200px]"
+        title={finalLink}
+      >
+        {finalLink ? (
+          <a
+            href={finalLink}
+            target="_blank"
+            rel="noreferrer"
+            className="text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            {item.fileName || finalLink.split("/").pop() || "Xem file"}
+          </a>
+        ) : (
+          <span className="text-rose-400">Không có link</span>
+        )}
+      </td>
+      <td className="px-4 py-4">
+        <span
+          className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+            isAssigned
+              ? "bg-emerald-500/10 text-emerald-400"
+              : "bg-gray-500/10 text-gray-400"
+          }`}
+        >
+          {statusText}
+        </span>
+      </td>
+      <td className="px-4 py-4 text-right">
+        {finalLink && (
+          <a
+            href={finalLink}
+            target="_blank"
+            rel="noreferrer"
+            className="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded transition-colors text-xs"
+          >
+            Mở xem
+          </a>
+        )}
+      </td>
+    </tr>
+  );
+});
 
 export default function DatasetUpload({ project }) {
   const { projectId: paramProjectId } = useParams();
@@ -33,13 +93,15 @@ export default function DatasetUpload({ project }) {
       } else if (type.includes("text")) {
         setFileType("Text");
       } else if (type.includes("mixed")) {
-        setFileType("Mixed"); // ĐÃ THÊM: Xử lý case Mixed
+        setFileType("Mixed");
       }
     }
   }, [project]);
 
-  // Hàm phụ trợ để lấy chuỗi 'accept' cho thẻ input file
-  const getAcceptTypes = () => {
+  // =====================================================================
+  // BÍ KÍP 1: GHI NHỚ TÍNH TOÁN BẰNG useMemo (Tránh não cá vàng)
+  // =====================================================================
+  const acceptTypes = useMemo(() => {
     switch (fileType) {
       case "Pic":
         return "image/*";
@@ -50,15 +112,13 @@ export default function DatasetUpload({ project }) {
       case "Text":
         return "text/*,.json,.csv";
       case "Mixed":
-        // ĐÃ THÊM: Gom tất cả các đuôi được phép cho Mixed
         return "image/*,video/*,audio/*,text/*,.json,.csv";
       default:
         return "*/*";
     }
-  };
+  }, [fileType]);
 
-  // Hàm phụ trợ để hiển thị text gợi ý loại file
-  const getSupportedText = () => {
+  const supportedText = useMemo(() => {
     switch (fileType) {
       case "Pic":
         return "Hỗ trợ: JPG, PNG, GIF, WEBP...";
@@ -69,55 +129,59 @@ export default function DatasetUpload({ project }) {
       case "Text":
         return "Hỗ trợ: TXT, CSV, JSON...";
       case "Mixed":
-        // ĐÃ THÊM: Nhắc nhở cho Mixed
         return "Hỗ trợ: Ảnh, Video, Audio, Văn bản...";
       default:
         return "Supported files...";
     }
-  };
+  }, [fileType]);
 
-  const handleFileSelect = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const files = Array.from(e.target.files);
+  // =====================================================================
+  // BÍ KÍP 2: ĐÓNG BĂNG HÀNH ĐỘNG BẰNG useCallback
+  // =====================================================================
+  const handleFileSelect = useCallback(
+    (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        const files = Array.from(e.target.files);
 
-      // KIỂM TRA NGHIÊM NGẶT LOẠI FILE
-      const isValid = files.every((file) => {
-        if (fileType === "Pic") return file.type.startsWith("image/");
-        if (fileType === "Video") return file.type.startsWith("video/");
-        if (fileType === "Audio") return file.type.startsWith("audio/");
-        if (fileType === "Text")
-          return (
-            file.type.startsWith("text/") ||
-            file.name.endsWith(".json") ||
-            file.name.endsWith(".csv")
+        // KIỂM TRA NGHIÊM NGẶT LOẠI FILE
+        const isValid = files.every((file) => {
+          if (fileType === "Pic") return file.type.startsWith("image/");
+          if (fileType === "Video") return file.type.startsWith("video/");
+          if (fileType === "Audio") return file.type.startsWith("audio/");
+          if (fileType === "Text")
+            return (
+              file.type.startsWith("text/") ||
+              file.name.endsWith(".json") ||
+              file.name.endsWith(".csv")
+            );
+          if (fileType === "Mixed") {
+            return (
+              file.type.startsWith("image/") ||
+              file.type.startsWith("video/") ||
+              file.type.startsWith("audio/") ||
+              file.type.startsWith("text/") ||
+              file.name.endsWith(".json") ||
+              file.name.endsWith(".csv")
+            );
+          }
+          return true;
+        });
+
+        if (!isValid) {
+          alert(
+            `Lỗi: Vui lòng chỉ chọn đúng định dạng file cho loại dữ liệu "${fileType}" của dự án này!`,
           );
-        // ĐÃ THÊM: Với Mixed, cho phép lọt khe 4 loại cơ bản trên, chặn mấy file rác (như .exe)
-        if (fileType === "Mixed") {
-          return (
-            file.type.startsWith("image/") ||
-            file.type.startsWith("video/") ||
-            file.type.startsWith("audio/") ||
-            file.type.startsWith("text/") ||
-            file.name.endsWith(".json") ||
-            file.name.endsWith(".csv")
-          );
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          return;
         }
-        return true;
-      });
 
-      if (!isValid) {
-        alert(
-          `Lỗi: Vui lòng chỉ chọn đúng định dạng file cho loại dữ liệu "${fileType}" của dự án này!`,
-        );
-        if (fileInputRef.current) fileInputRef.current.value = "";
-        return;
+        setSelectedFiles(files);
       }
+    },
+    [fileType],
+  ); // Chỉ tạo lại hàm nếu fileType đổi
 
-      setSelectedFiles(files);
-    }
-  };
-
-  const handleStartUpload = async () => {
+  const handleStartUpload = useCallback(async () => {
     if (selectedFiles.length === 0) {
       alert("Hãy chọn file trước khi upload!");
       return;
@@ -128,7 +192,7 @@ export default function DatasetUpload({ project }) {
       setSelectedFiles([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
-  };
+  }, [selectedFiles, fileType, uploadFiles]);
 
   return (
     <div className="space-y-8">
@@ -162,7 +226,6 @@ export default function DatasetUpload({ project }) {
               <option value="Text">Text (Văn bản)</option>
               <option value="Audio">Audio (Âm thanh)</option>
               <option value="Video">Video</option>
-              {/* ĐÃ THÊM: Option Mixed */}
               <option value="Mixed">Mixed (Hỗn hợp)</option>
             </select>
             <p className="text-[10px] text-rose-400/80 mt-1 italic text-right">
@@ -231,7 +294,7 @@ export default function DatasetUpload({ project }) {
                     translateZ="30"
                     className="text-sm text-blue-400/80 mt-1 font-medium"
                   >
-                    {getSupportedText()}
+                    {supportedText}
                   </CardItem>
                 </>
               )}
@@ -239,7 +302,7 @@ export default function DatasetUpload({ project }) {
               <input
                 type="file"
                 multiple
-                accept={getAcceptTypes()} // LỚP BẢO VỆ SỐ 1
+                accept={acceptTypes} // LỚP BẢO VỆ SỐ 1 ĐÃ ĐƯỢC TỐI ƯU
                 ref={fileInputRef}
                 onChange={handleFileSelect}
                 className="hidden"
@@ -251,7 +314,9 @@ export default function DatasetUpload({ project }) {
         {selectedFiles.length > 0 && (
           <div className="mt-4 flex justify-end">
             <AnimatedButton onClick={handleStartUpload} disabled={isUploading}>
-              🚀 Bắt đầu Upload lên Server
+              {isUploading
+                ? "⏳ Đang đẩy lên Server..."
+                : "🚀 Bắt đầu Upload lên Server"}
             </AnimatedButton>
           </div>
         )}
@@ -297,65 +362,11 @@ export default function DatasetUpload({ project }) {
                     </th>
                   </tr>
                 </thead>
+                {/* ĐÃ TỐI ƯU: GỌI COMPONENT ĐÓNG BĂNG Ở ĐÂY */}
                 <tbody className="divide-y divide-white/5">
-                  {dataItems.map((item, i) => {
-                    const finalLink =
-                      item.filePath || item.fileUrl || item.url || "";
-                    const isAssigned = item.isAssigned === true;
-                    const statusText = isAssigned
-                      ? "Đã giao Task"
-                      : "Chưa giao";
-
-                    return (
-                      <tr
-                        key={item.dataID || i}
-                        className="hover:bg-white/[0.04] transition-colors"
-                      >
-                        <td
-                          className="px-4 py-4 text-gray-200 truncate max-w-[200px]"
-                          title={finalLink}
-                        >
-                          {finalLink ? (
-                            <a
-                              href={finalLink}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-blue-400 hover:text-blue-300 transition-colors"
-                            >
-                              {item.fileName ||
-                                finalLink.split("/").pop() ||
-                                "Xem file"}
-                            </a>
-                          ) : (
-                            <span className="text-rose-400">Không có link</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-4">
-                          <span
-                            className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                              isAssigned
-                                ? "bg-emerald-500/10 text-emerald-400"
-                                : "bg-gray-500/10 text-gray-400"
-                            }`}
-                          >
-                            {statusText}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 text-right">
-                          {finalLink && (
-                            <a
-                              href={finalLink}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded transition-colors text-xs"
-                            >
-                              Mở xem
-                            </a>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {dataItems.map((item, i) => (
+                    <DataRowItem key={item.dataID || i} item={item} />
+                  ))}
                 </tbody>
               </table>
             )}
