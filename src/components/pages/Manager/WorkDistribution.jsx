@@ -1,8 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useWorkDistribution } from "../../../hooks/useWorkDistribution";
 
 // IMPORT THÊM NÚT ANIMATED CHO ĐỒNG BỘ GIAO DIỆN
 import { AnimatedButton } from "../../common/AnimatedButton";
+
+// =====================================================================
+// BÍ KÍP 3: ĐÓNG BĂNG TỪNG DÒNG FILE CHECKBOX
+// =====================================================================
+const UnassignedFileItem = React.memo(({ item, isSelected, onToggle }) => {
+  const targetId = item.dataItemId || item.id || item.dataID;
+  const targetName = item.fileName || item.name || `File #${targetId}`;
+
+  return (
+    <label
+      className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition-colors ${
+        isSelected
+          ? "border-blue-500 bg-blue-500/10"
+          : "border-white/5 bg-[#0B1120] hover:border-white/20"
+      }`}
+    >
+      <input
+        type="checkbox"
+        className="w-4 h-4 rounded cursor-pointer"
+        checked={isSelected}
+        onChange={() => onToggle(targetId)}
+      />
+      <span className="text-gray-300 text-sm font-medium truncate">
+        {targetName}
+      </span>
+    </label>
+  );
+});
 
 export default function WorkDistribution({ project, onRefresh }) {
   const projectId = project?.projectID || project?.id;
@@ -13,13 +41,14 @@ export default function WorkDistribution({ project, onRefresh }) {
   const [selectedIds, setSelectedIds] = useState([]);
   const [taskData, setTaskData] = useState({ taskName: "", deadline: "" });
 
-  const toggleSelection = (id) => {
+  // BÍ KÍP 2: Đóng băng hàm Toggle, sử dụng dạng callback của state (prev) để không phụ thuộc vào mảng selectedIds
+  const toggleSelection = useCallback((id) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
-  };
+  }, []);
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!taskData.taskName || !taskData.deadline) {
       alert("Vui lòng nhập Tên Task và Hạn chót!");
       return;
@@ -37,7 +66,7 @@ export default function WorkDistribution({ project, onRefresh }) {
       setSelectedIds([]);
       setTaskData({ taskName: "", deadline: "" });
     }
-  };
+  }, [taskData, selectedIds, createBatch]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -69,28 +98,13 @@ export default function WorkDistribution({ project, onRefresh }) {
           ) : (
             unassignedItems.map((item, idx) => {
               const targetId = item.dataItemId || item.id || item.dataID;
-              const targetName =
-                item.fileName || item.name || `File #${targetId || idx}`;
-
               return (
-                <label
+                <UnassignedFileItem
                   key={targetId || idx}
-                  className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition-colors ${
-                    selectedIds.includes(targetId)
-                      ? "border-blue-500 bg-blue-500/10"
-                      : "border-white/5 bg-[#0B1120] hover:border-white/20"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 rounded cursor-pointer"
-                    checked={selectedIds.includes(targetId)}
-                    onChange={() => toggleSelection(targetId)}
-                  />
-                  <span className="text-gray-300 text-sm font-medium truncate">
-                    {targetName}
-                  </span>
-                </label>
+                  item={item}
+                  isSelected={selectedIds.includes(targetId)}
+                  onToggle={toggleSelection}
+                />
               );
             })
           )}

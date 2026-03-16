@@ -1,7 +1,77 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { useQualityScore } from "../../../hooks/useQualityScore";
 // IMPORT NỀN CỰC QUANG
 import { AuroraBackground } from "../../common/aurora-background";
+
+// =====================================================================
+// BÍ KÍP 3: ĐÓNG BĂNG TỪNG DÒNG USER VÀ LOG
+// =====================================================================
+const UserRowItem = React.memo(({ user, isSelected, onToggleLog }) => {
+  const id = user.id || user.userId || user.userID;
+  const name = user.fullName || user.userName || "Người dùng ẩn danh";
+  const score = user.score ?? user.qualityScore ?? user.reputationScore ?? 100;
+
+  return (
+    <tr
+      className={`transition-colors ${isSelected ? "bg-blue-500/10" : "hover:bg-white/[0.02]"}`}
+    >
+      <td className="py-4 text-sm text-gray-200">
+        <div className="font-medium">{name}</div>
+        <div className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">
+          {user.role || user.roleName}
+        </div>
+      </td>
+      <td className="py-4">
+        <span
+          className={`text-sm font-bold ${score >= 80 ? "text-emerald-400" : score >= 50 ? "text-amber-400" : "text-rose-400"}`}
+        >
+          {score}⭐
+        </span>
+      </td>
+      <td className="py-4 text-right">
+        <button
+          onClick={() => onToggleLog(id, isSelected)}
+          className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+            isSelected
+              ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+              : "bg-white/5 hover:bg-white/10 text-gray-300"
+          }`}
+        >
+          {isSelected ? "Đóng" : "Xem Log"}
+        </button>
+      </td>
+    </tr>
+  );
+});
+
+const LogItem = React.memo(({ log }) => {
+  const date = log.date || log.createdAt || log.timestamp;
+  const change = log.scoreChange || log.change || 0;
+  const reason = log.reason || log.description || "Hệ thống tự động cập nhật";
+  const isPositive = change > 0;
+
+  return (
+    <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+      <div
+        className={`flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#151D2F] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm ${isPositive ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"}`}
+      >
+        {isPositive ? "+" : ""}
+        {change}
+      </div>
+
+      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-white/5 bg-[#0B1120]/80 shadow-sm">
+        <div className="flex items-center justify-between mb-1">
+          <time className="text-xs text-gray-500 font-medium">
+            {date
+              ? new Date(date).toLocaleString("vi-VN")
+              : "Thời gian không rõ"}
+          </time>
+        </div>
+        <p className="text-sm text-gray-300">{reason}</p>
+      </div>
+    </div>
+  );
+});
 
 export default function QualityScore() {
   const {
@@ -14,10 +84,20 @@ export default function QualityScore() {
     closeLogs,
   } = useQualityScore();
 
+  // BÍ KÍP 2: Đóng băng hành động click
+  const handleToggleLog = useCallback(
+    (id, isSelected) => {
+      if (isSelected) {
+        closeLogs();
+      } else {
+        fetchUserLogs(id);
+      }
+    },
+    [closeLogs, fetchUserLogs],
+  );
+
   return (
-    // BỌC AURORABACKGROUND RA NGOÀI CÙNG
     <AuroraBackground className="font-sans relative">
-      {/* Container chứa nội dung nổi lên trên nền */}
       <div className="p-8 max-w-7xl mx-auto space-y-6 relative z-20 w-full">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-white">
@@ -29,8 +109,6 @@ export default function QualityScore() {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {/* KHỐI TRÁI: DANH SÁCH NHÂN SỰ */}
-          {/* Thêm backdrop-blur-sm và bg opacity /90 để thấy ánh sáng cực quang mờ mờ */}
           <div className="rounded-xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm shadow-sm flex flex-col h-[600px]">
             <div className="p-6 border-b border-white/5">
               <h2 className="text-lg font-semibold text-white">
@@ -66,49 +144,13 @@ export default function QualityScore() {
                   <tbody className="divide-y divide-white/5">
                     {users.map((user, idx) => {
                       const id = user.id || user.userId || user.userID;
-                      const name =
-                        user.fullName || user.userName || "Người dùng ẩn danh";
-                      // Bọc lót tên biến điểm (score/qualityScore/reputation)
-                      const score =
-                        user.score ??
-                        user.qualityScore ??
-                        user.reputationScore ??
-                        100;
-                      const isSelected = activeUserId === id;
-
                       return (
-                        <tr
+                        <UserRowItem
                           key={id || idx}
-                          className={`transition-colors ${isSelected ? "bg-blue-500/10" : "hover:bg-white/[0.02]"}`}
-                        >
-                          <td className="py-4 text-sm text-gray-200">
-                            <div className="font-medium">{name}</div>
-                            <div className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">
-                              {user.role || user.roleName}
-                            </div>
-                          </td>
-                          <td className="py-4">
-                            <span
-                              className={`text-sm font-bold ${score >= 80 ? "text-emerald-400" : score >= 50 ? "text-amber-400" : "text-rose-400"}`}
-                            >
-                              {score}⭐
-                            </span>
-                          </td>
-                          <td className="py-4 text-right">
-                            <button
-                              onClick={() =>
-                                isSelected ? closeLogs() : fetchUserLogs(id)
-                              }
-                              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                                isSelected
-                                  ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
-                                  : "bg-white/5 hover:bg-white/10 text-gray-300"
-                              }`}
-                            >
-                              {isSelected ? "Đóng" : "Xem Log"}
-                            </button>
-                          </td>
-                        </tr>
+                          user={user}
+                          isSelected={activeUserId === id}
+                          onToggleLog={handleToggleLog}
+                        />
                       );
                     })}
                   </tbody>
@@ -117,9 +159,7 @@ export default function QualityScore() {
             </div>
           </div>
 
-          {/* KHỐI PHẢI: LỊCH SỬ ĐIỂM HOẶC OVERDUE TASKS */}
           {activeUserId ? (
-            // HIỂN THỊ LOGS CỦA USER ĐANG CHỌN
             <div className="rounded-xl border border-blue-500/20 bg-[#151D2F]/90 backdrop-blur-sm shadow-sm flex flex-col h-[600px] animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="p-6 border-b border-white/5 flex justify-between items-center bg-blue-500/5">
                 <div>
@@ -170,46 +210,14 @@ export default function QualityScore() {
                   </div>
                 ) : (
                   <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-white/10 before:to-transparent">
-                    {selectedUserLogs.map((log, idx) => {
-                      const date = log.date || log.createdAt || log.timestamp;
-                      const change = log.scoreChange || log.change || 0;
-                      const reason =
-                        log.reason ||
-                        log.description ||
-                        "Hệ thống tự động cập nhật";
-                      const isPositive = change > 0;
-
-                      return (
-                        <div
-                          key={idx}
-                          className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active"
-                        >
-                          <div
-                            className={`flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#151D2F] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm ${isPositive ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"}`}
-                          >
-                            {isPositive ? "+" : ""}
-                            {change}
-                          </div>
-
-                          <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-white/5 bg-[#0B1120]/80 shadow-sm">
-                            <div className="flex items-center justify-between mb-1">
-                              <time className="text-xs text-gray-500 font-medium">
-                                {date
-                                  ? new Date(date).toLocaleString("vi-VN")
-                                  : "Thời gian không rõ"}
-                              </time>
-                            </div>
-                            <p className="text-sm text-gray-300">{reason}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {selectedUserLogs.map((log, idx) => (
+                      <LogItem key={idx} log={log} />
+                    ))}
                   </div>
                 )}
               </div>
             </div>
           ) : (
-            // HIỂN THỊ OVERDUE TASKS
             <div className="rounded-xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-6 shadow-sm flex flex-col h-[600px] animate-in fade-in duration-500">
               <div className="mb-6">
                 <h2 className="text-lg font-semibold text-white">

@@ -133,10 +133,17 @@ export default function ProjectManagement() {
   // =====================================================================
   const filteredProjects = useMemo(() => {
     return projects.filter((p) => {
+      // 1. Tab Tất cả: Lấy láng
       if (filter === "All") return true;
+
+      // 2. Tab Đang mở: Gom Open và Active
       if (filter === "Open")
         return p.status === "Open" || p.status === "Active";
-      if (filter === "Closed") return p.status === "Closed";
+
+      // 3. Tab Đã đóng: Gom TẤT CẢ những thằng không phải Open/Active (Bao gồm Closed, Done, Completed, v.v...)
+      if (filter === "Closed")
+        return p.status !== "Open" && p.status !== "Active";
+
       return p.status === filter;
     });
   }, [projects, filter]);
