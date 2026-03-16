@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useTaskTracking } from "../../../hooks/useTaskTracking";
-import { useLabelManagement } from "../../../hooks/useLabelManagement";
+import { useTaskTracking } from "../../../hooks/Manager/useTaskTracking";
+import { useLabelManagement } from "../../../hooks/Manager/useLabelManagement";
 
 // =====================================================================
 // BÍ KÍP 3: ĐÓNG BĂNG TỪNG DÒNG TASK

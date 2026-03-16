@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { useQualityScore } from "../../../hooks/useQualityScore";
+import { useQualityScore } from "../../../hooks/Manager/useQualityScore";
 // IMPORT NỀN CỰC QUANG
 import { AuroraBackground } from "../../common/aurora-background";
 

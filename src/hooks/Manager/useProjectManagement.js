@@ -5,7 +5,7 @@ import {
   getProjectsList,
   createProject,
   getProjectStatistics,
-} from "../api/managerApi";
+} from "../../api/managerApi";
 
 export const useProjectManagement = () => {
   const [projects, setProjects] = useState([]);
