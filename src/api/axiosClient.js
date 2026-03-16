@@ -1,9 +1,7 @@
 import axios from 'axios';
 
-const DEFAULT_BASE_URL = 'https://swp-be-efc9d4and2d9fda3.japaneast-01.azurewebsites.net';
-// Ưu tiên lấy từ biến môi trường nếu có
-const RAW_BASE_URL = import.meta?.env?.VITE_API_BASE_URL || DEFAULT_BASE_URL;
-const BASE_URL = String(RAW_BASE_URL).replace(/\/+$/, '');
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
 const axiosClient = axios.create({
   baseURL: BASE_URL,

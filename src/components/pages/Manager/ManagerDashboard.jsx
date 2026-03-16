@@ -12,8 +12,8 @@ import {
   getAvailableAnnotators,
   getAvailableReviewers,
 } from "../../../api/managerApi";
-import { useProjectActions } from "../../../hooks/useProjectActions";
-import { useProjectStats } from "../../../hooks/useProjectStats";
+import { useProjectActions } from "../../../hooks/Manager/useProjectActions";
+import { useProjectStats } from "../../../hooks/Manager/useProjectStats";
 
 // Import cái card ảo ma Spotlight
 import { CardSpotlight } from "../../common/card-spotlight";
@@ -24,10 +24,14 @@ const OverviewContent = ({ project, projectId, allUsers }) => {
   const totalItems =
     stats?.totalItems || stats?.totalDataItems || project?.totalDataItems || 0;
   const labeledItems = stats?.labeledItems || stats?.completedItems || 0;
-  const progressRate =
-    stats?.progressRate ||
-    stats?.progress ||
-    (totalItems > 0 ? Math.round((labeledItems / totalItems) * 100) : 0);
+
+  // ĐÃ FIX 1: TỰ TÍNH PHẦN TRĂM BẰNG TAY (Ép chuẩn bằng số lượng thực tế)
+  let progressRate = 0;
+  if (totalItems > 0) {
+    progressRate = Math.round((labeledItems / totalItems) * 100);
+  }
+  progressRate = Math.min(Math.max(progressRate, 0), 100);
+
   const pendingItems = totalItems - labeledItems;
 
   return (
@@ -58,17 +62,19 @@ const OverviewContent = ({ project, projectId, allUsers }) => {
 
       {/* --- 4 THẺ THỐNG KÊ (ĐÃ GẮN CARD SPOTLIGHT) --- */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* THẺ 1: TỔNG SỐ LƯỢNG */}
         <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm relative overflow-hidden">
           <h3 className="text-gray-400 text-sm font-medium relative z-10 group-hover/spotlight:text-white transition-colors">
             Tổng số lượng (Items)
           </h3>
-          <p className="text-4xl font-bold text-white mt-3 mb-6 relative z-10">
+          {/* ĐÃ FIX 2: Bỏ thanh gạch ngang ở đây, margin-bottom về 0 */}
+          <p className="text-4xl font-bold text-white mt-3 relative z-10">
             {totalItems}
           </p>
-          <div className="w-full bg-[#0B1120] h-1.5 rounded-full relative z-10"></div>
           <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/5 rounded-full blur-xl pointer-events-none"></div>
         </CardSpotlight>
 
+        {/* THẺ 2: ĐÃ GÁN NHÃN */}
         <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm">
           <h3 className="text-gray-400 text-sm font-medium group-hover/spotlight:text-white transition-colors">
             Đã gán nhãn
@@ -81,21 +87,30 @@ const OverviewContent = ({ project, projectId, allUsers }) => {
           </p>
         </CardSpotlight>
 
-        <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm">
-          <h3 className="text-gray-400 text-sm font-medium group-hover/spotlight:text-white transition-colors">
-            Tiến độ dự án
-          </h3>
-          <p className="text-4xl font-bold text-[#10B981] mt-3 mb-6">
-            {isLoadingStats ? "..." : `${progressRate}%`}
-          </p>
+        {/* THẺ 3: TIẾN ĐỘ DỰ ÁN */}
+        <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 className="text-gray-400 text-sm font-medium group-hover/spotlight:text-white transition-colors">
+              Tiến độ dự án
+            </h3>
+            <div className="flex items-baseline gap-2 mt-3 mb-6">
+              <p className="text-4xl font-bold text-[#10B981]">
+                {isLoadingStats ? "..." : `${progressRate}%`}
+              </p>
+              <span className="text-xs text-gray-500 mb-1.5 font-medium">
+                ({labeledItems}/{totalItems})
+              </span>
+            </div>
+          </div>
           <div className="w-full bg-[#0B1120] h-1.5 rounded-full overflow-hidden border border-white/5">
             <div
-              className="bg-[#10B981] h-full rounded-full transition-all duration-1000"
+              className="bg-[#10B981] h-full rounded-full transition-all duration-1000 ease-out"
               style={{ width: `${progressRate}%` }}
             ></div>
           </div>
         </CardSpotlight>
 
+        {/* THẺ 4: LOẠI HÌNH */}
         <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm">
           <h3 className="text-gray-400 text-sm font-medium group-hover/spotlight:text-white transition-colors">
             Loại hình dự án
@@ -217,7 +232,7 @@ const OverviewContent = ({ project, projectId, allUsers }) => {
 
                     <div className="w-full bg-[#151D2F] h-1.5 rounded-full mt-2 overflow-hidden border border-white/5">
                       <div
-                        className="bg-blue-500 h-full rounded-full"
+                        className="bg-blue-500 h-full rounded-full transition-all duration-1000 ease-out"
                         style={{
                           width: `${total > 0 ? (approved / total) * 100 : 0}%`,
                         }}
@@ -290,9 +305,6 @@ export default function ManagerDashboard() {
           />
         );
       case "upload":
-        {
-          /* ĐÃ SỬA CHỖ NÀY: Truyền `project` vào DatasetUpload */
-        }
         return <DatasetUpload project={project} />;
       case "distribution":
         return (

@@ -36,6 +36,7 @@ const ReviewerTextViewer = ({
   setActiveAnnotationId,
   availableLabels = [],
 }) => {
+  const activeAnnotationId = _activeAnnotationId;
   const [text, setText] = useState("");
   const [status, setStatus] = useState("idle"); // idle | loading | loaded | failed
 
@@ -46,38 +47,85 @@ const ReviewerTextViewer = ({
   const parsedAnnotations = useMemo(() => {
     const anns = currentItem?.annotations || [];
     const normalized = [];
+    const fullText = String(text || "");
+
+    const toNumber = (val) => {
+      const num = Number(val);
+      return Number.isFinite(num) ? num : null;
+    };
+
+    const extractOffsets = (obj) => {
+      if (!obj || typeof obj !== "object") return {};
+      const startKeys = ["start", "begin", "from", "offsetStart", "startOffset", "startPos", "start_offset"];
+      const endKeys = ["end", "finish", "to", "offsetEnd", "endOffset", "endPos", "end_offset"];
+      let start, end;
+      for (const k of startKeys) if (start == null) start = toNumber(obj[k]);
+      for (const k of endKeys) if (end == null) end = toNumber(obj[k]);
+      return { start, end };
+    };
+
+    let searchCursor = 0; // Dùng cho fallback tìm theo nội dung để giảm trùng lặp
 
     for (const ann of anns) {
-      let start = ann?.start;
-      let end = ann?.end;
+      const isTextAnnotation = ann?.field && ann.field !== "BoundingBox";
 
+      let start = toNumber(ann?.start) ?? toNumber(ann?.begin) ?? toNumber(ann?.from);
+      let end = toNumber(ann?.end) ?? toNumber(ann?.finish) ?? toNumber(ann?.to);
+
+      // Thử đọc annotationData
       try {
         let parsed = ann?.annotationData;
         while (typeof parsed === "string") parsed = JSON.parse(parsed);
-        if (parsed && typeof parsed === "object") {
-          if (start === undefined) start = parsed.start ?? parsed.begin ?? parsed.from;
-          if (end === undefined) end = parsed.end ?? parsed.finish ?? parsed.to;
+
+        const directOffsets = extractOffsets(parsed);
+        if (start == null && directOffsets.start != null) start = directOffsets.start;
+        if (end == null && directOffsets.end != null) end = directOffsets.end;
+
+        if (parsed?.position) {
+          const nested = extractOffsets(parsed.position);
+          if (start == null && nested.start != null) start = nested.start;
+          if (end == null && nested.end != null) end = nested.end;
         }
       } catch {
-        // ignore parse errors
+        // bỏ qua lỗi parse JSON
       }
 
-      const s = Number(start);
-      const e = Number(end);
-      if (!Number.isFinite(s) || !Number.isFinite(e) || e <= s) continue;
+      // Fallback: nếu thiếu tọa độ mà có nội dung + text gốc, dò vị trí theo nội dung
+      if ((start == null || end == null || end <= start) && isTextAnnotation && fullText && ann?.content) {
+        const needle = String(ann.content).trim();
+        if (needle) {
+          let idx = fullText.indexOf(needle, searchCursor);
+          if (idx === -1) idx = fullText.indexOf(needle);
+          if (idx !== -1) {
+            start = idx;
+            end = idx + needle.length;
+            searchCursor = end;
+          }
+        }
+      }
+
+      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) continue;
+
+      // Text task: backend lưu label ở field, content là đoạn text đã bôi.
+      // Bounding box: field === "BoundingBox", label nằm ở content.
+      const labelName =
+        ann?.field && ann.field !== "BoundingBox"
+          ? ann.field
+          : ann?.label || ann?.content || "Nhãn";
 
       normalized.push({
         idDetail: ann?.idDetail,
-        label: ann?.content || ann?.label || "Nhãn",
+        label: labelName,
         isApproved: ann?.isApproved,
-        start: s,
-        end: e,
+        start,
+        end,
+        raw: ann,
       });
     }
 
     normalized.sort((a, b) => a.start - b.start);
     return normalized;
-  }, [currentItem?.annotations]);
+  }, [currentItem?.annotations, text]);
 
   const renderedText = useMemo(() => {
     if (!text) return "—";
@@ -97,13 +145,13 @@ const ReviewerTextViewer = ({
         );
       }
 
-      //ưu tiên lấy màu từ availableLabels theo tên nhãn, fallback xanh dương.
+      // ưu tiên lấy màu từ availableLabels theo tên nhãn, fallback hash để nhãn khác nhau có màu khác
       const labelDef = (availableLabels || []).find((l) => l?.name === ann.label);
       const color =
         labelDef?.color ||
-        ann?.labelColor ||
-        ann?.color ||
-        "#3b82f6";
+        ann?.raw?.labelColor ||
+        ann?.raw?.color ||
+        hashToHsl(ann.label || "");
 
       elements.push(
         <span

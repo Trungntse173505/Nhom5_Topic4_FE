@@ -1,14 +1,90 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useProjectManagement } from "../../../hooks/useProjectManagement";
+import { useProjectManagement } from "../../../hooks/Manager/useProjectManagement";
 
 // IMPORT API
 import authApi from "../../../api/authApi";
-
-// IMPORT HIỆU ỨNG
 import { CardSpotlight } from "../../common/card-spotlight";
 import { AnimatedButton } from "../../common/AnimatedButton";
 import { AuroraBackground } from "../../common/aurora-background";
+// IMPORT Hook lấy API thống kê
+import { useProjectStats } from "../../../hooks/Manager/useProjectStats";
+
+// COMPONENT CON: Gọi API Stats và hiển thị thẻ Dự án
+const ProjectCardItem = ({ proj, navigate }) => {
+  // Gọi API lấy thống kê riêng cho Project này
+  const { stats, isLoadingStats } = useProjectStats(proj.projectID);
+
+  // MÓC ĐÚNG KEY TỪ API SWAGGER SẾP VỪA ĐƯA
+  const totalItems =
+    stats?.totalItems || proj.totalDataItems || proj.totalItems || 0;
+  const labeledItems = stats?.completedItems || proj.completedItems || 0;
+
+  // Lấy key rateComplete, làm tròn 64.71 -> 65
+  let progressRate = 0;
+  if (stats?.rateComplete !== undefined) {
+    progressRate = Math.round(stats.rateComplete);
+  } else if (totalItems > 0) {
+    progressRate = Math.round((labeledItems / totalItems) * 100);
+  }
+  // Chốt chặn an toàn
+  progressRate = Math.min(Math.max(progressRate, 0), 100);
+
+  return (
+    <CardSpotlight
+      onClick={() => navigate(`/manager/projects/${proj.projectID}`)}
+      className="rounded-xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-6 shadow-sm hover:border-white/10 transition-colors cursor-pointer flex flex-col justify-between"
+    >
+      <div>
+        <div className="flex justify-between items-start mb-4">
+          <h3 className="text-lg font-semibold text-white group-hover/spotlight:text-blue-400 transition-colors line-clamp-1 pr-2">
+            {proj.projectName || "Dự án không tên"}
+          </h3>
+          <span
+            className={`px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${
+              proj.status === "Open" || proj.status === "Active"
+                ? "bg-emerald-500/10 text-emerald-400"
+                : "bg-gray-500/10 text-gray-400"
+            }`}
+          >
+            {proj.status === "Open" || proj.status === "Active"
+              ? "Đang mở"
+              : "Đã đóng"}
+          </span>
+        </div>
+        <div className="text-sm text-gray-400 mb-6">
+          Loại:{" "}
+          <span className="text-gray-200 font-medium">
+            {proj.projectType || "Không xác định"}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-auto">
+        <div className="flex justify-between text-xs mb-2 text-gray-400 font-medium">
+          <span>Tiến độ</span>
+          {isLoadingStats ? (
+            <span className="animate-pulse">Đang tải...</span>
+          ) : (
+            <span className={progressRate === 100 ? "text-emerald-400" : ""}>
+              {progressRate}% ({labeledItems}/{totalItems})
+            </span>
+          )}
+        </div>
+        <div className="w-full bg-[#0B1120] h-1.5 rounded-full overflow-hidden border border-white/5">
+          <div
+            className={`h-full rounded-full transition-all duration-1000 ease-out ${
+              proj.status === "Open" || proj.status === "Active"
+                ? "bg-[#10B981]"
+                : "bg-gray-500"
+            }`}
+            style={{ width: `${progressRate}%` }}
+          ></div>
+        </div>
+      </div>
+    </CardSpotlight>
+  );
+};
 
 export default function ProjectManagement() {
   const navigate = useNavigate();
@@ -19,7 +95,6 @@ export default function ProjectManagement() {
   const [filter, setFilter] = useState("All");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // STATE lưu thông tin cá nhân
   const [userInfo, setUserInfo] = useState({
     name: "Đang tải...",
     email: "Đang lấy thông tin...",
@@ -33,7 +108,6 @@ export default function ProjectManagement() {
     guideline: "",
   });
 
-  // GỌI API LẤY THÔNG TIN USER
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -92,11 +166,8 @@ export default function ProjectManagement() {
   };
 
   return (
-    // ĐÃ FIX: Ép lên trên cùng (!justify-start !items-start) và bỏ padding mặc định (!p-0)
     <AuroraBackground className="font-sans relative w-full !justify-start !items-start !p-0">
-      {/* KHUNG BỌC FULL MÀN HÌNH ĐỂ NỘI DUNG TỰ ĐẨY NHAU LÊN XUỐNG */}
       <div className="w-full flex flex-col min-h-screen z-20">
-        {/* HEADER: Chiều cao chuẩn 72px để gióng ngang hàng Sidebar */}
         <header className="w-full flex items-center justify-between px-8 h-[72px] bg-[#0B1120]/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-30 shrink-0">
           <div className="flex items-center gap-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#A855F7] shadow-lg shadow-purple-500/20 text-white shrink-0">
@@ -128,7 +199,6 @@ export default function ProjectManagement() {
           </div>
         </header>
 
-        {/* PHẦN MAIN NỘI DUNG Ở DƯỚI */}
         <main className="w-full p-8 max-w-7xl mx-auto space-y-6 flex-1">
           <div className="flex justify-between items-end mb-8">
             <div>
@@ -201,58 +271,16 @@ export default function ProjectManagement() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {filteredProjects.map((proj) => (
-                <CardSpotlight
+                <ProjectCardItem
                   key={proj.projectID || Math.random()}
-                  onClick={() =>
-                    navigate(`/manager/projects/${proj.projectID}`)
-                  }
-                  className="rounded-xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-6 shadow-sm hover:border-white/10 transition-colors cursor-pointer"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-semibold text-white group-hover/spotlight:text-blue-400 transition-colors">
-                      {proj.projectName || "Dự án không tên"}
-                    </h3>
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                        proj.status === "Open" || proj.status === "Active"
-                          ? "bg-emerald-500/10 text-emerald-400"
-                          : "bg-gray-500/10 text-gray-400"
-                      }`}
-                    >
-                      {proj.status === "Open" || proj.status === "Active"
-                        ? "Đang mở"
-                        : "Đã đóng"}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-400 mb-6">
-                    Loại:{" "}
-                    <span className="text-gray-200">
-                      {proj.projectType || "Không xác định"}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs mb-2 text-gray-400">
-                      <span>Tiến độ</span>
-                      <span>0% (0/0)</span>
-                    </div>
-                    <div className="w-full bg-[#0B1120] h-2 rounded-full overflow-hidden border border-white/5">
-                      <div
-                        className={`h-2 rounded-full ${
-                          proj.status === "Open" || proj.status === "Active"
-                            ? "bg-blue-500"
-                            : "bg-gray-500"
-                        }`}
-                        style={{ width: `0%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </CardSpotlight>
+                  proj={proj}
+                  navigate={navigate}
+                />
               ))}
             </div>
           )}
         </main>
 
-        {/* MODAL TẠO DỰ ÁN */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
             <div className="bg-[#151D2F] border border-white/10 rounded-xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -274,7 +302,6 @@ export default function ProjectManagement() {
                     placeholder="Nhập tên dự án..."
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">
                     Loại Dữ Liệu
@@ -293,7 +320,6 @@ export default function ProjectManagement() {
                     <option value="Mixed">Hỗn hợp (Mixed)</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">
                     Mô tả
@@ -307,7 +333,6 @@ export default function ProjectManagement() {
                     placeholder="Mô tả ngắn gọn về dự án..."
                   ></textarea>
                 </div>
-
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">
                     Đường dẫn Hướng dẫn (Tùy chọn)
@@ -323,7 +348,6 @@ export default function ProjectManagement() {
                   />
                 </div>
               </div>
-
               <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-white/10">
                 <button
                   onClick={() => setIsModalOpen(false)}
@@ -332,7 +356,6 @@ export default function ProjectManagement() {
                 >
                   Hủy bỏ
                 </button>
-
                 <AnimatedButton onClick={handleSubmit} disabled={isCreating}>
                   Tạo Dự Án
                 </AnimatedButton>

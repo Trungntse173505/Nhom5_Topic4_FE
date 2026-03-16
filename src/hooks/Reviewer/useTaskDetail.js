@@ -25,13 +25,13 @@ export const useTaskDetail = (taskId) => {
     fetchTaskDetail();
   }, [fetchTaskDetail]);
 
-  // ĐÃ FIX: Nhận thẳng `targetStatus` (true/false) và KHÔNG ĐẢO NGƯỢC NỮA
+  // ĐÃ FIX: Nhận thẳng giá trị (targetStatus) và KHÔNG BAO GIỜ DÙNG DẤU "!" ĐẢO NGƯỢC NỮA
   const toggleAnnotationApproval = async (idDetail, targetStatus) => {
     try {
-      // Gọi API báo cho Backend biết trạng thái (Đúng là true, Sai là false)
+      // Bấm Đúng là gửi True, Bấm Sai là gửi False
       await reviewerApi.checkItemDetail(idDetail, targetStatus);
 
-      // Cập nhật UI ngay lập tức
+      // Cập nhật State cho UI xanh/đỏ chuẩn xác
       setTaskDetail((prev) => {
         if (!prev) return prev;
         return {
@@ -51,6 +51,7 @@ export const useTaskDetail = (taskId) => {
       return true;
     } catch (err) {
       console.error("Lỗi khi đánh dấu annotation:", err);
+      alert("Lỗi kết nối khi chấm điểm!"); // Báo lỗi nếu Backend sập
       return false;
     }
   };

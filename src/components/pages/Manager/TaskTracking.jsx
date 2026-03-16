@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
-import { useTaskTracking } from "../../../hooks/useTaskTracking";
+import { useTaskTracking } from "../../../hooks/Manager/useTaskTracking";
 
 export default function TaskTracking({ project }) {
   const { projectId: paramId } = useParams();

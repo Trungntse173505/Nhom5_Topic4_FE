@@ -4,7 +4,7 @@ import {
   addLabelToLibrary,
   updateLabelInLibrary,
   deleteLabelFromLibrary,
-} from "../api/managerApi";
+} from "../../api/managerApi";
 
 export const useLabelLibrary = () => {
   const [labels, setLabels] = useState([]);

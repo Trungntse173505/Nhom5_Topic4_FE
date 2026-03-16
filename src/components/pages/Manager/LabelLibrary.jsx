@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useLabelLibrary } from "../../../hooks/useLabelLibrary";
+import { useLabelLibrary } from "../../../hooks/Manager/useLabelLibrary";
 // 1. IMPORT NỀN CỰC QUANG VÀO ĐÂY
 import { AuroraBackground } from "../../common/aurora-background";
 

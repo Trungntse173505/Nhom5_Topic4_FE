@@ -8,10 +8,6 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
   const navigate = useNavigate();
   const { projectId } = useParams(); // Lấy ID từ URL
 
-  const handleLogout = () => {
-    navigate("/login");
-  };
-
   const tabs = [
     {
       id: "overview",
@@ -157,12 +153,7 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
             <p className="text-sm text-gray-400">test@gmail.com</p>
           </div>
         </div>
-        <button
-          onClick={handleLogout}
-          className="rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10 transition-colors"
-        >
-          Đăng xuất
-        </button>
+        {/* ĐÃ FIX: XÓA NÚT ĐĂNG XUẤT Ở ĐÂY */}
       </header>
 
       {/* Main Content & Navigation (Thêm z-20 để nút bấm hoạt động bình thường) */}

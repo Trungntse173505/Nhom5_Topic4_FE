@@ -8,6 +8,9 @@ const authApi = {
 
   // Gọi api này để lấy thông tin user
   getMe: () => axiosClient.get("/api/Auth/me"),
+
+  // API log supabase
+  loginAuthgg: (payload) => axiosClient.post("/api/Auth/google-login", payload)
 };
 
 export default authApi;

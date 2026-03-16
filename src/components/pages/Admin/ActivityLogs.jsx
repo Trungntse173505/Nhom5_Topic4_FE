@@ -99,19 +99,17 @@ export default function ActivityLogs() {
                     <div key={log.id} className="bg-white/5 border border-white/10 p-4 rounded-xl">
                         <div className="flex justify-between items-start gap-4">
                             <div className="min-w-0">
-                                <p className="text-sm font-semibold text-white/90">
-                                    ID: <span className="text-blue-400">{log.id || '-'}</span>
-                                </p>
+
                                 <p className="text-sm font-semibold text-white/90 mt-1">
-                                    Username: <span className="text-blue-400">{log.username || '-'}</span>
+                                    Name: <span className="text-blue-400">{log.username || '-'}</span>
                                 </p>
                                 <p className="text-sm text-white/80 mt-1">
                                     Action: <span className="text-white/90">{log.action || '-'}</span>
                                 </p>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="text-[10px] text-white/20 font-mono whitespace-nowrap">
-                                  {formatDateTime(log.time)}
+                                <span className="text-sm md:text-base text-white/90 font-mono font-semibold whitespace-nowrap">
+                                    {formatDateTime(log.time)}
                                 </span>
                             </div>
                         </div>
