@@ -1,11 +1,6 @@
 import React, { useCallback } from "react";
 import { useQualityScore } from "../../../hooks/Manager/useQualityScore";
-// IMPORT NỀN CỰC QUANG
 import { AuroraBackground } from "../../common/aurora-background";
-
-// =====================================================================
-// BÍ KÍP 3: ĐÓNG BĂNG TỪNG DÒNG USER VÀ LOG
-// =====================================================================
 const UserRowItem = React.memo(({ user, isSelected, onToggleLog }) => {
   const id = user.id || user.userId || user.userID;
   const name = user.fullName || user.userName || "Người dùng ẩn danh";
@@ -83,8 +78,6 @@ export default function QualityScore() {
     fetchUserLogs,
     closeLogs,
   } = useQualityScore();
-
-  // BÍ KÍP 2: Đóng băng hành động click
   const handleToggleLog = useCallback(
     (id, isSelected) => {
       if (isSelected) {

@@ -1,12 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { useWorkDistribution } from "../../../hooks/Manager/useWorkDistribution";
-
-// IMPORT THÊM NÚT ANIMATED CHO ĐỒNG BỘ GIAO DIỆN
 import { AnimatedButton } from "../../common/AnimatedButton";
-
-// =====================================================================
-// BÍ KÍP 3: ĐÓNG BĂNG TỪNG DÒNG FILE CHECKBOX
-// =====================================================================
 const UnassignedFileItem = React.memo(({ item, isSelected, onToggle }) => {
   const targetId = item.dataItemId || item.id || item.dataID;
   const targetName = item.fileName || item.name || `File #${targetId}`;
@@ -40,8 +34,6 @@ export default function WorkDistribution({ project, onRefresh }) {
 
   const [selectedIds, setSelectedIds] = useState([]);
   const [taskData, setTaskData] = useState({ taskName: "", deadline: "" });
-
-  // BÍ KÍP 2: Đóng băng hàm Toggle, sử dụng dạng callback của state (prev) để không phụ thuộc vào mảng selectedIds
   const toggleSelection = useCallback((id) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
@@ -149,7 +141,6 @@ export default function WorkDistribution({ project, onRefresh }) {
             <AnimatedButton
               onClick={handleSubmit}
               disabled={selectedIds.length === 0 || isProcessing}
-              // Ghi đè màu xanh dương mặc định thành màu xanh lá cây để cảnh báo hành động "Tạo"
               className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 hover:ring-emerald-500 shadow-emerald-500/20"
             >
               Tạo Task ({selectedIds.length} file)

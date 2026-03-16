@@ -2,18 +2,11 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjectManagement } from "../../../hooks/Manager/useProjectManagement";
 
-// IMPORT API
 import authApi from "../../../api/authApi";
 import { CardSpotlight } from "../../common/card-spotlight";
 import { AnimatedButton } from "../../common/AnimatedButton";
 import { AuroraBackground } from "../../common/aurora-background";
-import { useProjectStats } from "../../../hooks/Manager/useProjectStats";
 
-
-// =====================================================================
-// BÍ KÍP 3: ĐÓNG BĂNG TỪNG THẺ DỰ ÁN
-// (Chống lỗi gõ phím ở Modal làm list dự án bị giật)
-// =====================================================================
 const ProjectCardItem = React.memo(({ proj, onClick }) => {
   const totalItems = proj.totalDataItems || 0;
   const labeledItems = proj.completedItems || 0;
@@ -130,31 +123,17 @@ export default function ProjectManagement() {
 
     fetchUserProfile();
   }, []);
-
-  // =====================================================================
-  // BÍ KÍP 1: GHI NHỚ MẢNG DATA BẰNG useMemo
-  // Chỉ tính toán lại khi có dự án mới hoặc đổi filter
-  // =====================================================================
   const filteredProjects = useMemo(() => {
     return projects.filter((p) => {
-      // 1. Tab Tất cả: Lấy láng
       if (filter === "All") return true;
-
-      // 2. Tab Đang mở: Gom Open và Active
       if (filter === "Open")
         return p.status === "Open" || p.status === "Active";
-
-      // 3. Tab Đã đóng: Gom TẤT CẢ những thằng không phải Open/Active (Bao gồm Closed, Done, Completed, v.v...)
       if (filter === "Closed")
         return p.status !== "Open" && p.status !== "Active";
 
       return p.status === filter;
     });
   }, [projects, filter]);
-
-  // =====================================================================
-  // BÍ KÍP 2: ĐÓNG BĂNG HÀNH ĐỘNG CLICK VÀ SUBMIT
-  // =====================================================================
   const handleProjectClick = useCallback(
     (id) => {
       navigate(`/manager/projects/${id}`);
