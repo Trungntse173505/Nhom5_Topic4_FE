@@ -3,10 +3,10 @@ import { pipeline, env } from "@xenova/transformers";
 
 env.allowLocalModels = false;
 
-// 1. NÃO NHÌN ẢNH
+// 1. NÃO NHÌN ẢNH (TRÙM CUỐI YOLOS - CHUYÊN TRỊ XE CỘ, ĐÁM ĐÔNG)
 class VisionPipeline {
   static task = "object-detection";
-  static model = "Xenova/detr-resnet-50";
+  static model = "Xenova/yolos-tiny"; // MÔ HÌNH MỚI NHẤT, NHẠY NHẤT
   static instance = null;
   static async getInstance(progress_callback = null) {
     if (this.instance === null) {
@@ -29,12 +29,11 @@ class AudioPipeline {
   }
 }
 
-// 3. NÃO ĐỌC HIỂU & PHÂN LOẠI VĂN BẢN (Zero-Shot Classification)
+// 3. NÃO ĐỌC HIỂU & PHÂN LOẠI VĂN BẢN
 class TextClassificationPipeline {
   static task = "zero-shot-classification";
   static model = "Xenova/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7";
   static instance = null;
-
   static async getInstance(progress_callback = null) {
     if (this.instance === null) {
       this.instance = pipeline(this.task, this.model, { progress_callback });
@@ -48,17 +47,25 @@ self.addEventListener("message", async (event) => {
   const { type, payload } = event.data;
 
   try {
-    // --- LỆNH XỬ LÝ ẢNH ---
+    // --- 1. LỆNH XỬ LÝ ẢNH ---
     if (type === "detect_image") {
       const detector = await VisionPipeline.getInstance((x) => {
         self.postMessage({ status: "progress", task: type, data: x });
       });
-      const output = await detector(payload.imageSrc);
+
+      self.postMessage({
+        status: "log",
+        message: `AI đang lùng sục vật thể với YOLOS (ngưỡng 5%)...`,
+      });
+
+      // CÀI NGƯỠNG 5% (0.05) VÀ BẬT MAX RESOLUTION NẾU CÓ THỂ
+      const output = await detector(payload.imageSrc, { threshold: 0.05 });
+
       self.postMessage({ status: "complete", task: type, result: output });
     }
 
-    // --- LỆNH XỬ LÝ AUDIO ---
-    if (type === "transcribe_audio") {
+    // --- 2. LỆNH XỬ LÝ AUDIO ---
+    else if (type === "transcribe_audio") {
       const transcriber = await AudioPipeline.getInstance((x) => {
         self.postMessage({ status: "progress", task: type, data: x });
       });
@@ -72,22 +79,19 @@ self.addEventListener("message", async (event) => {
       self.postMessage({ status: "complete", task: type, result: output });
     }
 
-    // --- LỆNH XỬ LÝ TEXT THÔNG MINH ---
-    if (type === "analyze_text") {
+    // --- 3. LỆNH XỬ LÝ TEXT THÔNG MINH ---
+    else if (type === "analyze_text") {
       const classifier = await TextClassificationPipeline.getInstance((x) => {
         self.postMessage({ status: "progress", task: type, data: x });
       });
 
       const { text, candidateLabels } = payload;
-
-      // Cắt đoạn văn an toàn (Lọc đoạn nào trên 20 ký tự để AI khỏi nhầm lẫn)
       let paragraphs = text.split(/\n+/).filter((p) => p.trim().length > 20);
-      if (paragraphs.length === 0) paragraphs = [text]; // Nếu text không có dấu xuống dòng thì lấy hết
+      if (paragraphs.length === 0) paragraphs = [text];
 
-      // Báo cáo số lượng đoạn cần đọc
       self.postMessage({
         status: "log",
-        message: `Bắt đầu đọc và chấm điểm ${paragraphs.length} đoạn văn...`,
+        message: `Bắt đầu đọc ${paragraphs.length} đoạn văn...`,
       });
 
       let results = [];
@@ -97,28 +101,16 @@ self.addEventListener("message", async (event) => {
         const para = paragraphs[i];
         const start = text.indexOf(para, currentIndex);
         const end = start + para.length;
-        currentIndex = end; // Cập nhật con trỏ
-
-        self.postMessage({
-          status: "log",
-          message: `Đang suy nghĩ đoạn ${i + 1}/${paragraphs.length}...`,
-        });
+        currentIndex = end;
 
         const output = await classifier(para, candidateLabels);
-
         const topLabel = output.labels[0];
         const topScore = output.scores[0];
 
-        self.postMessage({
-          status: "log",
-          message: `👉 Đoạn ${i + 1} chốt nhãn [${topLabel}] - Tự tin: ${Math.round(topScore * 100)}%`,
-        });
-
-        // ĐÃ HẠ NGƯỠNG TỰ TIN XUỐNG 0.2 (20%) ĐỂ TRẢ KẾT QUẢ RỘNG HƠN
         if (topScore > 0.2) {
           results.push({
-            start: start,
-            end: end,
+            start,
+            end,
             text: para,
             label: topLabel,
             score: topScore,
