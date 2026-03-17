@@ -6,7 +6,7 @@ import {
   stopPresenceTracking,
 } from "./services/firebase";
 import ProtectedRoute from "./components/ProtectedRoute";
-
+import { useLocation } from "react-router-dom";
 // Auth
 import Login from "./components/pages/Auth/Login";
 
@@ -41,8 +41,11 @@ import ReviewerDashboard from "./components/pages/Reviewer/ReviewerDashboard";
 import ReviewerWorkspace from "./components/pages/Reviewer/Workspace/ReviewerWorkspace"; 
 import ReviewerDisputeList from "./components/pages/Reviewer/Dispute/ReviewerDisputeList";
 import ReviewerDisputeDetail from "./components/pages/Reviewer/Dispute/ReviewerDisputeDetail";
+import ReviewerScorePage from "./components/pages/Reviewer/Workspace/ReviewerScorePage";
 
 const AnalyticsTracker = () => {
+  const location = useLocation();
+
   useEffect(() => {
     const savedUserStr = localStorage.getItem("user");
     if (!savedUserStr) return;
@@ -56,16 +59,14 @@ const AnalyticsTracker = () => {
     }
 
     if (!user?.id || !user?.role) return;
-
-    updateUserPresence(user.id, user.role, true);
-    startPresenceTracking(user.id, user.role);
-
-    console.log(`[Firebase] Tracking started: ${user.fullName || "User"} (${user.role})`);
-
+    console.log(`[Firebase] Bắt đầu tracking cho: ${user.id} (${user.role})`);
+    const cleanupTracking = startPresenceTracking(user.id, user.role);
     return () => {
-      stopPresenceTracking(user.id, user.role);
+      if (typeof cleanupTracking === 'function') {
+        cleanupTracking();
+      }
     };
-  }, []);
+  }, [location.pathname]); 
 
   return null;
 };
@@ -118,9 +119,11 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={["reviewer"]} />}>        
           <Route path="/reviewer" element={<ReviewerLayout />}>
           <Route index element={<ReviewerDashboard />} />
+          <Route path="dashboard" element={<ReviewerDashboard />} />
           <Route path="/reviewer/workspace/:taskId" element={<ReviewerWorkspace />} />
           <Route path="disputes" element={<ReviewerDisputeList />} />
             <Route path="disputes/:id" element={<ReviewerDisputeDetail />} />
+            <Route path="credit-score" element={<ReviewerScorePage />} />
           </Route>
 
         </Route>

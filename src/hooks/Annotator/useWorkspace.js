@@ -4,21 +4,24 @@ import { useItemDetail } from './useItemDetail';
 import { useSaveAnnotation } from './useSaveAnnotation';
 
 export const useWorkspace = (taskId) => {
-  const { taskItems = [], availableLabels = [], loading: loadingTask } = useTaskDetail(taskId);
+  const { taskItems = [], availableLabels = [], taskInfo, guideline, loading: loadingTask } = useTaskDetail(taskId);
   const { getItem, loading: loadingItem } = useItemDetail();
-  const { save, isSaving } = useSaveAnnotation();
+
+  const { save } = useSaveAnnotation(); 
+  const [isManualSaving, setIsManualSaving] = useState(false);
 
   const [currentFileId, setCurrentFileId] = useState(null);
   const [selectedTool, setSelectedTool] = useState('Bounding Box');
   const [selectedLabel, setSelectedLabel] = useState('');
   const [annotations, setAnnotations] = useState([]);
 
+  const status = taskInfo?.status;
+
   useEffect(() => {
     if (!currentFileId && taskItems[0]) setCurrentFileId(taskItems[0].itemID);
     if (!selectedLabel && availableLabels[0]) setSelectedLabel(availableLabels[0].name);
   }, [taskItems, availableLabels, currentFileId, selectedLabel]);
 
-  // CẬP NHẬT: Load data động cho cả Bounding Box lẫn Text
   const refreshCurrentItemData = useCallback(async (id) => {
     if (!id) return;
     try {
@@ -29,21 +32,17 @@ export const useWorkspace = (taskId) => {
           coords = typeof ann.annotationData === 'string' ? JSON.parse(ann.annotationData) : (ann.annotationData || {}); 
         } catch {}
         
-        // Phục hồi dữ liệu linh hoạt dựa vào trường "field" hoặc dữ liệu có sẵn
         const isText = ann.field !== 'BoundingBox' && coords.start !== undefined;
 
         return {
           id: `ann-${idx}-${Date.now()}`,
-          // Nếu là Text
           start: coords.start,
           end: coords.end,
           text: isText ? ann.content : undefined,
-          // Nếu là Image
           x: coords.x || 0, 
           y: coords.y || 0, 
           width: coords.width || 0, 
           height: coords.height || 0,
-          // Label (Dựa theo cách bạn thiết kế: Image lưu label ở content, Text lưu ở field)
           label: isText ? ann.field : ann.content 
         };
       }));
@@ -52,31 +51,57 @@ export const useWorkspace = (taskId) => {
 
   useEffect(() => { refreshCurrentItemData(currentFileId); }, [currentFileId, refreshCurrentItemData]);
 
-  // CẬP NHẬT: Lưu data phân biệt Text vs Image
-  const handleSave = async () => {
-    if (!currentFileId || isSaving) return;
-    
-    const formattedAnnotations = annotations.map((ann) => {
-      // 1. Nếu là TEXT (có start và end)
+  const formatAnnotations = (anns) => {
+    return anns.map((ann) => {
       if (ann.start !== undefined && ann.end !== undefined) {
         return {
-          annotationData: JSON.stringify({ start: ann.start, end: ann.end }), // Tọa độ chữ
-          content: ann.text || "", // Nội dung chữ đã bôi đen
-          field: ann.label || ""   // Tên nhãn (Tích cực, Tiêu cực...)
+          annotationData: JSON.stringify({ start: ann.start, end: ann.end }),
+          content: ann.text || "",
+          field: ann.label || "" 
         };
       }
-      
-      // 2. Nếu là IMAGE / BOUNDING BOX (Mặc định cũ của bạn)
       return {
         annotationData: JSON.stringify({ x: ann.x, y: ann.y, width: ann.width, height: ann.height }),
-        content: String(ann.label), // Tên nhãn
+        content: String(ann.label),
         field: "BoundingBox"
       };
     });
+  };
 
-    await save(currentFileId, { annotations: formattedAnnotations });
-    await refreshCurrentItemData(currentFileId);
-    alert("Đã lưu thành công!");
+  const handleSave = async () => {
+    if (!currentFileId || isManualSaving || (status !== 'InProgress' && status !== 'Rejected')) return;
+    
+    setIsManualSaving(true); 
+    try {
+      const formatted = formatAnnotations(annotations);
+      await save(currentFileId, { annotations: formatted });
+      await refreshCurrentItemData(currentFileId);
+      alert("Đã lưu thành công!");
+    } catch (error) {
+      alert("Lỗi khi lưu dữ liệu!");
+    } finally {
+      setIsManualSaving(false);
+    }
+  };
+
+  const handleSelectFile = (newFileId) => {
+    if (newFileId === currentFileId) return;
+
+    if (status === 'InProgress' || status === 'Rejected') {
+      const idToSave = currentFileId;
+      const annotationsToSave = [...annotations];
+
+      (async () => {
+        try {
+          const formatted = formatAnnotations(annotationsToSave);
+          await save(idToSave, { annotations: formatted });
+        } catch (error) {
+          console.error("Lỗi khi lưu ngầm file:", idToSave, error);
+        }
+      })();
+    }
+
+    setCurrentFileId(newFileId);
   };
 
   const files = useMemo(() => taskItems.map(ti => ({
@@ -85,10 +110,22 @@ export const useWorkspace = (taskId) => {
   })), [taskItems]);
 
   return {
-    files, availableLabels, currentFileId, handleSelectFile: setCurrentFileId,
-    selectedTool, setSelectedTool, selectedLabel, setSelectedLabel,
-    annotations, setAnnotations, isSaving, handleSave,
+    files, 
+    availableLabels, 
+    currentFileId, 
+    handleSelectFile, 
+    selectedTool, 
+    setSelectedTool, 
+    selectedLabel, 
+    setSelectedLabel,
+    annotations, 
+    setAnnotations, 
+    isSaving: isManualSaving, 
+    
+    handleSave,
+    status,
     isLoading: loadingTask || loadingItem, 
-    toolbarConfig: ['Vẽ Khung Nhãn']      
+    toolbarConfig: ['Vẽ Khung Nhãn'],
+    guideline 
   };
 };

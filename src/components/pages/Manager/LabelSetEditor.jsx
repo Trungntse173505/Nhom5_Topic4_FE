@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { useLabelManagement } from "../../../hooks/useLabelManagement";
-import { useProjectActions } from "../../../hooks/useProjectActions";
+import { useLabelManagement } from "../../../hooks/Manager/useLabelManagement";
+import { useProjectActions } from "../../../hooks/Manager/useProjectActions";
 
 // =====================================================================
 // BÍ KÍP 3: ĐÓNG BĂNG TỪNG CHỦ ĐỀ ACCORDION (Tránh render lại toàn bộ kho)

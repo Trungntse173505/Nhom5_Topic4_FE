@@ -5,7 +5,7 @@ import {
   updateProjectStatus,
   updateProjectGuideline,
   splitProjectTasks,
-} from "../api/managerApi"; // Nhớ đảm bảo ông đã chép 4 hàm API tui gửi ở tin nhắn trước vào file managerApi.js nhé!
+} from "../../api/managerApi"; // Nhớ đảm bảo ông đã chép 4 hàm API tui gửi ở tin nhắn trước vào file managerApi.js nhé!
 
 export const useProjectActions = (projectId) => {
   const [isActionLoading, setIsActionLoading] = useState(false);

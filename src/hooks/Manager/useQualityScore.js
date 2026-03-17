@@ -3,7 +3,7 @@ import {
   getAvailableAnnotators,
   getAvailableReviewers,
   getUserReputationLogs,
-} from "../api/managerApi";
+} from "../../api/managerApi";
 
 export const useQualityScore = () => {
   const [users, setUsers] = useState([]);

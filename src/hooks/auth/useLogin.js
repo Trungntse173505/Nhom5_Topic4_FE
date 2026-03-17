@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import authApi from '../api/authApi';
+import authApi from '../../api/authApi';
 
 const pick = (obj, keys) => {
   for (let i = 0; i < keys.length; i += 1) {
@@ -9,44 +9,45 @@ const pick = (obj, keys) => {
   return undefined;
 };
 
+const pickFirst = (sources, keys) => {
+  for (let i = 0; i < sources.length; i += 1) {
+    const v = pick(sources[i], keys);
+    if (v !== undefined) return v;
+  }
+  return undefined;
+};
+
+const pickCaseInsensitive = (sources, aliases) => {
+  if (!Array.isArray(aliases) || aliases.length === 0) return undefined;
+  const aliasSet = new Set(aliases.map((a) => String(a).toLowerCase()));
+  for (let i = 0; i < sources.length; i += 1) {
+    const src = sources[i];
+    if (!src || typeof src !== 'object') continue;
+    const foundKey = Object.keys(src).find((k) => aliasSet.has(String(k).toLowerCase()));
+    if (foundKey !== undefined) return src[foundKey];
+  }
+  return undefined;
+};
+
 const normalizeLoginResponse = (apiRes) => {
   const raw = apiRes?.data ?? apiRes;
   const data = raw?.data ?? raw;
-  const success = pick(raw, ['success', 'Success']);
+  const sourcePriority = [raw, data, data?.error, raw?.error];
 
-  const token = pick(data, ['token', 'Token']) ?? pick(raw, ['token', 'Token']);
-  const user = pick(data, ['user', 'User']) ?? pick(raw, ['user', 'User']);
-  const requirePasswordChangeRaw =
-    pick(raw, [
-      'requirePasswordChange',
-      'RequirePasswordChange',
-      'mustChangePassword',
-      'MustChangePassword',
-      'forcePasswordChange',
-      'ForcePasswordChange',
-    ]) ??
-    pick(data, [
-      'requirePasswordChange',
-      'RequirePasswordChange',
-      'mustChangePassword',
-      'MustChangePassword',
-      'forcePasswordChange',
-      'ForcePasswordChange',
-    ]) ??
-    pick(user, [
-      'requirePasswordChange',
-      'RequirePasswordChange',
-      'mustChangePassword',
-      'MustChangePassword',
-      'forcePasswordChange',
-      'ForcePasswordChange',
-    ]);
+  const success = pick(raw, ['success', 'Success']);
+  const token = pickFirst([data, raw], ['token', 'Token']);
+  const user = pickFirst([data, raw], ['user', 'User']);
+
+  const requirePasswordChangeRaw = pickCaseInsensitive([raw, data, user], [
+    'requirePasswordChange',
+    'mustChangePassword',
+    'forcePasswordChange',
+    'firstLogin',
+    'isFirstLogin',
+  ]);
   const requirePasswordChange = Boolean(requirePasswordChangeRaw);
 
-  const message =
-    pick(raw, ['message', 'Message']) ??
-    pick(data, ['message', 'Message']) ??
-    pick(raw?.error, ['message', 'Message']);
+  const message = pickFirst(sourcePriority, ['message', 'Message']);
 
   const ok = typeof success === 'boolean' ? success : Boolean(token || user);
 
@@ -73,9 +74,7 @@ const buildUserFromToken = (token) => {
 
   const role =
     payload.role ||
-    payload.Role ||
     payload.roles ||
-    payload.Roles ||
     payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ||
     null;
   const userId =
@@ -136,7 +135,6 @@ export const useLogin = () => {
       setLoading(false);
       const errMsg =
         err.response?.data?.message ||
-        err.response?.data?.Message ||
         "Đăng nhập thất bại. Kiểm tra lại kết nối Azure.";
       setError(errMsg);
       return { success: false, error: errMsg };

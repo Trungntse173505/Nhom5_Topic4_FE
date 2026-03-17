@@ -14,7 +14,7 @@ import {
   MessageSquareWarning,
 } from "lucide-react";
 import { useTasks } from "../../../hooks/Reviewer/useTasks";
-import { useScore } from "../../../hooks/useScore";
+import { useScore } from "../../../hooks/Reviewer/useScore";
 import { AuroraBackground } from "../../common/aurora-background";
 
 const TYPE_ICONS = {

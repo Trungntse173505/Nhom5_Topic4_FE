@@ -6,11 +6,8 @@ import React, {
   useCallback,
 } from "react";
 import { useParams, useLocation } from "react-router-dom";
-import { useDatasetUpload } from "../../../hooks/useDatasetUpload";
-
-// Import cái card 3D ảo ma vào đây (Đã căn chuẩn đường dẫn)
+import { useDatasetUpload } from "../../../hooks/Manager/useDatasetUpload";
 import { CardContainer, CardBody, CardItem } from "../../common/3d-card";
-// Bổ sung import cái nút Animated cực mượt mới tạo
 import { AnimatedButton } from "../../common/AnimatedButton";
 
 // =====================================================================
@@ -79,8 +76,6 @@ export default function DatasetUpload({ project }) {
   const fileInputRef = useRef(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [fileType, setFileType] = useState("Pic");
-
-  // TỰ ĐỘNG MAP LOẠI DATA CỦA DỰ ÁN VÀO KHUNG UPLOAD
   useEffect(() => {
     if (project?.projectType) {
       const type = project.projectType.toLowerCase();
@@ -142,8 +137,6 @@ export default function DatasetUpload({ project }) {
     (e) => {
       if (e.target.files && e.target.files.length > 0) {
         const files = Array.from(e.target.files);
-
-        // KIỂM TRA NGHIÊM NGẶT LOẠI FILE
         const isValid = files.every((file) => {
           if (fileType === "Pic") return file.type.startsWith("image/");
           if (fileType === "Video") return file.type.startsWith("video/");
@@ -179,7 +172,7 @@ export default function DatasetUpload({ project }) {
       }
     },
     [fileType],
-  ); // Chỉ tạo lại hàm nếu fileType đổi
+  ); 
 
   const handleStartUpload = useCallback(async () => {
     if (selectedFiles.length === 0) {

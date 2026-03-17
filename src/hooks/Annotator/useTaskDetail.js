@@ -28,6 +28,7 @@ export const useTaskDetail = (taskId) => {
   return {
     taskItems: data?.taskItems || [], 
     availableLabels: data?.availableLabels || [],   
+    guideline: data?.guideline || "",
     taskInfo: {
       taskID: data?.taskID,
       taskName: data?.taskName,

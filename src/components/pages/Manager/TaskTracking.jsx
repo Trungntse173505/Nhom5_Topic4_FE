@@ -1,11 +1,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useTaskTracking } from "../../../hooks/useTaskTracking";
-import { useLabelManagement } from "../../../hooks/useLabelManagement";
-
-// =====================================================================
-// BÍ KÍP 3: ĐÓNG BĂNG TỪNG DÒNG TASK
-// =====================================================================
+import { useTaskTracking } from "../../../hooks/Manager/useTaskTracking";
+import { useLabelManagement } from "../../../hooks/Manager/useLabelManagement";
 const TaskRowItem = React.memo(
   ({
     task,
@@ -159,16 +155,12 @@ export default function TaskTracking({ project, setActiveTab }) {
     reviewerId: "",
     isFirstAssign: false,
   });
-
-  // BÍ KÍP 1: useMemo chống lag khi gõ tìm kiếm
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
       const searchString = `${t.taskID} ${t.taskName}`.toLowerCase();
       return searchString.includes(searchTerm.toLowerCase());
     });
   }, [tasks, searchTerm]);
-
-  // BÍ KÍP 2: Đóng băng các hành động thao tác Task
   const submitReassign = useCallback(async () => {
     if (!reassignModal.annotatorId) return alert("Vui lòng chọn Annotator!");
     const success = await reassignTask(

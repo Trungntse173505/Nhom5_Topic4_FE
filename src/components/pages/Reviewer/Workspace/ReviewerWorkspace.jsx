@@ -2,12 +2,29 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReviewerSidebarLeft from "./ReviewerSidebarLeft";
 import ReviewerSidebarRight from "./ReviewerSidebarRight";
-import ReviewerCanvas from "./ReviewerCanvas";
-// 1. IMPORT CÁI CANVAS VIDEO VỪA TẠO VÀO
-import ReviewerVideoCanvas from "./ReviewerVideoCanvas";
+
+// IMPORT TẤT CẢ CÁC LOẠI CANVAS VÀO ĐÂY
+import ReviewerCanvas from "./ReviewerCanvas"; // Hình ảnh
+import ReviewerVideoCanvas from "./ReviewerVideoCanvas"; // Video
+import ReviewerTextViewer from "./ReviewerTextViewer"; // Văn bản
+import ReviewerAudioViewer from "./ReviewerAudioViewer"; // Âm thanh
+
 import { LogOut, Loader2, ArrowLeft } from "lucide-react";
 import { useTaskDetail } from "../../../../hooks/Reviewer/useTaskDetail";
 import { useReviewerActions } from "../../../../hooks/Reviewer/useReviewActions";
+
+// HÀM BẢO BỐI: Tự động phân loại file dựa trên đuôi file (extension)
+const getFileType = (filePath) => {
+  if (!filePath) return "image"; // Fallback an toàn
+
+  const ext = filePath.split("?")[0].split(".").pop().toLowerCase();
+
+  if (["mp4", "avi", "mov", "mkv", "webm"].includes(ext)) return "video";
+  if (["mp3", "wav", "ogg", "flac", "m4a"].includes(ext)) return "audio";
+  if (["txt", "csv", "json", "pdf", "doc", "docx"].includes(ext)) return "text";
+
+  return "image"; // Mặc định là ảnh (jpg, png, jpeg...)
+};
 
 const ReviewerWorkspace = () => {
   const params = useParams();
@@ -47,10 +64,40 @@ const ReviewerWorkspace = () => {
 
   const currentItem = taskDetail.items?.[currentImageIndex];
 
-  // 2. LOGIC PHÂN BIỆT ẢNH HAY VIDEO
-  const isVideoProject =
-    taskDetail.projectType === "Video" ||
-    currentItem?.filePath?.match(/\.(mp4|avi|mov|mkv|webm)$/i);
+  // SOI ĐUÔI FILE HIỆN TẠI ĐỂ QUYẾT ĐỊNH RENDER CANVAS NÀO
+  const currentFileType = getFileType(currentItem?.filePath);
+
+  // HÀM CHIA VIỆC RENDER CANVAS
+  const renderCanvas = () => {
+    if (!currentItem)
+      return <div className="text-slate-500">Không có dữ liệu</div>;
+
+    const commonProps = {
+      currentItem,
+      toggleAnnotationApproval,
+      activeBoxId,
+      setActiveBoxId,
+    };
+
+    switch (currentFileType) {
+      case "video":
+        return <ReviewerVideoCanvas {...commonProps} />;
+      case "audio":
+        return <ReviewerAudioViewer currentItem={currentItem} />;
+      case "text":
+        return (
+          <ReviewerTextViewer
+            currentItem={currentItem}
+            activeAnnotationId={activeBoxId}
+            setActiveAnnotationId={setActiveBoxId}
+            availableLabels={taskDetail?.availableLabels || []}
+          />
+        );
+      case "image":
+      default:
+        return <ReviewerCanvas {...commonProps} />;
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen bg-[#0f172a] text-slate-200">
@@ -67,7 +114,7 @@ const ReviewerWorkspace = () => {
               {taskDetail.taskName}
             </h1>
             <p className="text-xs text-slate-400">
-              {taskDetail.projectName} • {taskDetail.taskID.substring(0, 8)}
+              {taskDetail.projectName} • {taskDetail.taskID?.substring(0, 8)}
             </p>
           </div>
         </div>
@@ -95,38 +142,16 @@ const ReviewerWorkspace = () => {
           onSelectIndex={setCurrentImageIndex}
         />
 
-        {/* CANVAS CHÍNH */}
+        {/* CANVAS CHÍNH (TỰ ĐỘNG THAY ĐỔI THEO LOẠI FILE) */}
         <main className="flex-1 overflow-hidden relative flex flex-col bg-[#0b1220] p-4">
-          <div className="bg-[#1e293b] rounded-2xl border border-slate-800 flex-1 overflow-hidden">
-            {currentItem ? (
-              // 3. NẾU LÀ VIDEO THÌ GỌI VIDEO CANVAS, KHÔNG THÌ GỌI IMAGE CANVAS
-              isVideoProject ? (
-                <ReviewerVideoCanvas
-                  currentItem={currentItem}
-                  toggleAnnotationApproval={toggleAnnotationApproval}
-                  activeBoxId={activeBoxId}
-                  setActiveBoxId={setActiveBoxId}
-                />
-              ) : (
-                <ReviewerCanvas
-                  currentItem={currentItem}
-                  toggleAnnotationApproval={toggleAnnotationApproval}
-                  activeBoxId={activeBoxId}
-                  setActiveBoxId={setActiveBoxId}
-                />
-              )
-            ) : (
-              <div className="h-full flex items-center justify-center text-slate-500">
-                Không có dữ liệu nào
-              </div>
-            )}
+          <div className="bg-[#1e293b] rounded-2xl border border-slate-800 flex-1 overflow-hidden flex items-center justify-center relative">
+            {renderCanvas()}
           </div>
         </main>
 
         {/* SIDEBAR PHẢI */}
         <ReviewerSidebarRight
           taskId={activeTaskId}
-          // ĐÃ THÊM: Truyền 2 biến này để Sidebar phải đọc được toàn bộ danh sách và có thể bấm nhảy ảnh
           items={taskDetail.items}
           onSelectIndex={setCurrentImageIndex}
           currentItem={currentItem}

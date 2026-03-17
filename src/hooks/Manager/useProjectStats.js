@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getProjectStatistics, getUserPerformance } from "../api/managerApi";
+import { getProjectStatistics, getUserPerformance } from "../../api/managerApi";
 
 export const useProjectStats = (projectId) => {
   const [stats, setStats] = useState(null);

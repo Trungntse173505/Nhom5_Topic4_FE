@@ -1,6 +1,6 @@
 // src/hooks/useDatasetUpload.js
 import { useState, useEffect } from "react";
-import { getProjectDetail, uploadDataToProject } from "../api/managerApi";
+import { getProjectDetail, uploadDataToProject } from "../../api/managerApi";
 
 export const useDatasetUpload = (projectId) => {
   const [dataItems, setDataItems] = useState([]);

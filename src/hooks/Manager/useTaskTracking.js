@@ -6,7 +6,7 @@ import {
   revokeTask,
   getAvailableAnnotators, // <-- Gọi API mới
   getAvailableReviewers, // <-- Gọi API mới
-} from "../api/managerApi";
+} from "../../api/managerApi";
 
 export const useTaskTracking = (projectId) => {
   const [tasks, setTasks] = useState([]);

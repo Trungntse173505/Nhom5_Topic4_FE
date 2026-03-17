@@ -13,3 +13,19 @@
     }
   }
 }
+
+/* Dark dropdown for native <select> option list */
+select.select-dark {
+  color-scheme: dark;
+}
+
+select.select-dark option,
+select.select-dark optgroup {
+  background-color: #0b1226;
+  color: #93c5fd;
+}
+
+select.select-dark option:checked {
+  background-color: #334155;
+  color: #ffffff;
+}

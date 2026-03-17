@@ -7,7 +7,8 @@ import { AuroraBackground } from "../../common/aurora-background";
 
 const menuItems = [
   { path: "/reviewer", label: "Dashboard", icon: "🔍" },
-  { path: "/reviewer/disputes", label: "Khiếu Nại", icon: "⚖️" },
+  { path: "/reviewer/disputes", label: "Khiếu Nại", icon: "⚖️" }, 
+  { path: "/reviewer/credit-score", label: "Điểm Tín Nhiệm", icon: "🏆" },
 ];
 
 export default function ReviewerLayout() {

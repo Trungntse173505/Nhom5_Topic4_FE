@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useAdminUsers } from '../../../hooks/Admin/useAdminUsers';
 import { useAdminRoles } from '../../../hooks/Admin/useAdminRoles';
+import { useEmailValidator } from '../../../hooks/useEmailValidator';
 
 // Component phụ giúp tái sử dụng cấu trúc HTML của các ô nhập liệu
 const FormField = ({ label, isSelect, wrapperClass = "", children, ...props }) => (
     <div className={`bg-white/5 p-4 rounded-xl ${wrapperClass}`}>
         <label className="text-white/40 block mb-1 text-sm">{label}</label>
         {isSelect ? (
-            <select {...props} className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20">{children}</select>
+            <select {...props} className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20 select-dark">{children}</select>
         ) : (
             <input {...props} className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20" />
         )}
@@ -21,6 +22,7 @@ export default function UserList() {
         resetPassword, resettingId, toggleStatus, togglingId,
         updateUser, updatingId, assignRole, assigningRoleId,
     } = useAdminUsers();
+    const { validateEmail, verifying } = useEmailValidator();
 
     const {
         roles, rolesLoading, rolesError, refreshRoles,
@@ -36,11 +38,22 @@ export default function UserList() {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editForm, setEditForm] = useState(null);
     const [createForm, setCreateForm] = useState({ name: '', username: '', email: '', role: 'ANNOTATOR', password: '' });
+    const [createError, setCreateError] = useState('');
 
     // --- CÁC HÀM XỬ LÝ LOGIC ---
     const handleActionCreate = async () => {
+        const emailCheck = await validateEmail(createForm.email);
+        if (!emailCheck?.isValid) {
+            setCreateError(emailCheck?.message || 'Email không tồn tại.');
+            return;
+        }
+        setCreateError('');
+
         const res = await createUser(createForm);
-        if (!res.success) return alert("Lỗi: " + res.error);
+        if (!res.success) {
+            setCreateError(res.error || 'Không thể tạo user.');
+            return alert("Lỗi: " + res.error);
+        }
 
         alert("Tạo user thành công!");
         const refreshRes = await refresh();
@@ -260,7 +273,7 @@ export default function UserList() {
                                 <td className="px-6 py-4 text-center">
                                     <select
                                         value={user.role} onChange={(e) => handleAssignRole(user, e.target.value)} disabled={isBusy || assigningRoleId === user.id} title="Đổi vai trò"
-                                        className="text-xs font-semibold text-blue-300 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20 hover:border-blue-500/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                        className="text-xs font-semibold text-blue-300 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20 hover:border-blue-500/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed select-dark"
                                     >
                                         <option value="ADMIN">ADMIN</option>
                                         <option value="MANAGER">MANAGER</option>
@@ -304,6 +317,11 @@ export default function UserList() {
                             <button onClick={() => setIsCreateOpen(false)} disabled={loading} className="text-white/40 hover:text-white text-2xl disabled:opacity-60 disabled:cursor-not-allowed">✕</button>
                         </div>
                         <div className="p-8 space-y-4">
+                            {createError && (
+                                <div className="text-sm text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3">
+                                    {createError}
+                                </div>
+                            )}
                             <FormField label="Họ và tên" value={createForm.name} onChange={e => setCreateForm(p => ({ ...p, name: e.target.value }))} placeholder="Nguyễn Văn A" />
                             <FormField label="Username" value={createForm.username} onChange={e => setCreateForm(p => ({ ...p, username: e.target.value }))} placeholder="vd: admin01" />
                             <FormField type="email" label="Email" value={createForm.email} onChange={e => setCreateForm(p => ({ ...p, email: e.target.value }))} placeholder="user@email.com" />
@@ -316,7 +334,7 @@ export default function UserList() {
                             <FormField type="password" label="Mật khẩu" value={createForm.password} onChange={e => setCreateForm(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" />
                         </div>
                         <div className="px-8 py-6 bg-white/[0.02] border-t border-white/5 flex gap-3">
-                            <button onClick={handleActionCreate} disabled={loading} className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+                            <button onClick={handleActionCreate} disabled={loading || verifying} className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed">
                                 {loading ? 'Đang tạo...' : 'Tạo user'}
                             </button>
                             <button onClick={() => setIsCreateOpen(false)} disabled={loading} className="flex-1 bg-white/5 hover:bg-white/10 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed">Hủy</button>

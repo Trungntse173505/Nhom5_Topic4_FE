@@ -237,7 +237,7 @@ const AnnotatorWorkspace = () => {
   };
 
   const handleSubmitClick = async () => {
-    if (!window.confirm("Bạn có chắc chắn muốn NỘP BÀI?")) return;
+    if (!canEdit || !window.confirm("Bạn có chắc chắn muốn NỘP BÀI?")) return;
     try {
       await submit(activeTaskId);
       alert("🎉 Chúc mừng! Bạn đã nộp bài thành công.");
@@ -317,6 +317,7 @@ const AnnotatorWorkspace = () => {
                 <button
                   key={tool}
                   onClick={() => setSelectedTool(tool)}
+                  disabled={!canEdit}
                   className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
                     selectedTool === tool
                       ? "bg-blue-600 text-white"
