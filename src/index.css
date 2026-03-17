@@ -7,6 +7,7 @@
     0% {
       background-position: 0% 50%;
     }
+
     100% {
       /* Di chuyển đến 300% cho khớp với [background-size:300%_200%] trong file React */
       background-position: 300% 50%;
@@ -17,6 +18,9 @@
 /* Dark dropdown for native <select> option list */
 select.select-dark {
   color-scheme: dark;
+  background-color: #0f172a;
+  color: #dbeafe;
+  border-color: rgba(59, 130, 246, 0.35);
 }
 
 select.select-dark option,
@@ -28,4 +32,14 @@ select.select-dark optgroup {
 select.select-dark option:checked {
   background-color: #334155;
   color: #ffffff;
+}
+
+/* Hover & focus keep the same tone everywhere */
+select.select-dark:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+select.select-dark:focus {
+  outline: 2px solid rgba(59, 130, 246, 0.55);
+  outline-offset: 1px;
 }
