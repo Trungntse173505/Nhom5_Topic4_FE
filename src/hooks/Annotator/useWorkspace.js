@@ -4,7 +4,7 @@ import { useItemDetail } from './useItemDetail';
 import { useSaveAnnotation } from './useSaveAnnotation';
 
 export const useWorkspace = (taskId) => {
-  const { taskItems = [], availableLabels = [], taskInfo, loading: loadingTask } = useTaskDetail(taskId);
+  const { taskItems = [], availableLabels = [], taskInfo, guideline, loading: loadingTask } = useTaskDetail(taskId);
   const { getItem, loading: loadingItem } = useItemDetail();
 
   const { save } = useSaveAnnotation(); 
@@ -125,6 +125,7 @@ export const useWorkspace = (taskId) => {
     handleSave,
     status,
     isLoading: loadingTask || loadingItem, 
-    toolbarConfig: ['Vẽ Khung Nhãn']      
+    toolbarConfig: ['Vẽ Khung Nhãn'],
+    guideline 
   };
 };
