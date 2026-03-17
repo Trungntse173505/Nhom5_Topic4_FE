@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import SidebarLayout from "../../common/SidebarLayout";
-// NHỚ IMPORT API VÀO ĐÂY (Sếp check lại đường dẫn ../../api/authApi cho đúng folder nhé)
 import authApi from "../../../api/authApi";
 
+// Đẩy menu ra ngoài để không bị tạo lại mỗi lần render
 const menuItems = [
   { path: "/manager", label: "Dự án", icon: "📁" },
   { path: "/manager/labels", label: "Thư viện Nhãn", icon: "🏷️" },
@@ -11,8 +11,7 @@ const menuItems = [
   { path: "/manager/export", label: "Xuất Dữ liệu", icon: "📥" },
 ];
 
-export default function ManagerGlobalLayout() {
-  // STATE lưu thông tin user truyền cho Sidebar
+const ManagerGlobalLayout = React.memo(() => {
   const [userInfo, setUserInfo] = useState({
     name: "Đang tải...",
     email: "Đang lấy thông tin...",
@@ -20,11 +19,10 @@ export default function ManagerGlobalLayout() {
     color: "bg-purple-500",
   });
 
-  // GỌI API LẤY THÔNG TIN USER KHI LOAD LAYOUT
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const token = localStorage.getItem("token"); // Kiểm tra token
+        const token = localStorage.getItem("token");
 
         if (!token) {
           setUserInfo({
@@ -44,7 +42,7 @@ export default function ManagerGlobalLayout() {
           setUserInfo({
             name: displayName,
             email: data.email || "Không rõ email",
-            avatar: displayName.charAt(0).toUpperCase(), // Tự động lấy chữ cái đầu tiên làm Avatar
+            avatar: displayName.charAt(0).toUpperCase(),
             color: "bg-purple-500",
           });
         }
@@ -54,7 +52,7 @@ export default function ManagerGlobalLayout() {
           name: "Lỗi kết nối",
           email: "Vui lòng đăng nhập lại",
           avatar: "!",
-          color: "bg-rose-500", // Báo lỗi thì đổi avatar sang màu đỏ cho ngầu
+          color: "bg-rose-500",
         });
       }
     };
@@ -68,7 +66,9 @@ export default function ManagerGlobalLayout() {
       title="LabelMaster"
       menuLabel="Danh mục Quản lý"
       basePath="/manager"
-      userInfo={userInfo} // Truyền cái state đã gọi API xuống đây
+      userInfo={userInfo}
     />
   );
-}
+});
+
+export default ManagerGlobalLayout;

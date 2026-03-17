@@ -1,114 +1,112 @@
 import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
-// IMPORT NỀN CỰC QUANG VÀO ĐÂY
 import { AuroraBackground } from "../../common/aurora-background";
+
+// =====================================================================
+// BÍ KÍP: ĐẨY DATA TĨNH RA NGOÀI HÀM (Chống tái tạo mảng mỗi lần click tab)
+// =====================================================================
+const MANAGER_TABS = [
+  {
+    id: "overview",
+    label: "Tổng quan Dự án",
+    icon: (
+      <svg
+        className="w-4 h-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <line x1="18" y1="20" x2="18" y2="10"></line>
+        <line x1="12" y1="20" x2="12" y2="4"></line>
+        <line x1="6" y1="20" x2="6" y2="14"></line>
+      </svg>
+    ),
+  },
+  {
+    id: "upload",
+    label: "Tải lên Dữ liệu",
+    icon: (
+      <svg
+        className="w-4 h-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="17 8 12 3 7 8"></polyline>
+        <line x1="12" y1="3" x2="12" y2="15"></line>
+      </svg>
+    ),
+  },
+  {
+    id: "distribution",
+    label: "Tạo Task",
+    icon: (
+      <svg
+        className="w-4 h-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+        <circle cx="9" cy="7" r="4"></circle>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+      </svg>
+    ),
+  },
+  {
+    id: "labels",
+    label: "Chỉnh sửa Bộ nhãn",
+    icon: (
+      <svg
+        className="w-4 h-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+        <polyline points="10 9 9 9 8 9"></polyline>
+      </svg>
+    ),
+  },
+  {
+    id: "tracking",
+    label: "Theo dõi Nhiệm vụ",
+    icon: (
+      <svg
+        className="w-4 h-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <line x1="8" y1="6" x2="21" y2="6"></line>
+        <line x1="8" y1="12" x2="21" y2="12"></line>
+        <line x1="8" y1="18" x2="21" y2="18"></line>
+        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+      </svg>
+    ),
+  },
+];
 
 export default function ManagerLayout({ activeTab, setActiveTab, children }) {
   const navigate = useNavigate();
-  const { projectId } = useParams(); // Lấy ID từ URL
-
-  const tabs = [
-    {
-      id: "overview",
-      label: "Tổng quan Dự án",
-      icon: (
-        <svg
-          className="w-4 h-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <line x1="18" y1="20" x2="18" y2="10"></line>
-          <line x1="12" y1="20" x2="12" y2="4"></line>
-          <line x1="6" y1="20" x2="6" y2="14"></line>
-        </svg>
-      ),
-    },
-    {
-      id: "upload",
-      label: "Tải lên Dữ liệu",
-      icon: (
-        <svg
-          className="w-4 h-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="17 8 12 3 7 8"></polyline>
-          <line x1="12" y1="3" x2="12" y2="15"></line>
-        </svg>
-      ),
-    },
-    {
-      id: "distribution",
-      label: "Tạo Task",
-      icon: (
-        <svg
-          className="w-4 h-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-        </svg>
-      ),
-    },
-    {
-      id: "labels",
-      label: "Chỉnh sửa Bộ nhãn",
-      icon: (
-        <svg
-          className="w-4 h-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-          <line x1="16" y1="13" x2="8" y2="13"></line>
-          <line x1="16" y1="17" x2="8" y2="17"></line>
-          <polyline points="10 9 9 9 8 9"></polyline>
-        </svg>
-      ),
-    },
-    {
-      id: "tracking",
-      label: "Theo dõi Nhiệm vụ",
-      icon: (
-        <svg
-          className="w-4 h-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <line x1="8" y1="6" x2="21" y2="6"></line>
-          <line x1="8" y1="12" x2="21" y2="12"></line>
-          <line x1="8" y1="18" x2="21" y2="18"></line>
-          <line x1="3" y1="6" x2="3.01" y2="6"></line>
-          <line x1="3" y1="12" x2="3.01" y2="12"></line>
-          <line x1="3" y1="18" x2="3.01" y2="18"></line>
-        </svg>
-      ),
-    },
-  ];
+  const { projectId } = useParams();
 
   return (
-    // THAY THẺ DIV BẰNG NỀN AURORA
     <AuroraBackground className="font-sans">
-      {/* Header (Thêm z-20 và backdrop-blur để nổi lên trên nền cực quang) */}
       <header className="flex items-center justify-between px-8 py-4 bg-[#0B1120]/80 backdrop-blur-md border-b border-white/5 relative z-20">
         <div className="flex items-center gap-4">
-          {/* NÚT BACK VỀ QUẢN LÝ DỰ ÁN */}
           <button
             onClick={() => navigate("/manager")}
             className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
@@ -146,21 +144,17 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
             </svg>
           </div>
           <div className="flex flex-col">
-            {/* Đã Việt hóa Tiêu đề */}
             <h1 className="text-lg font-semibold tracking-wide text-white">
               Không gian làm việc Dự án {projectId ? `#${projectId}` : ""}
             </h1>
             <p className="text-sm text-gray-400">test@gmail.com</p>
           </div>
         </div>
-        {/* ĐÃ FIX: XÓA NÚT ĐĂNG XUẤT Ở ĐÂY */}
       </header>
 
-      {/* Main Content & Navigation (Thêm z-20 để nút bấm hoạt động bình thường) */}
       <main className="p-8 max-w-7xl mx-auto relative z-20">
-        {/* Tab Navigation Pill */}
         <nav className="flex items-center gap-1 rounded-xl bg-[#151D2F]/80 backdrop-blur p-1 w-fit mb-8 border border-white/5 shadow-sm">
-          {tabs.map((tab) => (
+          {MANAGER_TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -176,7 +170,6 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
           ))}
         </nav>
 
-        {/* Dynamic Content Rendering */}
         <div className="animate-in fade-in duration-300">{children}</div>
       </main>
     </AuroraBackground>
