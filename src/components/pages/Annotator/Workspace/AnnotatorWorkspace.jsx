@@ -20,13 +20,8 @@ import { useWorkspace } from "../../../../hooks/Annotator/useWorkspace";
 import { useSubmitTask } from "../../../../hooks/Annotator/useSubmitTask";
 import { useFlagItem } from "../../../../hooks/Annotator/useFlagItem";
 
-// 👉 IMPORT ĐỒ NGHỀ TỪ UTILS (Code ngắn gọn, sạch sẽ!)
-import {
-  normalizeText,
-  VI_TO_EN_DICT,
-  calculateIoU,
-  applyNMS,
-} from "../../../../utils/aiHelper";
+// 👉 IMPORT ĐỒ NGHỀ MỚI TỪ UTILS (Không còn VI_TO_EN_DICT nữa)
+import { calculateIoU, applyNMS } from "../../../../utils/aiHelper";
 
 const AnnotatorWorkspace = () => {
   const { taskId, id } = useParams();
@@ -107,17 +102,18 @@ const AnnotatorWorkspace = () => {
             let newAnnotations = [];
 
             result.forEach((item, index) => {
-              const aiLabel = item.label.toLowerCase();
-              const matchedLabel = availableLabels.find((l) => {
-                const cleanViName = normalizeText(l.name);
-                return (VI_TO_EN_DICT[cleanViName] || cleanViName) === aiLabel;
-              });
+              const aiLabel = item.label.toLowerCase(); // AI trả về tiếng Anh (ví dụ: 'car')
+
+              // So khớp với name tiếng Anh trong DB của sếp
+              const matchedLabel = availableLabels.find(
+                (l) => l.name.toLowerCase() === aiLabel,
+              );
 
               if (matchedLabel) {
                 newAnnotations.push({
                   id: `ai_generated_${Date.now()}_${index}`,
                   labelId: matchedLabel.id,
-                  label: matchedLabel.name,
+                  label: matchedLabel.name, // Lưu đúng tên gốc
                   x: item.box.xmin * scaleX,
                   y: item.box.ymin * scaleY,
                   width: (item.box.xmax - item.box.xmin) * scaleX,
@@ -157,17 +153,22 @@ const AnnotatorWorkspace = () => {
           return;
         }
 
-        // 2. DÀNH CHO AUDIO & 3. VĂN BẢN
-        else if (task === "transcribe_audio")
+        // 2. DÀNH CHO AUDIO
+        else if (task === "transcribe_audio") {
           alert("🤖 AI đã dịch xong Audio.");
+        }
+
+        // 3. DÀNH CHO VĂN BẢN
         else if (task === "analyze_text") {
           if (!result || result.length === 0)
             alert("🤖 AI: Không khớp nhãn nào!");
           else {
             const newTextAnnos = result.map((item) => {
+              // So khớp bằng tiếng Anh chuẩn
               const matched =
-                availableLabels.find((l) => l.name === item.label) ||
-                availableLabels[0];
+                availableLabels.find(
+                  (l) => l.name.toLowerCase() === item.label.toLowerCase(),
+                ) || availableLabels[0];
               return {
                 start: item.start,
                 end: item.end,
@@ -215,6 +216,7 @@ const AnnotatorWorkspace = () => {
       return alert("Không tìm thấy đường dẫn file để chạy AI!");
     if (!availableLabels || availableLabels.length === 0)
       return alert("Sếp phải tạo Bộ Nhãn trước!");
+
     setIsAILoading(true);
     try {
       if (actualType === "image" || actualType === "video") {
@@ -231,6 +233,7 @@ const AnnotatorWorkspace = () => {
         const textContent = await fetch(fileData.url).then((r) => r.text());
         workerRef.current.postMessage({
           type: "analyze_text",
+          // Gửi trực tiếp list tên tiếng Anh cho AI
           payload: {
             text: textContent,
             candidateLabels: availableLabels.map((l) => l.name),

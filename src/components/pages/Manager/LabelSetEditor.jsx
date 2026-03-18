@@ -1,11 +1,12 @@
+// Đường dẫn: src/pages/Manager/ProjectSettings/LabelSetEditor.jsx (Hoặc tương tự)
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useLabelManagement } from "../../../hooks/Manager/useLabelManagement";
 import { useProjectActions } from "../../../hooks/Manager/useProjectActions";
 
-// =====================================================================
-// BÍ KÍP 3: ĐÓNG BĂNG TỪNG CHỦ ĐỀ ACCORDION (Tránh render lại toàn bộ kho)
-// =====================================================================
+import { getLabelDisplay, normalizeText } from "../../../utils/aiHelper";
+import { VI_TO_EN_DICT } from "../../../utils/dictionary";
+
 const CategoryAccordion = React.memo(
   ({ category, labels, isExpanded, onToggle, projectLabels, onImport }) => {
     const totalLabels = labels.length;
@@ -14,9 +15,7 @@ const CategoryAccordion = React.memo(
       <div className="bg-[#0B1120] border border-white/5 rounded-xl overflow-hidden transition-all duration-300">
         <button
           onClick={() => onToggle(category)}
-          className={`w-full flex items-center justify-between p-4 text-left transition-colors ${
-            isExpanded ? "bg-[#1E293B]" : "hover:bg-white/5"
-          }`}
+          className={`w-full flex items-center justify-between p-4 text-left transition-colors ${isExpanded ? "bg-[#1E293B]" : "hover:bg-white/5"}`}
         >
           <div className="flex items-center gap-3">
             <span className="text-sm font-semibold text-gray-200 uppercase tracking-wide">
@@ -27,9 +26,7 @@ const CategoryAccordion = React.memo(
             </span>
           </div>
           <svg
-            className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${
-              isExpanded ? "rotate-180 text-blue-400" : ""
-            }`}
+            className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isExpanded ? "rotate-180 text-blue-400" : ""}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -44,11 +41,7 @@ const CategoryAccordion = React.memo(
         </button>
 
         <div
-          className={`transition-all duration-300 ease-in-out ${
-            isExpanded
-              ? "max-h-[1000px] opacity-100"
-              : "max-h-0 opacity-0 overflow-hidden"
-          }`}
+          className={`transition-all duration-300 ease-in-out ${isExpanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0 overflow-hidden"}`}
         >
           <div className="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2 border-t border-white/5 pt-4">
             {labels.map((lib, idx) => {
@@ -64,11 +57,7 @@ const CategoryAccordion = React.memo(
               return (
                 <div
                   key={targetId || idx}
-                  className={`flex items-center justify-between rounded-lg border p-2.5 h-[40px] transition-colors ${
-                    isImported
-                      ? "border-emerald-500/30 bg-emerald-500/5 cursor-not-allowed"
-                      : "border-white/10 bg-[#151D2F] hover:border-white/30"
-                  }`}
+                  className={`flex items-center justify-between rounded-lg border p-2.5 h-[40px] transition-colors ${isImported ? "border-emerald-500/30 bg-emerald-500/5 cursor-not-allowed" : "border-white/10 bg-[#151D2F] hover:border-white/30"}`}
                 >
                   <div className="flex items-center gap-2 overflow-hidden">
                     <div
@@ -76,11 +65,10 @@ const CategoryAccordion = React.memo(
                       style={{ backgroundColor: targetColor }}
                     ></div>
                     <span
-                      className={`text-xs truncate max-w-[80px] ${
-                        isImported ? "text-gray-500" : "text-gray-300"
-                      }`}
+                      className={`text-xs truncate max-w-[80px] ${isImported ? "text-gray-500" : "text-gray-300"}`}
+                      title={targetName}
                     >
-                      {targetName}
+                      {getLabelDisplay(targetName)}
                     </span>
                   </div>
                   {!isImported ? (
@@ -105,9 +93,6 @@ const CategoryAccordion = React.memo(
   },
 );
 
-// =====================================================================
-// BÍ KÍP 3: ĐÓNG BĂNG TỪNG NHÃN DỰ ÁN
-// =====================================================================
 const ProjectLabelItem = React.memo(({ label, onRemove }) => {
   const targetId = label.projectLabelId || label.labelID || label.id;
   const targetName =
@@ -122,7 +107,10 @@ const ProjectLabelItem = React.memo(({ label, onRemove }) => {
           className="w-4 h-4 rounded flex-shrink-0"
           style={{ backgroundColor: targetColor }}
         ></div>
-        <span className="text-sm text-gray-200">{targetName}</span>
+        <span className="text-sm text-gray-200" title={targetName}>
+          {getLabelDisplay(targetName)}
+        </span>
+
         {label.isCustom && (
           <span className="text-[9px] bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded uppercase tracking-wider">
             Tùy chỉnh
@@ -173,22 +161,30 @@ export default function LabelSetEditor({ project, onRefresh }) {
     if (project?.guidelineUrl) setGuideline(project.guidelineUrl);
   }, [project]);
 
+  // 👉 BỨC TƯỜNG LỬA 2: Lọc rác PROJECT_CUSTOM khỏi cột Thư viện bên trái
   const groupedLibrary = useMemo(() => {
     return libraryLabels.reduce((acc, label) => {
       const cat = label.category || "Chưa phân loại";
+
+      // Chặn ngay lập tức nếu nó là danh mục do hệ thống tự sinh bừa bãi
+      if (cat.toUpperCase() === "PROJECT_CUSTOM") return acc;
+
       if (!acc[cat]) acc[cat] = [];
       acc[cat].push(label);
       return acc;
     }, {});
   }, [libraryLabels]);
 
-  // BÍ KÍP 2: Đóng băng các hành động thao tác
   const handleAddCustom = useCallback(async () => {
     if (!newLabel.name) return;
+
+    const cleanInput = normalizeText(newLabel.name);
+    const mappedName = VI_TO_EN_DICT[cleanInput] || newLabel.name;
+
     const payload = {
-      labelName: newLabel.name,
+      labelName: mappedName,
       defaultColor: newLabel.color,
-      customName: newLabel.name,
+      customName: mappedName,
       colorCode: newLabel.color,
       url: "",
     };
@@ -207,7 +203,6 @@ export default function LabelSetEditor({ project, onRefresh }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* KHỐI 1: KHO NHÃN MẪU */}
         <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col h-[500px]">
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-white">Kho Nhãn Mẫu</h2>
@@ -237,7 +232,6 @@ export default function LabelSetEditor({ project, onRefresh }) {
           </div>
         </div>
 
-        {/* KHỐI 2: NHÃN DỰ ÁN & TẠO MỚI */}
         <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col h-[500px]">
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-white">Nhãn Của Dự Án</h2>
@@ -265,7 +259,6 @@ export default function LabelSetEditor({ project, onRefresh }) {
             )}
           </div>
 
-          {/* Form tạo nhãn */}
           <div className="space-y-4 pt-4 border-t border-white/5">
             <input
               type="text"
@@ -273,7 +266,7 @@ export default function LabelSetEditor({ project, onRefresh }) {
               onChange={(e) =>
                 setNewLabel({ ...newLabel, name: e.target.value })
               }
-              placeholder="Tên nhãn tùy chỉnh..."
+              placeholder="VD: Ô tô, Người..."
               className="w-full rounded-lg border border-white/10 bg-[#0B1120] px-4 py-2 text-sm text-white outline-none focus:border-blue-500/50"
             />
             <div className="flex gap-3">
@@ -297,7 +290,6 @@ export default function LabelSetEditor({ project, onRefresh }) {
         </div>
       </div>
 
-      {/* KHỐI 3: ANNOTATION GUIDELINES */}
       <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm">
         <div className="mb-4 flex justify-between items-center">
           <div>

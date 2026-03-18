@@ -1,4 +1,5 @@
 // Đường dẫn: src/utils/aiHelper.js
+import { AI_DICTIONARY } from "./dictionary";
 
 // 1. Khử dấu tiếng Việt
 export const normalizeText = (text) => {
@@ -10,17 +11,12 @@ export const normalizeText = (text) => {
     .trim();
 };
 
-// 2. Từ điển Map Nhãn
-export const VI_TO_EN_DICT = {
-  "trai tim": "heart",
-  "ma qr": "qr code",
-  "xe may": "motorcycle",
-  "xe buyt": "bus",
-  "xe tai": "truck",
-  "o to": "car",
-  nguoi: "person",
-  meo: "cat",
-  cho: "dog",
+// 2. HÀM ĐEO MẶT NẠ (Dịch Anh -> Việt để hiện lên màn hình)
+export const getLabelDisplay = (enName) => {
+  if (!enName) return "Không rõ";
+  const lowerName = enName.toLowerCase();
+  // Có trong từ điển thì trả tiếng Việt, không có thì giữ nguyên tiếng Anh
+  return AI_DICTIONARY[lowerName] || enName;
 };
 
 // 3. Tính độ đè khung (IoU)
