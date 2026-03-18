@@ -2,8 +2,10 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Trash2, RotateCcw, Loader2, FileText } from "lucide-react";
 
-// 👉 Gọi thằng đệ Menu ra xài chung!
 import BoxContextMenu from "../../../common/BoxContextMenu";
+
+// 👉 IMPORT HÀM MẶT NẠ
+import { getLabelDisplay } from "../../../../utils/aiHelper";
 
 const TextEditor = ({
   selectedLabel,
@@ -13,16 +15,13 @@ const TextEditor = ({
   availableLabels = [],
 }) => {
   const textContainerRef = useRef(null);
-  const wrapperRef = useRef(null); // Ref dùng để làm mốc tọa độ cho Menu
+  const wrapperRef = useRef(null);
 
   const [originalText, setOriginalText] = useState("");
   const [isLoadingText, setIsLoadingText] = useState(false);
   const [error, setError] = useState(null);
-
-  // 👉 TRẠNG THÁI MENU NỔI
   const [menuData, setMenuData] = useState(null);
 
-  // Fetch dữ liệu text từ URL
   useEffect(() => {
     const fetchTextContent = async () => {
       if (fileData?.url) {
@@ -47,7 +46,6 @@ const TextEditor = ({
     fetchTextContent();
   }, [fileData?.url, fileData?.content]);
 
-  // --- HÀM HỖ TRỢ ---
   const handleUndo = () => {
     if (annotations.length > 0) {
       setAnnotations((prev) => (prev || []).slice(0, -1));
@@ -64,7 +62,6 @@ const TextEditor = ({
     }
   };
 
-  // --- LOGIC BÔI ĐEN TẠO NHÃN ---
   const handleMouseUp = () => {
     const selection = window.getSelection();
     if (!selection.rangeCount || selection.isCollapsed || !selectedLabel)
@@ -82,7 +79,6 @@ const TextEditor = ({
     const highlightedText = originalText.slice(start, end);
 
     setAnnotations((prev) => {
-      // Cấp ID ngay lúc tạo để Lát nữa click vào còn biết là thằng nào
       const newId = `txt-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       const newAnnotation = {
         id: newId,
@@ -106,7 +102,6 @@ const TextEditor = ({
             text: originalText.slice(last.start, newEnd),
           };
         } else {
-          // Gắn ID dự phòng nếu dữ liệu cũ ko có
           acc.push({
             ...curr,
             id: curr.id || `txt-${Date.now()}-${Math.random()}`,
@@ -117,16 +112,10 @@ const TextEditor = ({
     });
   };
 
-  // --- LOGIC CLICK MỞ MENU MENU ---
   const handleHighlightClick = (e, hl) => {
-    e.stopPropagation(); // Ngăn sự kiện click lọt ra ngoài nền
-
-    // Lấy tọa độ của cái đoạn chữ vừa bị click
+    e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
-    // Lấy tọa độ của cái khung to ngoài cùng làm mốc
     const wrapperRect = wrapperRef.current.getBoundingClientRect();
-
-    // Tính x, y tương đối để vứt cho BoxContextMenu nó vẽ
     setMenuData({
       ...hl,
       x: rect.left - wrapperRect.left,
@@ -136,9 +125,11 @@ const TextEditor = ({
     });
   };
 
-  // Sửa nhãn
   const handleChangeLabel = (annId, newLabelName) => {
-    const matchedLabel = availableLabels.find((l) => l.name === newLabelName);
+    // 👉 FIX CHỐNG LỖI CỤC BỘ TẠI ĐÂY (Không phân biệt hoa thường)
+    const matchedLabel = availableLabels.find(
+      (l) => l.name?.toLowerCase() === newLabelName?.toLowerCase(),
+    );
     setAnnotations(
       annotations.map((ann) =>
         ann.id === annId
@@ -149,18 +140,15 @@ const TextEditor = ({
     setMenuData((prev) => ({ ...prev, label: newLabelName }));
   };
 
-  // Xóa nhãn
   const handleDeleteBox = (annId) => {
     setAnnotations(annotations.filter((a) => a.id !== annId));
     setMenuData(null);
   };
 
-  // Click ra nền trống thì tắt Menu
   const handleContainerClick = () => {
     setMenuData(null);
   };
 
-  // --- RENDER VĂN BẢN ---
   const renderText = () => {
     if (!annotations?.length) return originalText;
 
@@ -170,7 +158,6 @@ const TextEditor = ({
     annotations.forEach((hl, i) => {
       const safeStart = Math.max(lastIndex, hl.start);
 
-      // In chữ thường
       if (safeStart > lastIndex) {
         elements.push(
           <span key={`t-${i}`}>
@@ -179,19 +166,24 @@ const TextEditor = ({
         );
       }
 
-      const labelDef = availableLabels.find((l) => l.name === hl.label);
-      const labelColor = labelDef?.color || "#ea580c";
+      // 👉 FIX TÌM LABEL THÔNG MINH BẤT CHẤP HOA THƯỜNG
+      const labelDef = availableLabels.find(
+        (l) => l.name?.toLowerCase() === hl.label?.toLowerCase(),
+      );
+
+      // Nếu AI khoanh tào lao không có trong list thì cho màu xám
+      const labelColor = labelDef?.color || "#94a3b8";
       const isSelected = menuData?.id === hl.id;
 
-      // In chữ được Highlight
       elements.push(
         <span
           key={hl.id || `hl-${i}`}
           onClick={(e) => handleHighlightClick(e, hl)}
+          // 👉 ĐEO MẶT NẠ TIẾNG VIỆT AN TOÀN
+          title={`Nhãn: ${getLabelDisplay(hl.label || "")} - Click để sửa/xóa`}
           className="px-1 py-0.5 rounded mx-0.5 font-medium cursor-pointer hover:brightness-125 transition-all"
           style={{
             backgroundColor: `${labelColor}40`,
-            // Nếu đang được click chọn thì viền đứt nét màu trắng sáng bừng lên giống ImageCanvas!
             border: isSelected
               ? `2px dashed #ffffff`
               : `1px solid ${labelColor}`,
@@ -216,7 +208,6 @@ const TextEditor = ({
       ref={wrapperRef}
       className="w-full h-full bg-[#1e293b] flex flex-col relative group p-6 overflow-hidden"
     >
-      {/* THANH CÔNG CỤ HOVER (UNDO/CLEAR) */}
       <div className="absolute top-8 right-10 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={handleUndo}
@@ -263,18 +254,15 @@ const TextEditor = ({
         )}
       </div>
 
-      {/* 👉 MENU NỔI TÁI SỬ DỤNG LẠI Y CHANG ẢNH/VIDEO */}
       <BoxContextMenu
         selectedAnn={menuData}
         availableLabels={availableLabels}
-        // Truyền kích thước cái Wrapper để Menu không bị lọt ra ngoài màn hình
         CANVAS_WIDTH={wrapperRef.current?.clientWidth || 800}
         CANVAS_HEIGHT={wrapperRef.current?.clientHeight || 600}
         onCancel={() => setMenuData(null)}
         onChangeLabel={handleChangeLabel}
         onDelete={handleDeleteBox}
       />
-
       <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[11px] text-slate-400 font-medium bg-[#0f172a]/80 px-4 py-1.5 rounded-full backdrop-blur-sm border border-slate-700 z-20 pointer-events-none">
         Mẹo: Bôi đen một đoạn văn bản để gán nhãn. Click vào đoạn đã bôi để
         Sửa/Xóa.

@@ -15,6 +15,7 @@ import { Trash2, RotateCcw } from "lucide-react";
 
 // 👉 Import Component Menu dùng chung
 import BoxContextMenu from "../../../common/BoxContextMenu";
+import { getLabelDisplay } from "../../../../utils/aiHelper";
 
 const ImageCanvas = ({
   selectedTool,
@@ -159,6 +160,7 @@ const ImageCanvas = ({
               />
             )}
 
+            {/* PHẦN 1: RENDER CÁC KHUNG ĐÃ VẼ */}
             {annotations.map((ann) => {
               const color = getLabelColor(ann.label);
               const isSelected = ann.id === selectedBoxId;
@@ -188,7 +190,8 @@ const ImageCanvas = ({
                   <Label x={topX} y={topY - 24}>
                     <Tag fill={color} cornerRadius={4} />
                     <Text
-                      text={ann.label}
+                      // 👉 FIX 1: Gắn mặt nạ Tiếng Việt cho các nhãn đã vẽ
+                      text={getLabelDisplay(ann.label)}
                       fill="white"
                       fontSize={12}
                       fontStyle="bold"
@@ -199,6 +202,7 @@ const ImageCanvas = ({
               );
             })}
 
+            {/* PHẦN 2: RENDER KHUNG ĐANG KÉO CHUỘT VẼ */}
             {newAnnotation &&
               (() => {
                 const color = getLabelColor(newAnnotation.label);
@@ -225,7 +229,8 @@ const ImageCanvas = ({
                     <Label x={topX} y={topY - 24}>
                       <Tag fill={color} cornerRadius={4} />
                       <Text
-                        text={newAnnotation.label}
+                        // 👉 FIX 2: Gắn mặt nạ Tiếng Việt cho nhãn đang vẽ
+                        text={getLabelDisplay(newAnnotation.label)}
                         fill="white"
                         fontSize={12}
                         fontStyle="bold"

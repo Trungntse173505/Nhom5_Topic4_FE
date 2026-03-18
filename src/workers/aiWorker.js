@@ -29,9 +29,10 @@ class AudioPipeline {
   }
 }
 
-// 3. NÃO ĐỌC HIỂU (TRÙM CUỐI MICROSOFT ĐA NGÔN NGỮ)
+// 3. NÃO ĐỌC HIỂU (Trùm cuối Đa Ngôn Ngữ)
 class TextClassificationPipeline {
   static task = "zero-shot-classification";
+  // 👉 Nâng cấp lên con siêu xe đọc Tiếng Việt cực đỉnh
   static model = "Xenova/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7";
   static instance = null;
   static async getInstance(progress_callback = null) {
@@ -47,7 +48,6 @@ self.addEventListener("message", async (event) => {
   const { type, payload } = event.data;
 
   try {
-    // --- 1. LỆNH XỬ LÝ ẢNH ---
     if (type === "detect_image") {
       const detector = await VisionPipeline.getInstance((x) => {
         self.postMessage({ status: "progress", task: type, data: x });
@@ -55,14 +55,11 @@ self.addEventListener("message", async (event) => {
 
       self.postMessage({
         status: "log",
-        message: `AI đang lùng sục vật thể với YOLOS (ngưỡng 5%)...`,
+        message: `AI đang lùng sục vật thể với YOLOS...`,
       });
       const output = await detector(payload.imageSrc, { threshold: 0.05 });
       self.postMessage({ status: "complete", task: type, result: output });
-    }
-
-    // --- 2. LỆNH XỬ LÝ AUDIO ---
-    else if (type === "transcribe_audio") {
+    } else if (type === "transcribe_audio") {
       const transcriber = await AudioPipeline.getInstance((x) => {
         self.postMessage({ status: "progress", task: type, data: x });
       });
@@ -75,42 +72,58 @@ self.addEventListener("message", async (event) => {
       self.postMessage({ status: "complete", task: type, result: output });
     }
 
-    // --- 3. LỆNH XỬ LÝ TEXT (CHẾ ĐỘ PHÂN LOẠI TOÀN BỘ VĂN BẢN) ---
+    // --- 3. LỆNH XỬ LÝ TEXT (CHẾ ĐỘ TỰ KHOANH TỪNG ĐOẠN) ---
     else if (type === "analyze_text") {
       const classifier = await TextClassificationPipeline.getInstance((x) => {
         self.postMessage({ status: "progress", task: type, data: x });
       });
 
       const { text, candidateLabels } = payload;
-
       self.postMessage({
         status: "log",
-        message: `AI đang đọc lướt để phân tích thể loại của toàn bộ văn bản...`,
+        message: `AI đang mổ xẻ và khoanh vùng từng đoạn...`,
       });
 
-      // 👉 CẮT LẤY PHẦN MỞ BÀI ĐỂ ĐỌC (Tránh tràn RAM trình duyệt nếu file quá dài)
-      // Thường đọc 2000 ký tự đầu là AI đủ thông minh để biết bài này nói về cái gì rồi
-      const textToAnalyze = text.length > 2000 ? text.slice(0, 2000) : text;
+      // 👉 BƯỚC 1: Cắt bài văn thành từng đoạn (paragraph) để khoanh
+      // Bỏ qua các đoạn quá ngắn (dưới 20 ký tự), lấy tối đa 10 đoạn đầu để không treo RAM
+      const chunks = text
+        .split(/\n+/)
+        .filter((p) => p.trim().length > 20)
+        .slice(0, 10);
 
-      // Thả AI vào đọc đoạn text đó
-      const output = await classifier(textToAnalyze, candidateLabels);
+      if (chunks.length === 0) {
+        self.postMessage({ status: "complete", task: type, result: [] });
+        return;
+      }
 
-      // Lấy cái Thể loại mà AI tự tin cao nhất
-      const topLabel = output.labels[0];
-      const topScore = output.scores[0];
+      // 👉 BƯỚC 2: Cho AI đọc một lúc tất cả các đoạn (Xử lý song song cực lẹ)
+      const outputs = await classifier(chunks, candidateLabels);
+
+      // Tránh lỗi API trả về Object thay vì Array khi bài văn chỉ có 1 đoạn duy nhất
+      const outputArray = Array.isArray(outputs) ? outputs : [outputs];
 
       let results = [];
+      let searchStartIndex = 0;
 
-      // Nếu AI tự tin > 30% thì chốt đơn bôi đen CẢ BÀI VĂN
-      if (topScore > 0.3) {
-        results.push({
-          start: 0, // Bắt đầu từ ký tự đầu tiên
-          end: text.length, // Kéo dài đến hết bài
-          text: "Toàn bộ văn bản", // Lưu log text lại
-          label: topLabel, // Nhãn thể loại (VD: Thể thao, Hợp đồng...)
-          score: topScore, // Độ tự tin
-        });
-      }
+      // 👉 BƯỚC 3: Dò tìm lại vị trí để khoanh khung và bôi màu
+      outputArray.forEach((out, index) => {
+        const chunk = chunks[index];
+        const topLabel = out.labels[0]; // Lấy nhãn có điểm cao nhất
+        const topScore = out.scores[0];
+
+        // Tui bỏ luôn điều kiện kiểm tra Score. Sai cũng khoanh, cho sếp tự do chỉnh sửa!
+        const startIdx = text.indexOf(chunk, searchStartIndex);
+        if (startIdx !== -1) {
+          results.push({
+            start: startIdx, // Tọa độ bắt đầu
+            end: startIdx + chunk.length, // Tọa độ kết thúc
+            text: chunk,
+            label: topLabel,
+            score: topScore,
+          });
+          searchStartIndex = startIdx + chunk.length;
+        }
+      });
 
       self.postMessage({ status: "complete", task: type, result: results });
     }
