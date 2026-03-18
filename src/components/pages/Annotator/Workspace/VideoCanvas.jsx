@@ -2,8 +2,8 @@
 import React, { useRef, useState } from "react";
 import { Stage, Layer, Rect, Group, Label, Tag, Text } from "react-konva";
 import { Trash2, RotateCcw } from "lucide-react";
-// 👉 Import Component dùng chung
 import BoxContextMenu from "../../../common/BoxContextMenu";
+import { getLabelDisplay } from "../../../../utils/aiHelper";
 
 const VideoCanvas = ({
   selectedTool,
@@ -174,7 +174,8 @@ const VideoCanvas = ({
                     <Label x={topX} y={topY - 24}>
                       <Tag fill={color} cornerRadius={4} />
                       <Text
-                        text={ann.label}
+                        // 👉 FIX 1: Gắn mặt nạ cho nhãn đã vẽ
+                        text={getLabelDisplay(ann.label)}
                         fill="white"
                         fontSize={12}
                         fontStyle="bold"
@@ -210,7 +211,8 @@ const VideoCanvas = ({
                       <Label x={topX} y={topY - 24}>
                         <Tag fill={color} cornerRadius={4} />
                         <Text
-                          text={newAnnotation.label}
+                          // 👉 FIX 2: Gắn mặt nạ cho nhãn đang vẽ
+                          text={getLabelDisplay(newAnnotation.label)}
                           fill="white"
                           fontSize={12}
                           fontStyle="bold"
@@ -224,7 +226,6 @@ const VideoCanvas = ({
           </Stage>
         </div>
 
-        {/* 👉 GỌI COMPONENT DÙNG CHUNG CỰC KỲ NGẮN GỌN */}
         <BoxContextMenu
           selectedAnn={selectedAnn}
           availableLabels={availableLabels}
