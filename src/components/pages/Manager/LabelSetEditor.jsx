@@ -51,7 +51,10 @@ const CategoryAccordion = React.memo(
 
               const isImported = projectLabels.some(
                 (pl) =>
-                  pl.labelID === targetId || pl.projectLabelId === targetId,
+                  pl.labelID === targetId ||
+                  pl.projectLabelID === targetId ||
+                  pl.projectLabelId === targetId ||
+                  pl.id === targetId,
               );
 
               return (
@@ -94,7 +97,10 @@ const CategoryAccordion = React.memo(
 );
 
 const ProjectLabelItem = React.memo(({ label, onRemove }) => {
-  const targetId = label.projectLabelId || label.labelID || label.id;
+  // 👉 FIX: Đã thêm chính xác chữ `projectLabelID` (Chữ ID viết hoa) theo đúng cấu trúc BE trả về!
+  const targetId =
+    label.projectLabelID || label.projectLabelId || label.id || label.labelID;
+
   const targetName =
     label.customName || label.labelName || label.name || "Không tên";
   const targetColor =
@@ -118,7 +124,10 @@ const ProjectLabelItem = React.memo(({ label, onRemove }) => {
         )}
       </div>
       <button
-        onClick={() => onRemove(targetId)}
+        onClick={() => {
+          console.log("🛠 Đang gửi ID này xuống BE để xóa:", targetId);
+          onRemove(targetId);
+        }}
         className="text-gray-500 opacity-0 group-hover:opacity-100 hover:text-rose-400 transition-all flex-shrink-0"
       >
         <svg
@@ -161,12 +170,10 @@ export default function LabelSetEditor({ project, onRefresh }) {
     if (project?.guidelineUrl) setGuideline(project.guidelineUrl);
   }, [project]);
 
-  // 👉 BỨC TƯỜNG LỬA 2: Lọc rác PROJECT_CUSTOM khỏi cột Thư viện bên trái
   const groupedLibrary = useMemo(() => {
     return libraryLabels.reduce((acc, label) => {
       const cat = label.category || "Chưa phân loại";
 
-      // Chặn ngay lập tức nếu nó là danh mục do hệ thống tự sinh bừa bãi
       if (cat.toUpperCase() === "PROJECT_CUSTOM") return acc;
 
       if (!acc[cat]) acc[cat] = [];
@@ -251,7 +258,12 @@ export default function LabelSetEditor({ project, onRefresh }) {
             ) : (
               projectLabels.map((label, idx) => (
                 <ProjectLabelItem
-                  key={label.projectLabelId || label.labelID || label.id || idx}
+                  key={
+                    label.projectLabelID ||
+                    label.projectLabelId ||
+                    label.id ||
+                    idx
+                  }
                   label={label}
                   onRemove={removeLabel}
                 />
