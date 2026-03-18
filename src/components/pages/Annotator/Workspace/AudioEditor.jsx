@@ -10,6 +10,8 @@ import {
   X,
   Edit3,
 } from "lucide-react";
+// 👉 THÊM HÀM DỊCH NHÃN
+import { getLabelDisplay } from "../../../../utils/aiHelper";
 
 const AudioEditor = ({
   selectedLabel,
@@ -115,21 +117,22 @@ const AudioEditor = ({
                 return (
                   <div
                     key={ann.id || idx}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full border group relative"
+                    className="flex items-center gap-2 px-4 py-2 rounded-full border group relative"
                     style={{
                       backgroundColor: `${color}20`,
                       borderColor: `${color}50`,
                     }}
                   >
                     <div
-                      className="w-2 h-2 rounded-full"
+                      className="w-2.5 h-2.5 rounded-full"
                       style={{ backgroundColor: color }}
                     ></div>
-                    <span className="text-white text-sm font-medium">
-                      {ann.label}
+                    <span className="text-white text-sm font-bold tracking-wide">
+                      {/* 👉 SỬ DỤNG HÀM DỊCH NHÃN */}
+                      {getLabelDisplay(ann.label)}
                     </span>
 
-                    {/* Thông tin Text/Timestamp (Nếu AI có trả về) */}
+                    {/* Thông tin Text/Timestamp (Nếu có) */}
                     {ann.text && (
                       <span className="text-slate-400 text-xs italic ml-1">
                         "{ann.text}"

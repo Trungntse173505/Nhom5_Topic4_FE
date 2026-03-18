@@ -19,12 +19,26 @@ import {
 import { useWorkspace } from "../../../../hooks/Annotator/useWorkspace";
 import { useSubmitTask } from "../../../../hooks/Annotator/useSubmitTask";
 import { useFlagItem } from "../../../../hooks/Annotator/useFlagItem";
-
 import {
   calculateIoU,
   applyNMS,
   getLabelDisplay,
 } from "../../../../utils/aiHelper";
+
+// 👉 TẬN DỤNG "BẢO BỐI" CỦA SẾP
+import { VI_TO_EN_DICT } from "../../../../utils/dictionary";
+
+// Hàm dịch ngầm Tiếng Việt -> Tiếng Anh dùng bộ từ điển chuẩn
+const translateToEnglish = (viLabel) => {
+  // Chuẩn hóa chữ Việt (bỏ dấu) để khớp với key trong VI_TO_EN_DICT của sếp
+  const cleanVi = viLabel
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+  return VI_TO_EN_DICT[cleanVi] || viLabel.toLowerCase().trim();
+};
 
 const AnnotatorWorkspace = () => {
   const { taskId, id } = useParams();
@@ -68,7 +82,6 @@ const AnnotatorWorkspace = () => {
     fileDataRef.current = fileData;
   }, [fileData]);
 
-  // 👉 BƯỚC 1: LỌC NHÃN TRÙNG LẶP
   const uniqueLabels = React.useMemo(() => {
     return Array.from(
       new Map(availableLabels.map((item) => [item.name, item])).values(),
@@ -85,11 +98,10 @@ const AnnotatorWorkspace = () => {
       const { status, data, result, task, message, error } = event.data;
 
       if (status === "progress") {
-        if (data && data.total) {
+        if (data && data.total)
           setAiProgress(`${Math.round((data.loaded / data.total) * 100)}%`);
-        } else if (data && data.loaded) {
+        else if (data && data.loaded)
           setAiProgress(`${(data.loaded / 1024 / 1024).toFixed(1)} MB`);
-        }
       } else if (status === "log") {
         console.log("🤖 AI Báo Cáo:", message);
       } else if (status === "error") {
@@ -99,44 +111,50 @@ const AnnotatorWorkspace = () => {
         console.log(`AI [${task}] XONG:`, result);
         const currentAnnos = annotationsRef.current || [];
 
-        // 👉 XỬ LÝ VIDEO: CHỌN ĐÁP ÁN (DẠNG GLOBAL)
-        if (task === "analyze_video") {
+        // XỬ LÝ VIDEO & AUDIO
+        if (task === "analyze_video" || task === "analyze_audio") {
           if (result && result.length > 0) {
-            const topMatch = result[0];
+            const aiEngLabel = result[0].label;
+
             const matched = uniqueLabels.find(
-              (l) => l.name.toLowerCase() === topMatch.label.toLowerCase(),
+              (l) =>
+                translateToEnglish(l.name) === aiEngLabel ||
+                l.name.toLowerCase() === aiEngLabel.toLowerCase(),
             );
 
             if (matched) {
-              // 1. Tự động chuyển Sidebar sang nhãn này
               setSelectedLabel(matched.name);
-
-              // 2. Gán vào annotations dạng nhãn toàn bài (không tọa độ)
               setAnnotations([
                 {
-                  id: `video_cat_${Date.now()}`,
+                  id: `ai_${task}_${Date.now()}`,
                   label: matched.name,
                   labelId: matched.id,
                   isAiGenerated: true,
-                  text: "Thể loại Video",
+                  text:
+                    task === "analyze_video"
+                      ? "Phân loại Video"
+                      : "Phân loại Âm thanh",
                 },
               ]);
+            } else {
+              alert(
+                `🤖 AI phân tích được là '${aiEngLabel}' nhưng không có trong Bộ Nhãn của sếp!`,
+              );
             }
           } else {
-            alert("🤖 AI: Không chắc chắn video này thuộc thể loại nào!");
+            alert("🤖 AI: Không chắc chắn nội dung này thuộc thể loại nào!");
           }
           setIsAILoading(false);
           return;
         }
 
-        // 👉 XỬ LÝ ẢNH: VẼ KHUNG NHƯ CŨ
+        // XỬ LÝ ẢNH
         if (task === "detect_image") {
           if (!result || result.length === 0) {
             alert("🤖 AI: Không tìm thấy vật thể nào!");
             setIsAILoading(false);
             return;
           }
-
           const currentFile = fileDataRef.current;
           const img = new window.Image();
           img.src = currentFile.url;
@@ -144,10 +162,11 @@ const AnnotatorWorkspace = () => {
             const scaleX = 800 / (img.naturalWidth || 800);
             const scaleY = 600 / (img.naturalHeight || 600);
             let newAnnos = [];
-
             result.forEach((item, index) => {
               const matched = uniqueLabels.find(
-                (l) => l.name.toLowerCase() === item.label.toLowerCase(),
+                (l) =>
+                  translateToEnglish(l.name) === item.label.toLowerCase() ||
+                  l.name.toLowerCase() === item.label.toLowerCase(),
               );
               if (matched) {
                 newAnnos.push({
@@ -168,12 +187,14 @@ const AnnotatorWorkspace = () => {
           return;
         }
 
-        // Xử lý Text
+        // XỬ LÝ TEXT
         else if (task === "analyze_text") {
           const newTextAnnos = result.map((item) => {
             const matched =
               uniqueLabels.find(
-                (l) => l.name.toLowerCase() === item.label.toLowerCase(),
+                (l) =>
+                  translateToEnglish(l.name) === item.label.toLowerCase() ||
+                  l.name.toLowerCase() === item.label.toLowerCase(),
               ) || uniqueLabels[0];
             return {
               ...item,
@@ -216,6 +237,12 @@ const AnnotatorWorkspace = () => {
 
     setIsAILoading(true);
     setAiProgress(0);
+
+    // 👉 DỊCH BỘ NHÃN SANG TIẾNG ANH ĐỂ BƠM CHO AI CLAP/CLIP
+    const translatedLabels = uniqueLabels.map((l) =>
+      translateToEnglish(l.name),
+    );
+
     try {
       if (actualType === "image") {
         workerRef.current.postMessage({
@@ -233,14 +260,14 @@ const AnnotatorWorkspace = () => {
           const canvas = document.createElement("canvas");
           canvas.width = tempVideo.videoWidth;
           canvas.height = tempVideo.videoHeight;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
-          const frameBase64 = canvas.toDataURL("image/jpeg");
+          canvas
+            .getContext("2d")
+            .drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
           workerRef.current.postMessage({
             type: "analyze_video",
             payload: {
-              videoFrame: frameBase64,
-              candidateLabels: uniqueLabels.map((l) => l.name),
+              videoFrame: canvas.toDataURL("image/jpeg"),
+              candidateLabels: translatedLabels,
             },
           });
         };
@@ -248,6 +275,27 @@ const AnnotatorWorkspace = () => {
           setIsAILoading(false);
           alert("Lỗi đọc Video!");
         };
+      } else if (actualType === "audio") {
+        try {
+          const response = await fetch(fileData.url);
+          const arrayBuffer = await response.arrayBuffer();
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          const audioCtx = new AudioContext({ sampleRate: 48000 });
+          const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+          const audioData = audioBuffer.getChannelData(0);
+
+          workerRef.current.postMessage({
+            type: "analyze_audio",
+            payload: {
+              audioData: audioData,
+              candidateLabels: translatedLabels,
+            },
+          });
+        } catch (err) {
+          console.error(err);
+          alert("Lỗi đọc dữ liệu âm thanh!");
+          setIsAILoading(false);
+        }
       } else if (actualType === "text") {
         const textContent = await fetch(fileData.url).then((r) => r.text());
         workerRef.current.postMessage({
@@ -327,9 +375,7 @@ const AnnotatorWorkspace = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600/80 to-blue-600/80 hover:from-purple-500 text-white text-xs font-bold rounded-md disabled:opacity-50"
           >
             {isAILoading ? (
-              <span className="animate-pulse">
-                ⏳ Đang soi ({aiProgress})...
-              </span>
+              <span className="animate-pulse">⏳ Đang phân tích...</span>
             ) : (
               <>
                 <Sparkles size={14} /> AI Suggest
@@ -358,7 +404,7 @@ const AnnotatorWorkspace = () => {
               {actualType === "video"
                 ? "Phân loại Video"
                 : actualType === "audio"
-                  ? "Âm thanh"
+                  ? "Phân loại Âm thanh"
                   : actualType === "text"
                     ? "Văn bản"
                     : "Dữ liệu"}

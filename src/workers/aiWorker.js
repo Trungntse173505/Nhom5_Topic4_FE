@@ -27,9 +27,9 @@ class VideoClassificationPipeline {
   }
 }
 
-class AudioPipeline {
-  static task = "automatic-speech-recognition";
-  static model = "Xenova/whisper-tiny";
+class AudioClassificationPipeline {
+  static task = "zero-shot-audio-classification";
+  static model = "Xenova/clap-htsat-unfused"; // Model chuyên âm thanh
   static instance = null;
   static async getInstance(progress_callback = null) {
     if (this.instance === null) {
@@ -55,20 +55,28 @@ self.addEventListener("message", async (event) => {
   const { type, payload } = event.data;
 
   try {
+    // 1. NHÁNH ẢNH
     if (type === "detect_image") {
       const detector = await VisionPipeline.getInstance((x) => {
         self.postMessage({ status: "progress", task: type, data: x });
       });
+      self.postMessage({
+        status: "log",
+        message: `AI đang lùng sục vật thể...`,
+      });
       const output = await detector(payload.imageSrc, { threshold: 0.05 });
       self.postMessage({ status: "complete", task: type, result: output });
-    } else if (type === "analyze_video") {
+    }
+
+    // 2. NHÁNH VIDEO
+    else if (type === "analyze_video") {
       const classifier = await VideoClassificationPipeline.getInstance((x) => {
         self.postMessage({ status: "progress", task: type, data: x });
       });
 
       self.postMessage({
         status: "log",
-        message: `AI đang phân tích thể loại video...`,
+        message: `AI CLIP đang đoán thể loại Video...`,
       });
       const output = await classifier(
         payload.videoFrame,
@@ -76,29 +84,50 @@ self.addEventListener("message", async (event) => {
       );
 
       let results = [];
-      if (output && output.length > 0 && output[0].score > 0.05) {
-        results.push({
-          label: output[0].label,
-          score: output[0].score,
-          // 👉 ĐÃ BỎ BOX: Video chỉ cần biết là nhãn gì thôi
-        });
+      // 👉 ĐÃ FIX: Xóa điều kiện > 0.05, lấy thẳng Top 1
+      if (output && output.length > 0) {
+        results.push({ label: output[0].label, score: output[0].score });
       }
       self.postMessage({ status: "complete", task: type, result: results });
-    } else if (type === "transcribe_audio") {
-      const transcriber = await AudioPipeline.getInstance((x) => {
+    }
+
+    // 3. NHÁNH AUDIO (👉 ĐÂY LÀ CHỖ TUI BÁO HẠI SẾP)
+    else if (type === "analyze_audio") {
+      const classifier = await AudioClassificationPipeline.getInstance((x) => {
         self.postMessage({ status: "progress", task: type, data: x });
       });
-      const output = await transcriber(payload.audioData, {
-        chunk_length_s: 30,
-        stride_length_s: 5,
-        return_timestamps: true,
+
+      self.postMessage({
+        status: "log",
+        message: `AI CLAP đang lắng nghe âm thanh...`,
       });
-      self.postMessage({ status: "complete", task: type, result: output });
-    } else if (type === "analyze_text") {
+
+      // 👉 ĐÃ FIX CHUẨN: Dùng đúng payload.audioData (mảng Float32Array từ trên ném xuống)
+      const output = await classifier(
+        payload.audioData,
+        payload.candidateLabels,
+      );
+
+      let results = [];
+      // 👉 ĐÃ FIX: Xóa sạch rào cản điểm số
+      if (output && output.length > 0) {
+        self.postMessage({
+          status: "log",
+          message: `Đã chốt đáp án nhãn: ${output[0].label}`,
+        });
+        results.push({ label: output[0].label, score: output[0].score });
+      }
+      self.postMessage({ status: "complete", task: type, result: results });
+    }
+
+    // 4. NHÁNH TEXT
+    else if (type === "analyze_text") {
       const classifier = await TextClassificationPipeline.getInstance((x) => {
         self.postMessage({ status: "progress", task: type, data: x });
       });
       const { text, candidateLabels } = payload;
+      self.postMessage({ status: "log", message: `AI đang mổ xẻ văn bản...` });
+
       const chunks = text
         .split(/\n+/)
         .filter((p) => p.trim().length > 20)
@@ -108,6 +137,7 @@ self.addEventListener("message", async (event) => {
 
       const outputs = await classifier(chunks, candidateLabels);
       const outputArray = Array.isArray(outputs) ? outputs : [outputs];
+
       let results = [];
       let searchStartIndex = 0;
       outputArray.forEach((out, index) => {
