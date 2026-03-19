@@ -1,8 +1,8 @@
 // AnnotatorDashboard.jsx
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-// Đã bỏ bớt các icon không cần thiết ở file này đi cho nhẹ
-import { Filter, Clock, Trophy, Loader2 } from 'lucide-react';
+// Thêm icon ChevronLeft, ChevronRight cho nút chuyển trang
+import { Filter, Clock, Trophy, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { useTasks } from '../../../hooks/Annotator/useTasks';
 import { useReputation } from '../../../hooks/Annotator/useReputation';
@@ -10,16 +10,20 @@ import { useStartTask } from '../../../hooks/Annotator/useStartTask';
 import { useResubmitTask } from '../../../hooks/Annotator/useResubmitTask';
 import { useDisputeTask } from '../../../hooks/Annotator/useDisputeTask';
 
-import DisputeModal from './Workspace/DisputeModal';
+import DisputeModal from './Dispute/DisputeModal';
 
 import { TYPE_ICONS, STATUS_NAME, STATUS_STYLES, ACTION_STYLES, STAT_CARDS, FILTERS } from './Config';
+
+const TASKS_PER_PAGE = 10;
 
 const AnnotatorDashboard = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState('All');
   const [disputeTaskData, setDisputeTaskData] = useState(null);
-
   const [actionTaskId, setActionTaskId] = useState(null);
+  
+  // State quản lý trang hiện tại
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { tasks, loading: loadingTasks, refresh: refreshTasks } = useTasks(null);
   const { currentScore, loading: loadingRep } = useReputation();
@@ -29,10 +33,20 @@ const AnnotatorDashboard = () => {
 
   const isLoading = loadingTasks || loadingRep;
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter]);
+
   const filteredTasks = useMemo(() => {
     if (filter === 'All') return tasks;
     return tasks.filter(t => t.status === filter);
   }, [tasks, filter]);
+
+  const totalPages = Math.ceil(filteredTasks.length / TASKS_PER_PAGE);
+  const currentTasks = useMemo(() => {
+    const startIndex = (currentPage - 1) * TASKS_PER_PAGE;
+    return filteredTasks.slice(startIndex, startIndex + TASKS_PER_PAGE);
+  }, [filteredTasks, currentPage]);
 
   const stats = useMemo(() => ({
     totalTasks: tasks.length,
@@ -65,6 +79,12 @@ const AnnotatorDashboard = () => {
       alert(err?.response?.data || "Không thể gửi khiếu nại lúc này.");
     }
   }, [dispute, disputeTaskData, refreshTasks]);
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
 
   if (isLoading) return (
     <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white">
@@ -132,7 +152,7 @@ const AnnotatorDashboard = () => {
         </div>
       </div>
 
-      <div className="bg-[#1e293b] border border-slate-700 rounded-b-2xl overflow-hidden">
+      <div className="bg-[#1e293b] border border-slate-700 rounded-b-2xl overflow-hidden flex flex-col">
         <table className="w-full text-left border-collapse">
           <thead className="bg-[#0f172a]/50 text-slate-400 text-sm">
             <tr>
@@ -142,7 +162,7 @@ const AnnotatorDashboard = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredTasks.length > 0 ? filteredTasks.map(task => {
+            {currentTasks.length > 0 ? currentTasks.map(task => {
               const action = ACTION_STYLES[task.status] ?? ACTION_STYLES.default;
               const IconType = TYPE_ICONS[task.type] || TYPE_ICONS.image;
               const isCurrentAction = actionTaskId === task.taskID;
@@ -206,6 +226,51 @@ const AnnotatorDashboard = () => {
             )}
           </tbody>
         </table>
+
+        {/* --- Phần UI Chuyển Trang --- */}
+        {totalPages > 1 && (
+          <div className="border-t border-slate-700 p-4 bg-[#0f172a]/30 flex items-center justify-between">
+            <div className="text-sm text-slate-400">
+              Hiển thị <span className="font-semibold text-white">{(currentPage - 1) * TASKS_PER_PAGE + 1}</span> đến <span className="font-semibold text-white">{Math.min(currentPage * TASKS_PER_PAGE, filteredTasks.length)}</span> trong tổng số <span className="font-semibold text-white">{filteredTasks.length}</span> task
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="p-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                aria-label="Trang trước"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors flex items-center justify-center ${
+                      currentPage === page 
+                        ? 'bg-blue-600 text-white border border-blue-500' 
+                        : 'border border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-white'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                aria-label="Trang tiếp theo"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

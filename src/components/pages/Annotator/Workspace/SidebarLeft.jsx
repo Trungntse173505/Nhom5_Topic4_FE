@@ -1,7 +1,6 @@
 import React from 'react';
 import { Image as ImageIcon, AlertTriangle, CheckCircle } from 'lucide-react';
 
-// SỬA CHỖ NÀY: Thêm prop taskStatus
 const SidebarLeft = ({ files = [], currentItemId, onSelectItem, taskStatus }) => {
   return (
     <aside className="w-64 border-r border-slate-800 bg-[#0f172a] flex flex-col h-full overflow-hidden shrink-0">
@@ -36,19 +35,14 @@ const SidebarLeft = ({ files = [], currentItemId, onSelectItem, taskStatus }) =>
             >
               <div className="flex justify-between items-center gap-2">
                 {/* Icon bên trái */}
-                <ImageIcon size={14} className={iconClass} />
-                
+                <ImageIcon size={14} className={iconClass} />           
                 {/* Tên file */}
                 <span className={`text-sm font-medium truncate flex-1 ${textClass}`} title={name}>
                   {name}
                 </span>
-                
-                {/*Thay đổi logic hiển thị Icon */}
                 {taskStatus === 'Rejected' ? (
-                  // Ưu tiên 1: Nếu toàn bộ Task bị từ chối, hiện cảnh báo đỏ
                   <AlertTriangle size={14} className="text-red-500 shrink-0" title="Task bị từ chối, cần kiểm tra lại" />
                 ) : status === 'Done' ? (
-                  // Ưu tiên 2: Nếu Task bình thường và file đã làm xong
                   <CheckCircle size={14} className="text-green-500 shrink-0" />
                 ) : status === 'Rejected' && (
                   <AlertTriangle size={14} className="text-red-500 shrink-0" title="Bị báo lỗi" />
@@ -57,8 +51,7 @@ const SidebarLeft = ({ files = [], currentItemId, onSelectItem, taskStatus }) =>
             </div>
           );
         })}
-      </div>
-      
+      </div>    
     </aside>
   );
 };

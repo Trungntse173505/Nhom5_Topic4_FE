@@ -1,8 +1,5 @@
-// Đường dẫn: src/pages/Annotator/Workspace/SidebarRight.jsx
 import React from "react";
 import { Tag } from "lucide-react";
-
-// 👉 IMPORT HÀM MẶT NẠ TIẾNG VIỆT
 import { getLabelDisplay } from "../../../../utils/aiHelper";
 
 const SidebarRight = ({
@@ -13,7 +10,6 @@ const SidebarRight = ({
   annotations = [],
   setAnnotations,
 }) => {
-  // Sếp muốn Text nó cũng là Phân loại (Chọn 1 nhãn bự) thì thêm 'text' vào đây
   const isClassification =
     actualType === "video" || actualType === "audio" || actualType === "text";
 
@@ -37,16 +33,13 @@ const SidebarRight = ({
       >
         {/* 👉 NẠP INDEX VÀO ĐÂY ĐỂ TRÁNH LỖI KEY CỦA REACT */}
         {availableLabels.map(({ name, color }, index) => {
-          // Kiểm tra nhãn đang chọn (Logic xử lý vẫn dùng tiếng Anh gốc - name)
           const isSelected = isClassification
             ? annotations[0]?.label === name
             : selectedLabel === name;
-
           // DÀNH CHO NÚT BẤM TO (CHẾ ĐỘ PHÂN LOẠI VIDEO/AUDIO/TEXT)
           if (isClassification) {
             return (
               <button
-                // 👉 DÙNG CẢ TÊN VÀ INDEX ĐỂ CHẮC CHẮN KHÔNG TRÙNG LẶP KEY
                 key={`${name}-${index}`}
                 onClick={() => {
                   setAnnotations([
@@ -76,7 +69,6 @@ const SidebarRight = ({
                     : {}
                 }
               >
-                {/* 👉 ĐEO MẶT NẠ TIẾNG VIỆT TẠI ĐÂY */}
                 <span className="truncate" title={name}>
                   {getLabelDisplay(name)}
                 </span>
@@ -89,11 +81,8 @@ const SidebarRight = ({
               </button>
             );
           }
-
-          // DÀNH CHO NÚT BẤM NHỎ (CHẾ ĐỘ VẼ KHUNG ẢNH)
           return (
             <button
-              // 👉 DÙNG CẢ TÊN VÀ INDEX ĐỂ CHẮC CHẮN KHÔNG TRÙNG LẶP KEY
               key={`${name}-${index}`}
               onClick={() => setSelectedLabel(name)}
               className={`flex items-center gap-3 p-3 rounded-xl border text-sm font-medium transition-all text-left group ${
@@ -110,8 +99,6 @@ const SidebarRight = ({
                   boxShadow: isSelected ? `0 0 12px ${color}99` : "none",
                 }}
               ></span>
-
-              {/* 👉 ĐEO MẶT NẠ TIẾNG VIỆT TẠI ĐÂY NỮA */}
               <span
                 className="truncate group-hover:text-slate-200 transition-colors"
                 title={name}
@@ -121,8 +108,6 @@ const SidebarRight = ({
             </button>
           );
         })}
-
-        {/* Thông báo khi không có nhãn */}
         {availableLabels.length === 0 && (
           <p className="text-xs text-slate-500 italic font-normal text-center py-4">
             {isClassification ? "Chưa có nhãn." : "Chưa cấu hình nhãn."}

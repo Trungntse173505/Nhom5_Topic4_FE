@@ -13,7 +13,7 @@ import ResetPasswordByToken from "./components/pages/Auth/ResetPasswordByToken";
 import AnnotatorLayout from "./components/pages/Annotator/AnnotatorLayout";
 import AnnotatorDashboard from "./components/pages/Annotator/AnnotatorDashboard";
 import AnnotatorWorkspace from "./components/pages/Annotator/Workspace/AnnotatorWorkspace";
-import CreditScorePage from "./components/pages/Annotator/Workspace/CreditScorePage";
+import CreditScorePage from "./components/pages/Annotator/Score/CreditScorePage";
 import DisputeList from "./components/pages/Annotator/Dispute/DisputeList";
 import DisputeDetail from "./components/pages/Annotator/Dispute/DisputeDetail";
 
