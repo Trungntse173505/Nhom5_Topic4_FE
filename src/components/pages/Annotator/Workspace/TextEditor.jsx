@@ -1,10 +1,7 @@
 // Đường dẫn: src/pages/Annotator/Workspace/TextEditor.jsx
 import React, { useRef, useState, useEffect } from "react";
 import { Trash2, RotateCcw, Loader2, FileText } from "lucide-react";
-
 import BoxContextMenu from "../../../common/BoxContextMenu";
-
-// 👉 IMPORT HÀM MẶT NẠ
 import { getLabelDisplay } from "../../../../utils/aiHelper";
 
 const TextEditor = ({
@@ -126,9 +123,10 @@ const TextEditor = ({
   };
 
   const handleChangeLabel = (annId, newLabelName) => {
-    // 👉 FIX CHỐNG LỖI CỤC BỘ TẠI ĐÂY (Không phân biệt hoa thường)
+    // 👉 GIA CỐ: Thêm trim() chống lỗi khoảng trắng
     const matchedLabel = availableLabels.find(
-      (l) => l.name?.toLowerCase() === newLabelName?.toLowerCase(),
+      (l) =>
+        l.name?.trim().toLowerCase() === newLabelName?.trim().toLowerCase(),
     );
     setAnnotations(
       annotations.map((ann) =>
@@ -166,12 +164,15 @@ const TextEditor = ({
         );
       }
 
-      // 👉 FIX TÌM LABEL THÔNG MINH BẤT CHẤP HOA THƯỜNG
+      // 👉 GIA CỐ: Thêm trim() chống lỗi khoảng trắng
       const labelDef = availableLabels.find(
-        (l) => l.name?.toLowerCase() === hl.label?.toLowerCase(),
+        (l) =>
+          l.name?.trim().toLowerCase() ===
+          String(hl.label || "")
+            .trim()
+            .toLowerCase(),
       );
 
-      // Nếu AI khoanh tào lao không có trong list thì cho màu xám
       const labelColor = labelDef?.color || "#94a3b8";
       const isSelected = menuData?.id === hl.id;
 
@@ -179,7 +180,6 @@ const TextEditor = ({
         <span
           key={hl.id || `hl-${i}`}
           onClick={(e) => handleHighlightClick(e, hl)}
-          // 👉 ĐEO MẶT NẠ TIẾNG VIỆT AN TOÀN
           title={`Nhãn: ${getLabelDisplay(hl.label || "")} - Click để sửa/xóa`}
           className="px-1 py-0.5 rounded mx-0.5 font-medium cursor-pointer hover:brightness-125 transition-all"
           style={{

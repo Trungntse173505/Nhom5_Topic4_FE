@@ -55,7 +55,11 @@ const BoxContextMenu = ({
         className="bg-slate-800 text-white text-sm rounded px-2 py-2 outline-none border border-slate-600 focus:border-blue-500 cursor-pointer"
       >
         {availableLabels.map((label) => (
-          <option key={label.id} value={label.name}>
+          <option
+            // 👉 FIX LỖI ĐỎ THIẾU KEY (Thêm fallback l.name lỡ id bị rỗng)
+            key={label.id || label.name}
+            value={label.name}
+          >
             {/* 👉 Đeo mặt nạ hiển thị tiếng Việt ở đây */}
             {getLabelDisplay(label.name)}
           </option>
