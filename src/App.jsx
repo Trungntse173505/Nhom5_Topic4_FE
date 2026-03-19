@@ -1,14 +1,13 @@
 import { useEffect } from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
 import {
-  updateUserPresence,
   startPresenceTracking,
-  stopPresenceTracking,
 } from "./services/firebase";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useLocation } from "react-router-dom";
 // Auth
 import Login from "./components/pages/Auth/Login";
+import ResetPasswordByToken from "./components/pages/Auth/ResetPasswordByToken";
 
 // ================= ANNOTATOR =================
 import AnnotatorLayout from "./components/pages/Annotator/AnnotatorLayout";
@@ -78,6 +77,7 @@ function App() {
       <Routes>
         {/* ================= PUBLIC ROUTES ================= */}
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-pass" element={<ResetPasswordByToken />} />
         <Route path="/" element={<Login />} />
 
         {/* ================= ADMIN PROTECTED ================= */}

@@ -34,8 +34,9 @@ const ReviewerAudioViewer = ({ currentItem }) => {
       <div className="bg-[#1e293b] border border-slate-700/50 rounded-3xl p-10 flex flex-col items-center justify-center max-w-md w-full relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
         <div
-          className={`mb-6 p-5 rounded-full transition-all duration-500 ${isPlay ? "bg-blue-500/20 text-blue-400 animate-pulse" : "bg-slate-800 text-slate-400"
-            }`}
+          className={`mb-6 p-5 rounded-full transition-all duration-500 ${
+            isPlay ? "bg-blue-500/20 text-blue-400 animate-pulse" : "bg-slate-800 text-slate-400"
+          }`}
         >
           <Music size={48} />
         </div>

@@ -57,6 +57,11 @@ const coerceRoleName = (role) => {
   }
   return String(role);
 };
+
+const buildFirstLoginRedirectUrl = () => {
+  if (typeof window === 'undefined' || !window.location?.origin) return '';
+  return `${window.location.origin}/reset-pass`;
+};
 // Normalize user object from various possible backend shapes to a consistent frontend shape.
 const normalizeUser = (u) => {
   const id = u?.id ?? u?.userId ?? u?.userID ?? u?.accountId ?? u?.accountID;
@@ -239,6 +244,7 @@ export const useAdminUsers = () => {
         email: normalizedEmail,
         expertise: formData?.expertise || 'N/A',
         role: roleId,
+        redirectUrl: buildFirstLoginRedirectUrl(),
       };
 
       const response = await adminApi.createUser(payload);

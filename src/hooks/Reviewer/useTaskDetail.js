@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { reviewerApi } from "../../api/reviewerService";
+import { normalizeLabels } from "../../utils/utils";
 
 export const useTaskDetail = (taskId) => {
   const [taskDetail, setTaskDetail] = useState(null);
@@ -13,7 +14,10 @@ export const useTaskDetail = (taskId) => {
     setError(null);
     try {
       const data = await reviewerApi.getTaskDetail(taskId);
-      setTaskDetail(data);
+      setTaskDetail({
+        ...data,
+        availableLabels: normalizeLabels(data?.availableLabels || []),
+      });
     } catch (err) {
       setError(err?.message || "Có lỗi xảy ra khi lấy chi tiết Task.");
     } finally {

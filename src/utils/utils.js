@@ -23,12 +23,12 @@ export const getLabelName = (label) => {
 
   return String(
     label.name ??
-      label.labelName ??
-      label.customName ??
-      label.field ??
-      label.label ??
-      label.content ??
-      "",
+    label.labelName ??
+    label.customName ??
+    label.field ??
+    label.label ??
+    label.content ??
+    "",
   ).trim();
 };
 
@@ -37,11 +37,11 @@ export const getLabelColor = (label, fallbackName = "") => {
     typeof label === "string"
       ? ""
       : label?.color ??
-        label?.defaultColor ??
-        label?.colorCode ??
-        label?.labelColor ??
-        label?.hexColor ??
-        label?.value;
+      label?.defaultColor ??
+      label?.colorCode ??
+      label?.labelColor ??
+      label?.hexColor ??
+      label?.value;
 
   if (isNonEmptyString(rawColor)) return rawColor.trim();
 
