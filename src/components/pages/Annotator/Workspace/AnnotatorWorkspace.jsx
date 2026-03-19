@@ -19,63 +19,25 @@ import {
 import { useWorkspace } from "../../../../hooks/Annotator/useWorkspace";
 import { useSubmitTask } from "../../../../hooks/Annotator/useSubmitTask";
 import { useFlagItem } from "../../../../hooks/Annotator/useFlagItem";
+import {
+  calculateIoU,
+  applyNMS,
+  getLabelDisplay,
+} from "../../../../utils/aiHelper";
 
-// 👉 HÀM KHỬ DẤU TIẾNG VIỆT & DẤU CÁCH
-const normalizeText = (text) => {
-  if (!text) return "";
-  return text
+// 👉 TẬN DỤNG "BẢO BỐI" CỦA SẾP
+import { VI_TO_EN_DICT } from "../../../../utils/dictionary";
+
+// Hàm dịch ngầm Tiếng Việt -> Tiếng Anh dùng bộ từ điển chuẩn
+const translateToEnglish = (viLabel) => {
+  // Chuẩn hóa chữ Việt (bỏ dấu) để khớp với key trong VI_TO_EN_DICT của sếp
+  const cleanVi = viLabel
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
-};
 
-// 👉 TỪ ĐIỂN MAP NHÃN
-const VI_TO_EN_DICT = {
-  "trai tim": "heart",
-  "ma qr": "qr code",
-  "xe may": "motorcycle",
-  "xe buyt": "bus",
-  "xe tai": "truck",
-  "o to": "car",
-  nguoi: "person",
-  meo: "cat",
-  cho: "dog",
-};
-
-// 🧠 THUẬT TOÁN NMS: TÍNH TOÁN ĐỘ ĐÈ NHAU CỦA 2 KHUNG (IoU)
-const calculateIoU = (box1, box2) => {
-  const xA = Math.max(box1.x, box2.x);
-  const yA = Math.max(box1.y, box2.y);
-  const xB = Math.min(box1.x + box1.width, box2.x + box2.width);
-  const yB = Math.min(box1.y + box1.height, box2.y + box2.height);
-
-  const interArea = Math.max(0, xB - xA) * Math.max(0, yB - yA);
-  const box1Area = box1.width * box1.height;
-  const box2Area = box2.width * box2.height;
-  const iou = interArea / (box1Area + box2Area - interArea);
-
-  return iou;
-};
-
-// 🧠 THUẬT TOÁN NMS: LỌC BỎ KHUNG TRÙNG LẶP
-const applyNMS = (boxes, iouThreshold = 0.4) => {
-  // Sắp xếp khung theo điểm tự tin từ cao xuống thấp
-  const sortedBoxes = [...boxes].sort((a, b) => b.score - a.score);
-  const selectedBoxes = [];
-
-  while (sortedBoxes.length > 0) {
-    const currentBox = sortedBoxes.shift(); // Lấy khung có điểm cao nhất
-    selectedBoxes.push(currentBox);
-
-    // Xóa tất cả các khung bị đè lên khung hiện tại quá nhiều (>= 40%)
-    for (let i = sortedBoxes.length - 1; i >= 0; i--) {
-      if (calculateIoU(currentBox, sortedBoxes[i]) > iouThreshold) {
-        sortedBoxes.splice(i, 1);
-      }
-    }
-  }
-  return selectedBoxes;
+  return VI_TO_EN_DICT[cleanVi] || viLabel.toLowerCase().trim();
 };
 
 const AnnotatorWorkspace = () => {
@@ -102,7 +64,6 @@ const AnnotatorWorkspace = () => {
   } = useWorkspace(activeTaskId);
 
   const canEdit = status === "InProgress" || status === "Rejected";
-
   const { submit } = useSubmitTask();
   const { flag } = useFlagItem();
 
@@ -121,6 +82,12 @@ const AnnotatorWorkspace = () => {
     fileDataRef.current = fileData;
   }, [fileData]);
 
+  const uniqueLabels = React.useMemo(() => {
+    return Array.from(
+      new Map(availableLabels.map((item) => [item.name, item])).values(),
+    );
+  }, [availableLabels]);
+
   useEffect(() => {
     workerRef.current = new Worker(
       new URL("../../../../workers/aiWorker.js", import.meta.url),
@@ -128,142 +95,154 @@ const AnnotatorWorkspace = () => {
     );
 
     workerRef.current.onmessage = (event) => {
-      const { status, data, result, task, message } = event.data;
+      const { status, data, result, task, message, error } = event.data;
 
       if (status === "progress") {
-        setAiProgress(Math.round((data.loaded / data.total) * 100) || 0);
+        if (data && data.total)
+          setAiProgress(`${Math.round((data.loaded / data.total) * 100)}%`);
+        else if (data && data.loaded)
+          setAiProgress(`${(data.loaded / 1024 / 1024).toFixed(1)} MB`);
       } else if (status === "log") {
         console.log("🤖 AI Báo Cáo:", message);
+      } else if (status === "error") {
+        console.error("Lỗi AI:", error);
+        setIsAILoading(false);
       } else if (status === "complete") {
-        console.log(`AI [${task}] TRẢ VỀ KẾT QUẢ CUỐI CÙNG:`, result);
-
+        console.log(`AI [${task}] XONG:`, result);
         const currentAnnos = annotationsRef.current || [];
 
-        // 1. DÀNH CHO ẢNH VÀ VIDEO
-        if (task === "detect_image" || task === "detect") {
+        // XỬ LÝ VIDEO & AUDIO
+        if (task === "analyze_video" || task === "analyze_audio") {
+          if (result && result.length > 0) {
+            const aiEngLabel = result[0].label;
+
+            const matched = uniqueLabels.find(
+              (l) =>
+                translateToEnglish(l.name) === aiEngLabel ||
+                l.name.toLowerCase() === aiEngLabel.toLowerCase(),
+            );
+
+            if (matched) {
+              setSelectedLabel(matched.name);
+              setAnnotations([
+                {
+                  id: `ai_${task}_${Date.now()}`,
+                  label: matched.name,
+                  labelId: matched.id,
+                  isAiGenerated: true,
+                  text:
+                    task === "analyze_video"
+                      ? "Phân loại Video"
+                      : "Phân loại Âm thanh",
+                },
+              ]);
+            } else {
+              alert(
+                `🤖 AI phân tích được là '${aiEngLabel}' nhưng không có trong Bộ Nhãn của sếp!`,
+              );
+            }
+          } else {
+            alert("🤖 AI: Không chắc chắn nội dung này thuộc thể loại nào!");
+          }
+          setIsAILoading(false);
+          return;
+        }
+
+        // XỬ LÝ ẢNH
+        if (task === "detect_image") {
           if (!result || result.length === 0) {
-            alert("🤖 AI: Bức ảnh này trống trơn, không tìm thấy gì!");
+            alert("🤖 AI: Không tìm thấy vật thể nào!");
             setIsAILoading(false);
             return;
           }
-
           const currentFile = fileDataRef.current;
-          if (!currentFile || !currentFile.url) return;
-
           const img = new window.Image();
           img.src = currentFile.url;
           img.onload = () => {
-            const origW = img.naturalWidth || 800;
-            const origH = img.naturalHeight || 600;
-
-            const scaleX = 800 / origW;
-            const scaleY = 600 / origH;
-
-            let newAnnotations = [];
-
+            const scaleX = 800 / (img.naturalWidth || 800);
+            const scaleY = 600 / (img.naturalHeight || 600);
+            let newAnnos = [];
             result.forEach((item, index) => {
-              const aiLabel = item.label.toLowerCase();
-
-              const matchedLabel = availableLabels.find((l) => {
-                const cleanViName = normalizeText(l.name);
-                const enName = VI_TO_EN_DICT[cleanViName] || cleanViName;
-                return enName === aiLabel;
-              });
-
-              if (matchedLabel) {
-                newAnnotations.push({
-                  id: `ai_generated_${Date.now()}_${index}`,
-                  labelId: matchedLabel.id,
-                  label: matchedLabel.name,
+              const matched = uniqueLabels.find(
+                (l) =>
+                  translateToEnglish(l.name) === item.label.toLowerCase() ||
+                  l.name.toLowerCase() === item.label.toLowerCase(),
+              );
+              if (matched) {
+                newAnnos.push({
+                  id: `ai_${Date.now()}_${index}`,
+                  labelId: matched.id,
+                  label: matched.name,
                   x: item.box.xmin * scaleX,
                   y: item.box.ymin * scaleY,
                   width: (item.box.xmax - item.box.xmin) * scaleX,
                   height: (item.box.ymax - item.box.ymin) * scaleY,
-                  score: item.score,
                   isAiGenerated: true,
                 });
               }
             });
-
-            if (newAnnotations.length === 0) {
-              alert(
-                "🤖 AI: Đã quét xong nhưng KHÔNG CÓ vật thể nào thuộc Bộ Nhãn của bạn!",
-              );
-            } else {
-              // 👉 ÁP DỤNG LƯỚI LỌC NMS ĐỂ XÓA CÁC KHUNG BỊ ĐÈ NHAU
-              const cleanAnnotations = applyNMS(newAnnotations, 0.4);
-
-              setAnnotations([...currentAnnos, ...cleanAnnotations]);
-            }
-
+            setAnnotations([...currentAnnos, ...newAnnos]);
             setIsAILoading(false);
           };
-
           return;
         }
 
-        // 2. DÀNH CHO AUDIO
-        else if (task === "transcribe_audio") {
-          alert("🤖 AI đã dịch xong Audio (Xem console log).");
-        }
-
-        // 3. DÀNH CHO VĂN BẢN
+        // XỬ LÝ TEXT
         else if (task === "analyze_text") {
-          if (!result || result.length === 0) {
-            alert("🤖 AI: Đã đọc xong nhưng không khớp nhãn nào!");
-          } else {
-            const newTextAnnotations = result.map((item) => {
-              const matchedLabel =
-                availableLabels.find((l) => l.name === item.label) ||
-                availableLabels[0];
-              return {
-                start: item.start,
-                end: item.end,
-                label: matchedLabel?.name || "AI_Suggest",
-                labelId: matchedLabel?.id,
-                text: item.text,
-                score: item.score,
-                isAiGenerated: true,
-              };
-            });
-            const combined = [...currentAnnos, ...newTextAnnotations];
-            setAnnotations(combined.sort((a, b) => a.start - b.start));
-          }
+          const newTextAnnos = result.map((item) => {
+            const matched =
+              uniqueLabels.find(
+                (l) =>
+                  translateToEnglish(l.name) === item.label.toLowerCase() ||
+                  l.name.toLowerCase() === item.label.toLowerCase(),
+              ) || uniqueLabels[0];
+            return {
+              ...item,
+              label: matched?.name,
+              labelId: matched?.id,
+              isAiGenerated: true,
+            };
+          });
+          setAnnotations(
+            [...currentAnnos, ...newTextAnnos].sort(
+              (a, b) => a.start - b.start,
+            ),
+          );
         }
-
-        setIsAILoading(false);
-      } else if (status === "error") {
-        console.error("Lỗi AI:", event.data.error);
-        alert("Lỗi quá trình chạy AI trên trình duyệt!");
         setIsAILoading(false);
       }
     };
-
     return () => workerRef.current?.terminate();
-  }, [availableLabels, setAnnotations]);
+  }, [uniqueLabels, setAnnotations, setSelectedLabel]);
 
   const getFileType = (url) => {
     if (!url) return "image";
-    const urlLower = url.toLowerCase();
+    const urlL = url.toLowerCase();
     if (
-      urlLower.includes(".mp4") ||
-      urlLower.includes(".webm") ||
-      urlLower.includes(".mov")
+      urlL.includes(".mp4") ||
+      urlL.includes(".webm") ||
+      urlL.includes(".mov")
     )
       return "video";
-    if (urlLower.includes(".mp3") || urlLower.includes(".wav")) return "audio";
-    if (urlLower.includes(".txt")) return "text";
+    if (urlL.includes(".mp3") || urlL.includes(".wav")) return "audio";
+    if (urlL.includes(".txt")) return "text";
     return "image";
   };
   const actualType = getFileType(fileData?.url);
 
   const handleRunAI = async () => {
-    if (!fileData?.url)
-      return alert("Không tìm thấy đường dẫn file để chạy AI!");
-    if (!availableLabels || availableLabels.length === 0)
+    if (!fileData?.url) return alert("Không tìm thấy đường dẫn file!");
+    if (!uniqueLabels || uniqueLabels.length === 0)
       return alert("Sếp phải tạo Bộ Nhãn trước!");
 
     setIsAILoading(true);
+    setAiProgress(0);
+
+    // 👉 DỊCH BỘ NHÃN SANG TIẾNG ANH ĐỂ BƠM CHO AI CLAP/CLIP
+    const translatedLabels = uniqueLabels.map((l) =>
+      translateToEnglish(l.name),
+    );
+
     try {
       if (actualType === "image") {
         workerRef.current.postMessage({
@@ -271,31 +250,70 @@ const AnnotatorWorkspace = () => {
           payload: { imageSrc: fileData.url },
         });
       } else if (actualType === "video") {
-        alert("Tính năng AI cho Video đang giả lập.");
-        workerRef.current.postMessage({
-          type: "detect_image",
-          payload: { imageSrc: fileData.url },
-        });
+        const tempVideo = document.createElement("video");
+        tempVideo.crossOrigin = "anonymous";
+        tempVideo.src = fileData.url;
+        tempVideo.onloadeddata = () => {
+          tempVideo.currentTime = 1;
+        };
+        tempVideo.onseeked = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = tempVideo.videoWidth;
+          canvas.height = tempVideo.videoHeight;
+          canvas
+            .getContext("2d")
+            .drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
+          workerRef.current.postMessage({
+            type: "analyze_video",
+            payload: {
+              videoFrame: canvas.toDataURL("image/jpeg"),
+              candidateLabels: translatedLabels,
+            },
+          });
+        };
+        tempVideo.onerror = () => {
+          setIsAILoading(false);
+          alert("Lỗi đọc Video!");
+        };
       } else if (actualType === "audio") {
-        alert("Tính năng AI cho Audio đang giả lập.");
-        setIsAILoading(false);
+        try {
+          const response = await fetch(fileData.url);
+          const arrayBuffer = await response.arrayBuffer();
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          const audioCtx = new AudioContext({ sampleRate: 48000 });
+          const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+          const audioData = audioBuffer.getChannelData(0);
+
+          workerRef.current.postMessage({
+            type: "analyze_audio",
+            payload: {
+              audioData: audioData,
+              candidateLabels: translatedLabels,
+            },
+          });
+        } catch (err) {
+          console.error(err);
+          alert("Lỗi đọc dữ liệu âm thanh!");
+          setIsAILoading(false);
+        }
       } else if (actualType === "text") {
         const textContent = await fetch(fileData.url).then((r) => r.text());
-        const candidateLabelsText = availableLabels.map((l) => l.name);
         workerRef.current.postMessage({
           type: "analyze_text",
-          payload: { text: textContent, candidateLabels: candidateLabelsText },
+          payload: {
+            text: textContent,
+            candidateLabels: uniqueLabels.map((l) => l.name),
+          },
         });
       }
     } catch (error) {
       console.error(error);
       setIsAILoading(false);
-      alert("Lỗi khi chuẩn bị file cho AI.");
     }
   };
 
   const handleFlagClick = async () => {
-    if (!currentFileId || !window.confirm("File bị mờ/hỏng. Báo lỗi?")) return;
+    if (!currentFileId || !window.confirm("Báo lỗi file này?")) return;
     try {
       await flag(currentFileId);
       alert("Đã báo lỗi!");
@@ -305,10 +323,10 @@ const AnnotatorWorkspace = () => {
   };
 
   const handleSubmitClick = async () => {
-    if (!canEdit || !window.confirm("Bạn có chắc chắn muốn NỘP BÀI?")) return;
+    if (!canEdit || !window.confirm("NỘP BÀI?")) return;
     try {
       await submit(activeTaskId);
-      alert("🎉 Chúc mừng! Bạn đã nộp bài thành công.");
+      alert("Nộp bài thành công.");
       navigate("/annotator");
     } catch (err) {
       alert(err?.response?.data || "Chưa thể nộp bài!");
@@ -328,7 +346,7 @@ const AnnotatorWorkspace = () => {
       annotations,
       setAnnotations,
       fileData,
-      availableLabels,
+      availableLabels: uniqueLabels,
     };
     if (actualType === "video")
       return <VideoCanvas {...props} videoUrl={fileData?.url} />;
@@ -349,28 +367,21 @@ const AnnotatorWorkspace = () => {
       <header className="flex justify-between items-center px-4 py-3 border-b border-gray-700 bg-gray-800">
         <div className="flex-1 flex items-center gap-4">
           <span className="font-bold text-gray-400 text-sm uppercase">
-            Không gian làm việc
+            Làm việc
           </span>
-          {(actualType === "image" ||
-            actualType === "video" ||
-            actualType === "audio" ||
-            actualType === "text") && (
-            <button
-              onClick={handleRunAI}
-              disabled={!canEdit || isAILoading || !fileData}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600/80 to-blue-600/80 hover:from-purple-500 text-white text-xs font-bold rounded-md disabled:opacity-50"
-            >
-              {isAILoading ? (
-                <span className="animate-pulse">
-                  ⏳ Đang soi ({aiProgress}%)...
-                </span>
-              ) : (
-                <>
-                  <Sparkles size={14} /> AI Suggest
-                </>
-              )}
-            </button>
-          )}
+          <button
+            onClick={handleRunAI}
+            disabled={!canEdit || isAILoading || !fileData}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600/80 to-blue-600/80 hover:from-purple-500 text-white text-xs font-bold rounded-md disabled:opacity-50"
+          >
+            {isAILoading ? (
+              <span className="animate-pulse">⏳ Đang phân tích...</span>
+            ) : (
+              <>
+                <Sparkles size={14} /> AI Suggest
+              </>
+            )}
+          </button>
         </div>
 
         <div className="flex justify-center flex-1">
@@ -389,11 +400,11 @@ const AnnotatorWorkspace = () => {
             </div>
           ) : (
             <div className="text-sm font-medium text-blue-400 bg-blue-900/30 px-4 py-1.5 rounded border border-blue-500/30">
-              Chế độ: Phân loại{" "}
+              Chế độ:{" "}
               {actualType === "video"
-                ? "Video"
+                ? "Phân loại Video"
                 : actualType === "audio"
-                  ? "Âm thanh"
+                  ? "Phân loại Âm thanh"
                   : actualType === "text"
                     ? "Văn bản"
                     : "Dữ liệu"}
@@ -448,7 +459,7 @@ const AnnotatorWorkspace = () => {
           {renderEditor()}
         </main>
         <SidebarRight
-          availableLabels={availableLabels}
+          availableLabels={uniqueLabels}
           selectedLabel={selectedLabel}
           setSelectedLabel={setSelectedLabel}
           actualType={actualType}

@@ -1,21 +1,20 @@
+// Đường dẫn: src/pages/Reviewer/Workspace/ReviewerWorkspace.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReviewerSidebarLeft from "./ReviewerSidebarLeft";
 import ReviewerSidebarRight from "./ReviewerSidebarRight";
 
-// IMPORT TẤT CẢ CÁC LOẠI CANVAS VÀO ĐÂY
-import ReviewerCanvas from "./ReviewerCanvas"; // Hình ảnh
-import ReviewerVideoCanvas from "./ReviewerVideoCanvas"; // Video
-import ReviewerTextViewer from "./ReviewerTextViewer"; // Văn bản
-import ReviewerAudioViewer from "./ReviewerAudioViewer"; // Âm thanh
+import ReviewerCanvas from "./ReviewerCanvas";
+import ReviewerVideoCanvas from "./ReviewerVideoCanvas";
+import ReviewerTextViewer from "./ReviewerTextViewer";
+import ReviewerAudioViewer from "./ReviewerAudioViewer";
 
 import { LogOut, Loader2, ArrowLeft } from "lucide-react";
 import { useTaskDetail } from "../../../../hooks/Reviewer/useTaskDetail";
 import { useReviewerActions } from "../../../../hooks/Reviewer/useReviewActions";
 
-// HÀM BẢO BỐI: Tự động phân loại file dựa trên đuôi file (extension)
 const getFileType = (filePath) => {
-  if (!filePath) return "image"; // Fallback an toàn
+  if (!filePath) return "image";
 
   const ext = filePath.split("?")[0].split(".").pop().toLowerCase();
 
@@ -23,7 +22,7 @@ const getFileType = (filePath) => {
   if (["mp3", "wav", "ogg", "flac", "m4a"].includes(ext)) return "audio";
   if (["txt", "csv", "json", "pdf", "doc", "docx"].includes(ext)) return "text";
 
-  return "image"; // Mặc định là ảnh (jpg, png, jpeg...)
+  return "image";
 };
 
 const ReviewerWorkspace = () => {
@@ -62,12 +61,27 @@ const ReviewerWorkspace = () => {
       </div>
     );
 
-  const currentItem = taskDetail.items?.[currentImageIndex];
+  // 🚨 BẬT RADAR QUÉT TÌM BẢNG MÀU TRONG API REVIEWER 🚨
+  console.log(
+    "🕵️‍♂️ KIỂM TRA DỮ LIỆU TỪ BACKEND TRẢ VỀ (taskDetail):",
+    taskDetail,
+  );
 
-  // SOI ĐUÔI FILE HIỆN TẠI ĐỂ QUYẾT ĐỊNH RENDER CANVAS NÀO
+  // Càn quét mọi ngóc ngách để tìm mảng labels
+  const labelsList =
+    taskDetail?.availableLabels ||
+    taskDetail?.labels ||
+    taskDetail?.project?.labels ||
+    taskDetail?.project?.labelDefs ||
+    taskDetail?.projectLabels ||
+    taskDetail?.categories ||
+    [];
+
+  console.log("🎨 Mảng Label moi được từ Backend:", labelsList);
+
+  const currentItem = taskDetail.items?.[currentImageIndex];
   const currentFileType = getFileType(currentItem?.filePath);
 
-  // HÀM CHIA VIỆC RENDER CANVAS
   const renderCanvas = () => {
     if (!currentItem)
       return <div className="text-slate-500">Không có dữ liệu</div>;
@@ -90,7 +104,8 @@ const ReviewerWorkspace = () => {
             currentItem={currentItem}
             activeAnnotationId={activeBoxId}
             setActiveAnnotationId={setActiveBoxId}
-            availableLabels={taskDetail?.availableLabels || []}
+            // 👉 ÉP TRUYỀN BẢNG MÀU VÀO ĐÂY
+            availableLabels={labelsList}
           />
         );
       case "image":
@@ -135,21 +150,16 @@ const ReviewerWorkspace = () => {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* SIDEBAR TRÁI */}
         <ReviewerSidebarLeft
           items={taskDetail.items}
           currentIndex={currentImageIndex}
           onSelectIndex={setCurrentImageIndex}
         />
-
-        {/* CANVAS CHÍNH (TỰ ĐỘNG THAY ĐỔI THEO LOẠI FILE) */}
         <main className="flex-1 overflow-hidden relative flex flex-col bg-[#0b1220] p-4">
           <div className="bg-[#1e293b] rounded-2xl border border-slate-800 flex-1 overflow-hidden flex items-center justify-center relative">
             {renderCanvas()}
           </div>
         </main>
-
-        {/* SIDEBAR PHẢI */}
         <ReviewerSidebarRight
           taskId={activeTaskId}
           items={taskDetail.items}

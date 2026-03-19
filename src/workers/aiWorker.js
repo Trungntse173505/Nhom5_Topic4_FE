@@ -1,12 +1,11 @@
-// src/workers/aiWorker.js
+// Đường dẫn: src/workers/aiWorker.js
 import { pipeline, env } from "@xenova/transformers";
 
 env.allowLocalModels = false;
 
-// 1. NÃO NHÌN ẢNH (TRÙM CUỐI YOLOS - CHUYÊN TRỊ XE CỘ, ĐÁM ĐÔNG)
 class VisionPipeline {
   static task = "object-detection";
-  static model = "Xenova/yolos-tiny"; // MÔ HÌNH MỚI NHẤT, NHẠY NHẤT
+  static model = "Xenova/yolos-tiny";
   static instance = null;
   static async getInstance(progress_callback = null) {
     if (this.instance === null) {
@@ -16,10 +15,9 @@ class VisionPipeline {
   }
 }
 
-// 2. NÃO NGHE ÂM THANH
-class AudioPipeline {
-  static task = "automatic-speech-recognition";
-  static model = "Xenova/whisper-tiny";
+class VideoClassificationPipeline {
+  static task = "zero-shot-image-classification";
+  static model = "Xenova/clip-vit-base-patch32";
   static instance = null;
   static async getInstance(progress_callback = null) {
     if (this.instance === null) {
@@ -29,7 +27,18 @@ class AudioPipeline {
   }
 }
 
-// 3. NÃO ĐỌC HIỂU & PHÂN LOẠI VĂN BẢN
+class AudioClassificationPipeline {
+  static task = "zero-shot-audio-classification";
+  static model = "Xenova/clap-htsat-unfused"; // Model chuyên âm thanh
+  static instance = null;
+  static async getInstance(progress_callback = null) {
+    if (this.instance === null) {
+      this.instance = pipeline(this.task, this.model, { progress_callback });
+    }
+    return this.instance;
+  }
+}
+
 class TextClassificationPipeline {
   static task = "zero-shot-classification";
   static model = "Xenova/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7";
@@ -42,82 +51,109 @@ class TextClassificationPipeline {
   }
 }
 
-// LẮNG NGHE LỆNH TỪ TẦNG TRỆT
 self.addEventListener("message", async (event) => {
   const { type, payload } = event.data;
 
   try {
-    // --- 1. LỆNH XỬ LÝ ẢNH ---
+    // 1. NHÁNH ẢNH
     if (type === "detect_image") {
       const detector = await VisionPipeline.getInstance((x) => {
         self.postMessage({ status: "progress", task: type, data: x });
       });
-
       self.postMessage({
         status: "log",
-        message: `AI đang lùng sục vật thể với YOLOS (ngưỡng 5%)...`,
+        message: `AI đang lùng sục vật thể...`,
       });
-
-      // CÀI NGƯỠNG 5% (0.05) VÀ BẬT MAX RESOLUTION NẾU CÓ THỂ
       const output = await detector(payload.imageSrc, { threshold: 0.05 });
-
       self.postMessage({ status: "complete", task: type, result: output });
     }
 
-    // --- 2. LỆNH XỬ LÝ AUDIO ---
-    else if (type === "transcribe_audio") {
-      const transcriber = await AudioPipeline.getInstance((x) => {
+    // 2. NHÁNH VIDEO
+    else if (type === "analyze_video") {
+      const classifier = await VideoClassificationPipeline.getInstance((x) => {
         self.postMessage({ status: "progress", task: type, data: x });
       });
 
-      const output = await transcriber(payload.audioData, {
-        chunk_length_s: 30,
-        stride_length_s: 5,
-        return_timestamps: true,
+      self.postMessage({
+        status: "log",
+        message: `AI CLIP đang đoán thể loại Video...`,
       });
+      const output = await classifier(
+        payload.videoFrame,
+        payload.candidateLabels,
+      );
 
-      self.postMessage({ status: "complete", task: type, result: output });
+      let results = [];
+      // 👉 ĐÃ FIX: Xóa điều kiện > 0.05, lấy thẳng Top 1
+      if (output && output.length > 0) {
+        results.push({ label: output[0].label, score: output[0].score });
+      }
+      self.postMessage({ status: "complete", task: type, result: results });
     }
 
-    // --- 3. LỆNH XỬ LÝ TEXT THÔNG MINH ---
+    // 3. NHÁNH AUDIO (👉 ĐÂY LÀ CHỖ TUI BÁO HẠI SẾP)
+    else if (type === "analyze_audio") {
+      const classifier = await AudioClassificationPipeline.getInstance((x) => {
+        self.postMessage({ status: "progress", task: type, data: x });
+      });
+
+      self.postMessage({
+        status: "log",
+        message: `AI CLAP đang lắng nghe âm thanh...`,
+      });
+
+      // 👉 ĐÃ FIX CHUẨN: Dùng đúng payload.audioData (mảng Float32Array từ trên ném xuống)
+      const output = await classifier(
+        payload.audioData,
+        payload.candidateLabels,
+      );
+
+      let results = [];
+      // 👉 ĐÃ FIX: Xóa sạch rào cản điểm số
+      if (output && output.length > 0) {
+        self.postMessage({
+          status: "log",
+          message: `Đã chốt đáp án nhãn: ${output[0].label}`,
+        });
+        results.push({ label: output[0].label, score: output[0].score });
+      }
+      self.postMessage({ status: "complete", task: type, result: results });
+    }
+
+    // 4. NHÁNH TEXT
     else if (type === "analyze_text") {
       const classifier = await TextClassificationPipeline.getInstance((x) => {
         self.postMessage({ status: "progress", task: type, data: x });
       });
-
       const { text, candidateLabels } = payload;
-      let paragraphs = text.split(/\n+/).filter((p) => p.trim().length > 20);
-      if (paragraphs.length === 0) paragraphs = [text];
+      self.postMessage({ status: "log", message: `AI đang mổ xẻ văn bản...` });
 
-      self.postMessage({
-        status: "log",
-        message: `Bắt đầu đọc ${paragraphs.length} đoạn văn...`,
-      });
+      const chunks = text
+        .split(/\n+/)
+        .filter((p) => p.trim().length > 20)
+        .slice(0, 10);
+      if (chunks.length === 0)
+        return self.postMessage({ status: "complete", task: type, result: [] });
+
+      const outputs = await classifier(chunks, candidateLabels);
+      const outputArray = Array.isArray(outputs) ? outputs : [outputs];
 
       let results = [];
-      let currentIndex = 0;
-
-      for (let i = 0; i < paragraphs.length; i++) {
-        const para = paragraphs[i];
-        const start = text.indexOf(para, currentIndex);
-        const end = start + para.length;
-        currentIndex = end;
-
-        const output = await classifier(para, candidateLabels);
-        const topLabel = output.labels[0];
-        const topScore = output.scores[0];
-
-        if (topScore > 0.2) {
+      let searchStartIndex = 0;
+      outputArray.forEach((out, index) => {
+        const chunk = chunks[index];
+        const startIdx = text.indexOf(chunk, searchStartIndex);
+        if (startIdx !== -1) {
           results.push({
-            start,
-            end,
-            text: para,
-            label: topLabel,
-            score: topScore,
+            start: startIdx,
+            end: startIdx + chunk.length,
+            text: chunk,
+            label: out.labels[0],
+            score: out.scores[0],
           });
+          searchStartIndex = startIdx + chunk.length;
         }
-      }
-
+      });
       self.postMessage({ status: "complete", task: type, result: results });
     }
   } catch (error) {
