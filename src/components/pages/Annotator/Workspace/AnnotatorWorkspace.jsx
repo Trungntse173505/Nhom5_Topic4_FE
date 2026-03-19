@@ -4,7 +4,7 @@ import SidebarLeft from "./SidebarLeft";
 import SidebarRight from "./SidebarRight";
 import ImageCanvas from "./ImageCanvas/index";
 import VideoCanvas from "./VideoCanvas";
-import TextEditor from "./TextEditor";
+import TextEditor from "./TextEditor/index";
 import AudioEditor from "./AudioEditor";
 import {
   Save,
