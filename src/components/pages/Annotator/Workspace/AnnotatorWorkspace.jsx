@@ -1,9 +1,8 @@
-// Đường dẫn: src/pages/Annotator/Workspace/AnnotatorWorkspace.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import SidebarLeft from "./SidebarLeft";
 import SidebarRight from "./SidebarRight";
-import ImageCanvas from "./ImageCanvas";
+import ImageCanvas from "./ImageCanvas/index";
 import VideoCanvas from "./VideoCanvas";
 import TextEditor from "./TextEditor";
 import AudioEditor from "./AudioEditor";
@@ -27,10 +26,7 @@ import {
 
 // 👉 TẬN DỤNG "BẢO BỐI" CỦA SẾP
 import { VI_TO_EN_DICT } from "../../../../utils/dictionary";
-
-// Hàm dịch ngầm Tiếng Việt -> Tiếng Anh dùng bộ từ điển chuẩn
 const translateToEnglish = (viLabel) => {
-  // Chuẩn hóa chữ Việt (bỏ dấu) để khớp với key trong VI_TO_EN_DICT của sếp
   const cleanVi = viLabel
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
