@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import SidebarLeft from "./SidebarLeft";
 import SidebarRight from "./SidebarRight";
 import ImageCanvas from "./ImageCanvas/index";
-import VideoCanvas from "./VideoCanvas";
+import VideoCanvas from "./VideoCanvas/index";
 import TextEditor from "./TextEditor/index";
 import AudioEditor from "./AudioEditor";
 import {
