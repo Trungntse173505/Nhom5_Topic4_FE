@@ -4,14 +4,14 @@ import {
   updateTaskDeadline,
   assignTaskPersonnel,
   revokeTask,
-  getAvailableAnnotators, // <-- Gọi API mới
-  getAvailableReviewers, // <-- Gọi API mới
+  getSuggestedAnnotators, // <-- Thay bằng API mới
+  getSuggestedReviewers, // <-- Thay bằng API mới
 } from "../../api/managerApi";
 
 export const useTaskTracking = (projectId) => {
   const [tasks, setTasks] = useState([]);
-  const [annotators, setAnnotators] = useState([]); // Tách riêng list Annotator
-  const [reviewers, setReviewers] = useState([]); // Tách riêng list Reviewer
+  const [annotators, setAnnotators] = useState([]);
+  const [reviewers, setReviewers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
@@ -19,11 +19,11 @@ export const useTaskTracking = (projectId) => {
     if (!projectId) return;
     setIsLoading(true);
     try {
-      // Gọi song song 3 API: Lấy Task, lấy Annotator, lấy Reviewer
+      // 👉 GỌI API MỚI VÀ TRUYỀN projectId VÀO ĐỂ TÌM GỢI Ý
       const [tasksRes, annRes, revRes] = await Promise.all([
         getProjectTasks(projectId).catch(() => []),
-        getAvailableAnnotators().catch(() => []),
-        getAvailableReviewers().catch(() => []),
+        getSuggestedAnnotators(projectId).catch(() => []),
+        getSuggestedReviewers(projectId).catch(() => []),
       ]);
 
       const taskList = Array.isArray(tasksRes) ? tasksRes : tasksRes.data || [];
@@ -40,8 +40,8 @@ export const useTaskTracking = (projectId) => {
       }));
 
       setTasks(processedTasks);
-      setAnnotators(annList); // Gắn data vào state
-      setReviewers(revList); // Gắn data vào state
+      setAnnotators(annList);
+      setReviewers(revList);
     } catch (error) {
       console.error("Lỗi lấy dữ liệu Task Tracking:", error);
     } finally {
