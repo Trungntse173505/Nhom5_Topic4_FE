@@ -1,4 +1,3 @@
-// Đường dẫn: src/pages/Reviewer/Workspace/ReviewerWorkspace.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ReviewerSidebarLeft from "./ReviewerSidebarLeft";
@@ -15,13 +14,10 @@ import { useReviewerActions } from "../../../../hooks/Reviewer/useReviewActions"
 
 const getFileType = (filePath) => {
   if (!filePath) return "image";
-
   const ext = filePath.split("?")[0].split(".").pop().toLowerCase();
-
   if (["mp4", "avi", "mov", "mkv", "webm"].includes(ext)) return "video";
   if (["mp3", "wav", "ogg", "flac", "m4a"].includes(ext)) return "audio";
   if (["txt", "csv", "json", "pdf", "doc", "docx"].includes(ext)) return "text";
-
   return "image";
 };
 
@@ -61,13 +57,7 @@ const ReviewerWorkspace = () => {
       </div>
     );
 
-  // 🚨 BẬT RADAR QUÉT TÌM BẢNG MÀU TRONG API REVIEWER 🚨
-  console.log(
-    "🕵️‍♂️ KIỂM TRA DỮ LIỆU TỪ BACKEND TRẢ VỀ (taskDetail):",
-    taskDetail,
-  );
-
-  // Càn quét mọi ngóc ngách để tìm mảng labels
+  // Moi mảng Label từ Backend ra
   const labelsList =
     taskDetail?.availableLabels ||
     taskDetail?.labels ||
@@ -77,8 +67,6 @@ const ReviewerWorkspace = () => {
     taskDetail?.categories ||
     [];
 
-  console.log("🎨 Mảng Label moi được từ Backend:", labelsList);
-
   const currentItem = taskDetail.items?.[currentImageIndex];
   const currentFileType = getFileType(currentItem?.filePath);
 
@@ -86,11 +74,13 @@ const ReviewerWorkspace = () => {
     if (!currentItem)
       return <div className="text-slate-500">Không có dữ liệu</div>;
 
+    // 👉 ÉP TRUYỀN BẢNG MÀU CHO TẤT CẢ CÁC CANVAS (THÊM DÒNG NÀY)
     const commonProps = {
       currentItem,
       toggleAnnotationApproval,
       activeBoxId,
       setActiveBoxId,
+      availableLabels: labelsList, 
     };
 
     switch (currentFileType) {
@@ -104,7 +94,6 @@ const ReviewerWorkspace = () => {
             currentItem={currentItem}
             activeAnnotationId={activeBoxId}
             setActiveAnnotationId={setActiveBoxId}
-            // 👉 ÉP TRUYỀN BẢNG MÀU VÀO ĐÂY
             availableLabels={labelsList}
           />
         );
