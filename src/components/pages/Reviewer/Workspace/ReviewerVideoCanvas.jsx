@@ -6,15 +6,13 @@ const ReviewerVideoCanvas = ({
   toggleAnnotationApproval,
   activeBoxId,
   setActiveBoxId,
+  availableLabels = [], 
 }) => {
   const containerRef = useRef(null);
   const videoRef = useRef(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-
-  // STATE MỚI: Bắt thời gian hiện tại của Video để vẽ Box cho chuẩn frame
   const [currentTime, setCurrentTime] = useState(0);
 
-  // KÍCH THƯỚC CỐ ĐỊNH TỪ BÊN ANNOTATOR
   const ANNOTATOR_WIDTH = 800;
   const ANNOTATOR_HEIGHT = 600;
 
@@ -30,15 +28,12 @@ const ReviewerVideoCanvas = ({
     return () => window.removeEventListener("resize", resize);
   }, [currentItem]);
 
-  // TÍNH TOÁN DỰA TRÊN 800x600
   const renderData = useMemo(() => {
     if (containerSize.width === 0) return null;
-
     const scale = Math.min(
       containerSize.width / ANNOTATOR_WIDTH,
       containerSize.height / ANNOTATOR_HEIGHT,
     );
-
     return {
       scale,
       offsetX: (containerSize.width - ANNOTATOR_WIDTH * scale) / 2,
@@ -47,11 +42,8 @@ const ReviewerVideoCanvas = ({
   }, [containerSize]);
 
   const handleStageClick = (e) => {
-    // Nếu click vào vùng trống (không trúng Box nào)
     if (e.target === e.target.getStage()) {
       if (setActiveBoxId) setActiveBoxId(null);
-
-      // HACK: Bấm vào vùng trống để Play/Pause video (vì Canvas đã đè lên controls)
       if (videoRef.current) {
         if (videoRef.current.paused) {
           videoRef.current.play();
@@ -82,7 +74,6 @@ const ReviewerVideoCanvas = ({
           Đang đồng bộ tọa độ không gian Video...
         </div>
       ) : (
-        // Wrapper bọc sát rạt kích thước 800x600 đã được scale
         <div
           style={{
             position: "absolute",
@@ -93,7 +84,6 @@ const ReviewerVideoCanvas = ({
           }}
           className="rounded-xl overflow-hidden shadow-2xl border border-slate-800"
         >
-          {/* 1. LỚP VIDEO Ở DƯỚI CÙNG */}
           <video
             ref={videoRef}
             src={currentItem.filePath}
@@ -103,64 +93,44 @@ const ReviewerVideoCanvas = ({
             className="absolute inset-0 w-full h-full object-contain bg-black"
           />
 
-          {/* 2. LỚP KONVA Ở TRÊN ĐỂ VẼ BOX */}
-          <div className="absolute inset-0">
+          <div className="absolute inset-0 pointer-events-none">
             <Stage
               width={ANNOTATOR_WIDTH * renderData.scale}
               height={ANNOTATOR_HEIGHT * renderData.scale}
               onClick={handleStageClick}
+              className="pointer-events-auto"
             >
               <Layer scaleX={renderData.scale} scaleY={renderData.scale}>
                 {(currentItem?.annotations || []).map((ann) => {
                   if (activeBoxId && activeBoxId !== ann.idDetail) return null;
 
-                  let bx = 0,
-                    by = 0,
-                    bw = 0,
-                    bh = 0;
-                  let startTime = 0,
-                    endTime = 999999;
+                  let bx = 0, by = 0, bw = 0, bh = 0;
+                  let startTime = 0, endTime = 999999;
 
                   try {
                     let parsedData = ann.annotationData;
                     while (typeof parsedData === "string") {
                       parsedData = JSON.parse(parsedData);
                     }
-
                     bx = Number(parsedData?.x || parsedData?.xmin) || 0;
                     by = Number(parsedData?.y || parsedData?.ymin) || 0;
-                    bw =
-                      Number(
-                        parsedData?.width ||
-                          (parsedData?.xmax ? parsedData.xmax - bx : 0),
-                      ) || 0;
-                    bh =
-                      Number(
-                        parsedData?.height ||
-                          (parsedData?.ymax ? parsedData.ymax - by : 0),
-                      ) || 0;
+                    bw = Number(parsedData?.width || (parsedData?.xmax ? parsedData.xmax - bx : 0)) || 0;
+                    bh = Number(parsedData?.height || (parsedData?.ymax ? parsedData.ymax - by : 0)) || 0;
 
-                    // Xử lý Timeline của Video (nếu có)
-                    if (parsedData?.startTime !== undefined)
-                      startTime = Number(parsedData.startTime);
-                    if (parsedData?.endTime !== undefined)
-                      endTime = Number(parsedData.endTime);
+                    if (parsedData?.startTime !== undefined) startTime = Number(parsedData.startTime);
+                    if (parsedData?.endTime !== undefined) endTime = Number(parsedData.endTime);
                   } catch (e) {
                     return null;
                   }
 
                   if (bw === 0 || bh === 0) return null;
+                  if (currentTime < startTime || currentTime > endTime) return null;
 
-                  // NẾU VIDEO CHƯA CHẠY TỚI ĐOẠN CÓ BOX NÀY THÌ ẨN NÓ ĐI
-                  if (currentTime < startTime || currentTime > endTime)
-                    return null;
-
-                  const strokeColor =
-                    ann.isApproved === true
-                      ? "#22c55e"
-                      : ann.isApproved === false
-                        ? "#ef4444"
-                        : "#eab308";
+                  const labelName = ann.content || "Chưa có nhãn";
+                  const labelDef = availableLabels.find(l => l.name?.toLowerCase() === labelName.toLowerCase());
+                  
+                  // 🎨 Lấy chuẩn 1 màu duy nhất từ CSDL cho cả KHUNG và NỀN CHỮ
+                  const themeColor = labelDef?.color || "#3B82F6";
 
                   const invScale = 1 / renderData.scale;
 
@@ -171,18 +141,14 @@ const ReviewerVideoCanvas = ({
                         y={by}
                         width={bw}
                         height={bh}
-                        stroke={strokeColor}
-                        strokeWidth={
-                          (activeBoxId === ann.idDetail ? 4 : 2) * invScale
-                        }
-                        fill={`${strokeColor}${activeBoxId === ann.idDetail ? "40" : "1A"}`}
+                        stroke={themeColor}
+                        strokeWidth={(activeBoxId === ann.idDetail ? 4 : 2) * invScale}
+                        fill={`${themeColor}${activeBoxId === ann.idDetail ? "40" : "1A"}`}
                         onMouseEnter={(e) => {
-                          e.target.getStage().container().style.cursor =
-                            "pointer";
+                          e.target.getStage().container().style.cursor = "pointer";
                         }}
                         onMouseLeave={(e) => {
-                          e.target.getStage().container().style.cursor =
-                            "crosshair";
+                          e.target.getStage().container().style.cursor = "crosshair";
                         }}
                         onClick={(e) => {
                           e.cancelBubble = true;
@@ -194,14 +160,14 @@ const ReviewerVideoCanvas = ({
                         y={by - 24 * invScale}
                         width={100 * invScale}
                         height={24 * invScale}
-                        fill={strokeColor}
+                        fill={themeColor}
                         opacity={0.9}
                         cornerRadius={4}
                       />
                       <Text
                         x={bx + 4 * invScale}
                         y={by - 18 * invScale}
-                        text={ann.content || "Chưa có nhãn"}
+                        text={labelName}
                         fontSize={12 * invScale}
                         fill="#fff"
                         fontStyle="bold"
