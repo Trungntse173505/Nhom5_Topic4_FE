@@ -18,5 +18,7 @@ export const reviewerApi = {
   // Từ chối Task và yêu cầu làm lại kèm lý do (POST)
   rejectTask: (taskId, reason) => axiosClient.post(`/api/reviewer/tasks/${taskId}/reject`, JSON.stringify(reason), {
     headers: { 'Content-Type': 'application/json' }
-  })
+  }),
+
+  getDisputes: () => axiosClient.get('/api/reviewer/disputes')
 };
