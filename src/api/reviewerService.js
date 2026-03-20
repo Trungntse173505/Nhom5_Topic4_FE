@@ -19,6 +19,8 @@ export const reviewerApi = {
   rejectTask: (taskId, reason) => axiosClient.post(`/api/reviewer/tasks/${taskId}/reject`, JSON.stringify(reason), {
     headers: { 'Content-Type': 'application/json' }
   }),
-
-  getDisputes: () => axiosClient.get('/api/reviewer/disputes')
+  // all khiếu nại
+  getDisputes: () => axiosClient.get('/api/reviewer/disputes'),
+  // xem điểm
+  getReputation: () => axiosClient.get('/api/reviewer/reputation')
 };
