@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image as ImageIcon, AlertTriangle, CheckCircle } from 'lucide-react';
 
-const SidebarLeft = ({ files = [], currentItemId, onSelectItem }) => {
+const SidebarLeft = ({ files = [], currentItemId, onSelectItem, taskStatus }) => {
   return (
     <aside className="w-64 border-r border-slate-800 bg-[#0f172a] flex flex-col h-full overflow-hidden shrink-0">
       
@@ -35,27 +35,23 @@ const SidebarLeft = ({ files = [], currentItemId, onSelectItem }) => {
             >
               <div className="flex justify-between items-center gap-2">
                 {/* Icon bên trái */}
-                <ImageIcon size={14} className={iconClass} />
-                
+                <ImageIcon size={14} className={iconClass} />           
                 {/* Tên file */}
                 <span className={`text-sm font-medium truncate flex-1 ${textClass}`} title={name}>
                   {name}
                 </span>
-                
-                {/* Trạng thái file (Done hoặc Rejected) */}
-                {status === 'Done' && (
+                {taskStatus === 'Rejected' ? (
+                  <AlertTriangle size={14} className="text-red-500 shrink-0" title="Task bị từ chối, cần kiểm tra lại" />
+                ) : status === 'Done' ? (
                   <CheckCircle size={14} className="text-green-500 shrink-0" />
-                )}
-                
-                {status === 'Rejected' && (
+                ) : status === 'Rejected' && (
                   <AlertTriangle size={14} className="text-red-500 shrink-0" title="Bị báo lỗi" />
                 )}
               </div>
             </div>
           );
         })}
-      </div>
-      
+      </div>    
     </aside>
   );
 };

@@ -12,6 +12,8 @@ import {
   Trophy,
   XCircle,
   MessageSquareWarning,
+  AlertCircle,
+  PlusCircle,
 } from "lucide-react";
 import { useTasks } from "../../../hooks/Reviewer/useTasks";
 import { useScore } from "../../../hooks/Reviewer/useScore";
@@ -23,34 +25,57 @@ const TYPE_ICONS = {
   image: <ImageIcon size={16} className="text-green-400" />,
 };
 
+// ĐỊNH DẠNG MÀU SẮC TRẠNG THÁI (TIẾNG VIỆT)
 const STATUS_STYLES = {
+  New: "bg-sky-500/20 text-sky-400 border border-sky-500/30",           // Trạng thái Mới
   PendingReview: "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30",
   Approved: "bg-green-500/20 text-green-400 border border-green-500/30",
-  InProgress: "bg-red-500/20 text-red-400 border border-red-500/30",
+  Rejected: "bg-orange-500/20 text-orange-400 border border-orange-500/30",
+  InProgress: "bg-blue-500/20 text-blue-400 border border-blue-500/30",
+  Fail: "bg-red-500/20 text-red-400 border border-red-500/30",
 };
 
+// ĐỊNH DẠNG NÚT BẤM HÀNH ĐỘNG
 const ACTION_STYLES = {
+  New: {
+    label: "Chưa nộp",
+    cls: "bg-slate-700/50 border border-slate-600 cursor-not-allowed opacity-50 text-slate-300",
+  },
   PendingReview: {
     label: "Kiểm duyệt",
     cls: "bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20 text-white",
   },
   Approved: {
-    label: "Xem lại",
-    cls: "bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600 cursor-not-allowed opacity-50 text-slate-300",
+    label: "Đã xong",
+    cls: "bg-slate-700/50 border border-slate-600 cursor-not-allowed opacity-50 text-slate-300",
+  },
+  Rejected: {
+    label: "Chờ sửa",
+    cls: "bg-slate-700/50 border border-slate-600 cursor-not-allowed opacity-50 text-slate-300",
   },
   InProgress: {
-    label: "Đang làm lại",
-    cls: "bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600 cursor-not-allowed opacity-50 text-slate-300",
+    label: "Đang sửa",
+    cls: "bg-slate-700/50 border border-slate-600 cursor-not-allowed opacity-50 text-slate-300",
+  },
+  Fail: {
+    label: "Đã đóng",
+    cls: "bg-slate-700/50 border border-slate-600 cursor-not-allowed opacity-50 text-slate-300",
   },
 };
 
 const STAT_CARDS = [
   { icon: FolderOpen, color: "blue", label: "Tổng Task", key: "totalTasks" },
   { icon: CheckCircle2, color: "green", label: "Đã Duyệt", key: "doneTasks" },
-  { icon: XCircle, color: "yellow", label: "Chờ Duyệt", key: "pendingTasks" },
+  { icon: AlertCircle, color: "yellow", label: "Chờ Duyệt", key: "pendingTasks" },
 ];
 
-const FILTERS = ["All", "Pending", "Done"];
+const FILTERS = [
+  { id: "All", label: "Tất cả" },
+  { id: "New", label: "Mới" },
+  { id: "Pending", label: "Chờ duyệt" },
+  { id: "Rejected", label: "Đã trả về" },
+  { id: "Done", label: "Hoàn thành" },
+];
 
 const ReviewerDashboard = () => {
   const navigate = useNavigate();
@@ -69,13 +94,11 @@ const ReviewerDashboard = () => {
   if (isLoading && (!tasks || tasks.length === 0))
     return (
       <div className="relative w-full h-full flex flex-col flex-1 overflow-hidden bg-[#0B1120]">
-        {/* NỀN CỰC QUANG (Chỉ chiếm không gian của thẻ cha) */}
         <div className="absolute inset-0 z-0 pointer-events-none">
           <AuroraBackground />
         </div>
         <div className="z-10 flex-1 flex items-center justify-center text-white">
-          <Loader2 className="animate-spin w-8 h-8 mr-3 text-blue-400" /> Đang
-          tải dữ liệu...
+          <Loader2 className="animate-spin w-8 h-8 mr-3 text-blue-400" /> Đang tải dữ liệu...
         </div>
       </div>
     );
@@ -101,35 +124,28 @@ const ReviewerDashboard = () => {
 
   const stats = {
     totalTasks: tasks?.length || 0,
-    pendingTasks:
-      tasks?.filter(
-        (t) => t.status === "PendingReview" || t.status === "Pending",
-      ).length || 0,
+    pendingTasks: tasks?.filter((t) => t.status === "PendingReview" || t.status === "Pending").length || 0,
     doneTasks: tasks?.filter((t) => t.status === "Approved").length || 0,
   };
 
-  const filteredTasks =
-    tasks?.filter((task) => {
-      if (filter === "All") return true;
-      if (filter === "Pending")
-        return task.status === "PendingReview" || task.status === "Pending";
-      if (filter === "Done") return task.status === "Approved";
-      return true;
-    }) || [];
+  const filteredTasks = tasks?.filter((task) => {
+    if (filter === "All") return true;
+    if (filter === "New") return task.status === "New";
+    if (filter === "Pending") return task.status === "PendingReview" || task.status === "Pending";
+    if (filter === "Rejected") return task.status === "Rejected";
+    if (filter === "Done") return task.status === "Approved";
+    return true;
+  }) || [];
 
   return (
-    // ĐÃ FIX LỖI MẤT LAYOUT: Thay "fixed" bằng "absolute" để Aurora chỉ đè trong khung chứa nó (Dashboard), không đè lên Sidebar
     <div className="relative w-full h-full flex flex-col flex-1 overflow-hidden bg-[#0B1120]">
-      {/* NỀN AURORA (Chỉ nằm trọn trong khung Dashboard) */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <AuroraBackground />
-        {/* Lớp phủ mờ để chữ dễ đọc hơn */}
         <div className="absolute inset-0 bg-[#0B1120]/60"></div>
       </div>
 
-      {/* KHUNG NỘI DUNG CHÍNH (Nổi lên trên lớp nền và tự do cuộn) */}
       <div className="relative z-10 w-full h-full overflow-y-auto custom-scrollbar">
-        <div className="text-slate-200 p-8 max-w-7xl mx-auto flex flex-col min-h-full">
+        <div className="text-slate-200 p-8 max-w-7xl mx-auto flex flex-col min-h-full text-left">
           {/* Header */}
           <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 mt-4">
             <h1 className="text-3xl font-bold text-white drop-shadow-md">
@@ -147,14 +163,8 @@ const ReviewerDashboard = () => {
                   Điểm Tín Nhiệm
                 </p>
                 <p className="text-2xl font-black text-yellow-400">
-                  {isLoadingScore ? (
-                    <Loader2 className="animate-spin inline-block w-5 h-5 mr-1" />
-                  ) : (
-                    myScore
-                  )}{" "}
-                  <span className="text-sm font-medium text-slate-500">
-                    pts
-                  </span>
+                  {isLoadingScore ? <Loader2 className="animate-spin inline-block w-5 h-5 mr-1" /> : myScore} 
+                  <span className="text-sm font-medium text-slate-500 ml-1">pts</span>
                 </p>
               </div>
             </button>
@@ -167,16 +177,12 @@ const ReviewerDashboard = () => {
                 key={key}
                 className="bg-[#151D2F]/80 backdrop-blur-md border border-white/5 p-6 rounded-2xl flex items-center gap-4 hover:border-white/20 transition-all shadow-xl"
               >
-                <div
-                  className={`p-4 bg-${color}-500/20 rounded-xl text-${color}-400 shadow-[0_0_15px_rgba(var(--color-${color}-500),0.2)]`}
-                >
+                <div className={`p-4 bg-${color}-500/20 rounded-xl text-${color}-400`}>
                   <Icon size={28} />
                 </div>
                 <div>
                   <p className="text-sm text-slate-400 font-medium">{label}</p>
-                  <p className="text-3xl font-bold text-white transition-all duration-300 drop-shadow-md">
-                    {stats[key]}
-                  </p>
+                  <p className="text-3xl font-bold text-white drop-shadow-md">{stats[key]}</p>
                 </div>
               </div>
             ))}
@@ -186,23 +192,19 @@ const ReviewerDashboard = () => {
           <div className="bg-[#151D2F]/80 backdrop-blur-md border border-white/5 rounded-t-2xl p-4 flex items-center justify-between border-b-0 shadow-lg shrink-0">
             <h2 className="text-lg font-semibold text-white flex items-center gap-2">
               <Filter size={20} className="text-blue-400" /> Danh Sách Task
-              <span className="relative flex h-2 w-2 ml-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
             </h2>
             <div className="flex gap-2">
-              {FILTERS.map((status) => (
+              {FILTERS.map((f) => (
                 <button
-                  key={status}
-                  onClick={() => setFilter(status)}
+                  key={f.id}
+                  onClick={() => setFilter(f.id)}
                   className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all ${
-                    filter === status
+                    filter === f.id
                       ? "bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
                       : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 border border-white/5"
                   }`}
                 >
-                  {status}
+                  {f.label}
                 </button>
               ))}
             </div>
@@ -213,112 +215,70 @@ const ReviewerDashboard = () => {
             <table className="w-full text-left border-collapse">
               <thead className="bg-black/20 text-slate-400 text-sm border-b border-white/5">
                 <tr>
-                  {["Tên Task", "Annotator", "Trạng thái", "Deadline", ""].map(
-                    (h, i) => (
-                      <th
-                        key={i}
-                        className={`p-4 font-semibold tracking-wide uppercase text-[11px] ${i === 4 ? "text-right w-px" : ""}`}
-                      >
-                        {h}
-                      </th>
-                    ),
-                  )}
+                  {["Tên Task", "Người làm", "Trạng thái", "Hạn chót", ""].map((h, i) => (
+                    <th key={i} className={`p-4 font-semibold tracking-wide uppercase text-[11px] ${i === 4 ? "text-right w-px" : ""}`}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {filteredTasks.length > 0 ? (
                   filteredTasks.map((task) => {
                     let currentStatus = task.status;
-                    if (
-                      currentStatus === "Pending" ||
-                      currentStatus === "Submitted"
-                    ) {
-                      currentStatus = "PendingReview";
-                    }
+                    // Chuẩn hóa trạng thái hiển thị (giữ nguyên logic cũ cho các trạng thái nộp)
+                    if (currentStatus === "Pending" || currentStatus === "Submitted") currentStatus = "PendingReview";
 
-                    const action =
-                      ACTION_STYLES[currentStatus] ??
-                      ACTION_STYLES.PendingReview;
-                    const statusStyle =
-                      STATUS_STYLES[currentStatus] ??
-                      "bg-gray-500/20 text-gray-400 border border-gray-500/30";
+                    const action = ACTION_STYLES[currentStatus] || ACTION_STYLES.New;
+                    const statusStyle = STATUS_STYLES[currentStatus] || "bg-gray-500/20 text-gray-400 border border-gray-500/30";
 
+                    // Chuyển text trạng thái sang tiếng Việt
                     let statusText = "Chưa rõ";
-                    if (currentStatus === "PendingReview")
-                      statusText = "Chờ duyệt";
+                    if (currentStatus === "New") statusText = "Mới";
+                    if (currentStatus === "PendingReview") statusText = "Chờ duyệt";
                     if (currentStatus === "Approved") statusText = "Đã duyệt";
-                    if (currentStatus === "InProgress")
-                      statusText = "Đang làm lại";
+                    if (currentStatus === "Rejected") statusText = "Đã trả về";
+                    if (currentStatus === "InProgress") statusText = "Đang sửa";
+                    if (currentStatus === "Fail") statusText = "Thất bại";
 
                     const theTaskId = task.taskId || task.taskID;
-
-                    const annotatorName = task.annotatorName || "Ẩn danh";
-                    const initialLetter =
-                      annotatorName !== "Ẩn danh"
-                        ? annotatorName.charAt(0).toUpperCase()
-                        : "A";
+                    const annotatorName = task.annotatorName || "Chưa gán";
 
                     return (
-                      <tr
-                        key={theTaskId}
-                        className="border-b border-white/5 hover:bg-white/5 transition-colors animate-in fade-in duration-500 last:border-0"
-                      >
+                      <tr key={theTaskId} className="border-b border-white/5 hover:bg-white/5 transition-colors last:border-0">
                         <td className="p-4">
                           <div className="flex items-center gap-3 font-bold text-white mb-1">
-                            <div className="p-2 bg-blue-500/10 rounded-lg">
-                              {TYPE_ICONS.image}
-                            </div>
-                            {task.taskName ||
-                              `Task ${theTaskId?.substring(0, 5)}`}
+                            <div className="p-2 bg-blue-500/10 rounded-lg">{TYPE_ICONS.image}</div>
+                            {task.taskName || `Task ${theTaskId?.substring(0, 5)}`}
                           </div>
-                          <p className="text-xs text-slate-400 ml-10 font-medium">
-                            ID: {theTaskId?.substring(0, 8)}... • Vòng{" "}
-                            <span className="text-white">
-                              {task.currentRound || 0}
-                            </span>
-                          </p>
+                          <p className="text-xs text-slate-400 ml-10">ID: {theTaskId?.substring(0, 8)}... • Vòng: {task.currentRound || 0}</p>
                         </td>
 
                         <td className="p-4">
-                          <div className="flex items-center gap-2 text-sm text-slate-300 font-medium">
-                            <div className="w-6 h-6 rounded-full bg-[#0f172a] border border-white/10 flex items-center justify-center text-xs font-bold text-white shadow-inner">
-                              {initialLetter}
+                          <div className="flex items-center gap-2 text-sm text-slate-300">
+                            <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold">
+                              {annotatorName.charAt(0).toUpperCase()}
                             </div>
                             {annotatorName}
                           </div>
                         </td>
 
                         <td className="p-4">
-                          <span
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold inline-block transition-colors duration-500 shadow-sm ${statusStyle}`}
-                          >
+                          <span className={`px-3 py-1.5 rounded-lg text-xs font-bold inline-block shadow-sm ${statusStyle}`}>
                             {statusText}
                           </span>
-                          {task.rejectCount > 0 && (
-                            <p className="text-xs text-rose-400 mt-2 font-semibold flex items-center gap-1">
-                              <MessageSquareWarning size={12} /> Đã từ chối{" "}
-                              {task.rejectCount} lần
-                            </p>
-                          )}
                         </td>
 
-                        <td className="p-4">
-                          <div className="flex items-center gap-2 text-sm text-slate-300 font-medium">
+                        <td className="p-4 text-sm text-slate-300">
+                          <div className="flex items-center gap-2">
                             <Clock size={14} className="text-blue-400" />
-                            {task.deadline
-                              ? new Date(task.deadline).toLocaleDateString(
-                                  "vi-VN",
-                                )
-                              : "N/A"}
+                            {task.deadline ? new Date(task.deadline).toLocaleDateString("vi-VN") : "N/A"}
                           </div>
                         </td>
 
                         <td className="p-4 text-right">
                           <button
-                            onClick={() =>
-                              currentStatus === "PendingReview" &&
-                              navigate(`/reviewer/workspace/${theTaskId}`)
-                            }
+                            onClick={() => currentStatus === "PendingReview" && navigate(`/reviewer/workspace/${theTaskId}`)}
                             disabled={currentStatus !== "PendingReview"}
                             className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${action.cls}`}
                           >
@@ -330,16 +290,8 @@ const ReviewerDashboard = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan="5" className="p-12 text-center">
-                      <div className="flex flex-col items-center justify-center text-slate-500">
-                        <Filter size={40} className="mb-3 opacity-20" />
-                        <p className="text-lg font-medium text-slate-400">
-                          Trống rỗng!
-                        </p>
-                        <p className="text-sm mt-1">
-                          Không tìm thấy task nào với bộ lọc "{filter}"
-                        </p>
-                      </div>
+                    <td colSpan="5" className="p-12 text-center text-slate-500 italic">
+                      Không tìm thấy task nào phù hợp.
                     </td>
                   </tr>
                 )}

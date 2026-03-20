@@ -1,20 +1,19 @@
 import { useEffect } from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
 import {
-  updateUserPresence,
   startPresenceTracking,
-  stopPresenceTracking,
 } from "./services/firebase";
 import ProtectedRoute from "./components/ProtectedRoute";
-
+import { useLocation } from "react-router-dom";
 // Auth
 import Login from "./components/pages/Auth/Login";
+import ResetPasswordByToken from "./components/pages/Auth/ResetPasswordByToken";
 
 // ================= ANNOTATOR =================
 import AnnotatorLayout from "./components/pages/Annotator/AnnotatorLayout";
 import AnnotatorDashboard from "./components/pages/Annotator/AnnotatorDashboard";
 import AnnotatorWorkspace from "./components/pages/Annotator/Workspace/AnnotatorWorkspace";
-import CreditScorePage from "./components/pages/Annotator/Workspace/CreditScorePage";
+import CreditScorePage from "./components/pages/Annotator/Score/CreditScorePage";
 import DisputeList from "./components/pages/Annotator/Dispute/DisputeList";
 import DisputeDetail from "./components/pages/Annotator/Dispute/DisputeDetail";
 
@@ -44,6 +43,8 @@ import ReviewerDisputeDetail from "./components/pages/Reviewer/Dispute/ReviewerD
 import ReviewerScorePage from "./components/pages/Reviewer/Workspace/ReviewerScorePage";
 
 const AnalyticsTracker = () => {
+  const location = useLocation();
+
   useEffect(() => {
     const savedUserStr = localStorage.getItem("user");
     if (!savedUserStr) return;
@@ -57,16 +58,14 @@ const AnalyticsTracker = () => {
     }
 
     if (!user?.id || !user?.role) return;
-
-    updateUserPresence(user.id, user.role, true);
-    startPresenceTracking(user.id, user.role);
-
-    console.log(`[Firebase] Tracking started: ${user.fullName || "User"} (${user.role})`);
-
+    console.log(`[Firebase] Bắt đầu tracking cho: ${user.id} (${user.role})`);
+    const cleanupTracking = startPresenceTracking(user.id, user.role);
     return () => {
-      stopPresenceTracking(user.id, user.role);
+      if (typeof cleanupTracking === 'function') {
+        cleanupTracking();
+      }
     };
-  }, []);
+  }, [location.pathname]); 
 
   return null;
 };
@@ -78,6 +77,7 @@ function App() {
       <Routes>
         {/* ================= PUBLIC ROUTES ================= */}
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-pass" element={<ResetPasswordByToken />} />
         <Route path="/" element={<Login />} />
 
         {/* ================= ADMIN PROTECTED ================= */}

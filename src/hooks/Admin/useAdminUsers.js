@@ -57,6 +57,11 @@ const coerceRoleName = (role) => {
   }
   return String(role);
 };
+
+const buildFirstLoginRedirectUrl = () => {
+  if (typeof window === 'undefined' || !window.location?.origin) return '';
+  return `${window.location.origin}/reset-pass`;
+};
 // Normalize user object from various possible backend shapes to a consistent frontend shape.
 const normalizeUser = (u) => {
   const id = u?.id ?? u?.userId ?? u?.userID ?? u?.accountId ?? u?.accountID;
@@ -239,6 +244,7 @@ export const useAdminUsers = () => {
         email: normalizedEmail,
         expertise: formData?.expertise || 'N/A',
         role: roleId,
+        redirectUrl: buildFirstLoginRedirectUrl(),
       };
 
       const response = await adminApi.createUser(payload);
@@ -268,21 +274,16 @@ export const useAdminUsers = () => {
   const resetPassword = async (id, passwordOrPayload) => {
     setResettingId(id);
     try {
-      const payload = (() => {
-        if (typeof passwordOrPayload === 'string') {
-          const password = passwordOrPayload;
-          return { password, newPassword: password, Password: password, NewPassword: password };
-        }
-        return passwordOrPayload || {};
-      })();
+      const password =
+        typeof passwordOrPayload === 'string'
+          ? passwordOrPayload
+          : passwordOrPayload?.newPassword ?? passwordOrPayload?.password ?? '';
 
-      const candidate =
-        payload?.password ?? payload?.newPassword ?? payload?.Password ?? payload?.NewPassword ?? null;
-      if (candidate === null || candidate === undefined || String(candidate).trim() === '') {
+      if (String(password).trim() === '') {
         throw new Error('Password cannot be empty.');
       }
 
-      const response = await adminApi.resetPassword(id, payload);
+      const response = await adminApi.resetPassword(id, { newPassword: String(password) });
       setResettingId(null);
       return { success: true, data: response };
     } catch (err) {
@@ -336,26 +337,15 @@ export const useAdminUsers = () => {
   const updateUser = async (id, formData) => {
     setUpdatingId(id);
     try {
-      const roleInt = coerceRoleInt(formData?.role);
-
       const fullName = String(formData?.name ?? formData?.fullName ?? '').trim();
       const email = String(formData?.email ?? '').trim();
 
-      const dtoBase = {
-        id,
-        userId: id,
-        fullName,
-        email,
-        ...(roleInt !== null ? { role: roleInt } : {}),
-      };
-
-      const payload = { dto: dtoBase };
+      const payload = { fullName, email };
       const response = await adminApi.updateUser(id, payload);
 
       saveOverride(id, {
         ...(fullName ? { name: fullName } : {}),
         ...(email ? { email } : {}),
-        ...(formData?.role ? { role: coerceRoleName(formData.role) } : {}),
       });
 
       setUpdatingId(null);
@@ -384,146 +374,15 @@ export const useAdminUsers = () => {
       return { success: false, error: errMsg };
     }
 
-    const combined = {
-      id,
-      userId: id,
-      role: roleInt,
-      roleId: roleInt,
-      newRole: roleInt,
-      roleName: normalizedRole,
-    };
-
-    const payloadsToTry = [
-      { role: normalizedRole },
-      { roleName: normalizedRole },
-      { newRole: normalizedRole },
-      { Role: normalizedRole },
-      { RoleName: normalizedRole },
-      { NewRole: normalizedRole },
-      { role: roleInt },
-      { roleId: roleInt },
-      { newRole: roleInt },
-      { Role: roleInt },
-      { RoleId: roleInt },
-      { NewRole: roleInt },
-      combined,
-      { dto: combined },
-      roleInt,
-      normalizedRole,
-    ];
-
-    const queryParamsToTry = [
-      { role: roleInt },
-      { roleId: roleInt },
-      { newRole: roleInt },
-      { role: normalizedRole },
-      { roleName: normalizedRole },
-    ];
-
-    const request = async (method, data, config) => {
-      return adminApi.assignRoleRequest(method, id, data, { silent: true, ...(config || {}) });
-    };
-
-    const callWithPayloads = async (method) => {
-      let lastErr = null;
-      for (const payload of payloadsToTry) {
-        try {
-          return await request(method, payload);
-        } catch (err) {
-          lastErr = err;
-          const status = err?.response?.status;
-          if (![400, 415, 422].includes(status)) throw err;
-        }
-      }
-      throw lastErr;
-    };
-
-    const callWithQueryParams = async (method) => {
-      let lastErr = null;
-      for (const params of queryParamsToTry) {
-        try {
-          return await request(method, {}, { params });
-        } catch (err) {
-          lastErr = err;
-          const status = err?.response?.status;
-          if (![400, 415, 422].includes(status)) throw err;
-        }
-      }
-      throw lastErr;
-    };
-
-    const shouldTryQueryParams = (err) => {
-      const status = err?.response?.status;
-      if (status !== 400) return false;
-      const data = err?.response?.data;
-      const errors = data?.errors;
-      if (!errors || typeof errors !== 'object') return true;
-      const keys = Object.keys(errors).map((k) => String(k).toLowerCase());
-      return keys.some((k) => k.includes('role') || k.includes('roleid') || k.includes('newrole'));
-    };
-
-    const finalizeSuccess = (response) => {
+    try {
+      const response = await adminApi.assignRole(id, { roleId: roleInt });
       saveOverride(id, { role: normalizedRole });
       setAssigningRoleId(null);
       return { success: true, data: response, role: normalizedRole };
-    };
-
-    try {
-      const response = await callWithPayloads('patch');
-      return finalizeSuccess(response);
-    } catch (errPatch) {
-      if (shouldTryQueryParams(errPatch)) {
-        try {
-          const response = await callWithQueryParams('patch');
-          return finalizeSuccess(response);
-        } catch {
-          // fall through
-        }
-      }
-
-      if (errPatch?.response?.status !== 405) {
-        const errMsg = buildErrorMessage(errPatch);
-        setAssigningRoleId(null);
-        return { success: false, error: errMsg, status: errPatch?.response?.status, details: errPatch?.response?.data };
-      }
-
-      try {
-        const response = await callWithPayloads('put');
-        return finalizeSuccess(response);
-      } catch (errPut) {
-        if (shouldTryQueryParams(errPut)) {
-          try {
-            const response = await callWithQueryParams('put');
-            return finalizeSuccess(response);
-          } catch {
-            // fall through
-          }
-        }
-
-        if (errPut?.response?.status !== 405) {
-          const errMsg = buildErrorMessage(errPut);
-          setAssigningRoleId(null);
-          return { success: false, error: errMsg, status: errPut?.response?.status, details: errPut?.response?.data };
-        }
-
-        try {
-          const response = await callWithPayloads('post');
-          return finalizeSuccess(response);
-        } catch (errPost) {
-          if (shouldTryQueryParams(errPost)) {
-            try {
-              const response = await callWithQueryParams('post');
-              return finalizeSuccess(response);
-            } catch {
-              // fall through
-            }
-          }
-
-          const errMsg = buildErrorMessage(errPost);
-          setAssigningRoleId(null);
-          return { success: false, error: errMsg, status: errPost?.response?.status, details: errPost?.response?.data };
-        }
-      }
+    } catch (err) {
+      const errMsg = buildErrorMessage(err);
+      setAssigningRoleId(null);
+      return { success: false, error: errMsg, status: err?.response?.status, details: err?.response?.data };
     }
   };
 

@@ -1,11 +1,32 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, TrendingUp, TrendingDown, ShieldAlert, History, Loader2 } from 'lucide-react';
+import { 
+  Trophy, TrendingUp, TrendingDown, ShieldAlert, 
+  History, Loader2, ChevronLeft, ChevronRight 
+} from 'lucide-react';
 import { useReputation } from '../../../../hooks/Annotator/useReputation';
+
+const LOGS_PER_PAGE = 5;
 
 const CreditScorePage = () => {
   const navigate = useNavigate();
   const { currentScore, logs, loading, error } = useReputation();
+  
+  // State quản lý phân trang
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // TỐI ƯU 1: Tính toán tổng số trang (chỉ tính lại khi logs thay đổi)
+  const totalPages = useMemo(() => {
+    if (!logs?.length) return 1;
+    return Math.ceil(logs.length / LOGS_PER_PAGE);
+  }, [logs]);
+
+  // TỐI ƯU 2: Cắt mảng lấy đúng 10 item cho trang hiện tại
+  const currentLogs = useMemo(() => {
+    if (!logs?.length) return [];
+    const startIndex = (currentPage - 1) * LOGS_PER_PAGE;
+    return logs.slice(startIndex, startIndex + LOGS_PER_PAGE);
+  }, [logs, currentPage]);
 
   if (loading) return (
     <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white">
@@ -19,9 +40,16 @@ const CreditScorePage = () => {
       <button onClick={() => navigate('/annotator')} className="text-blue-400 underline">Quay lại</button>
     </div>
   );
+
   const isHigh = currentScore >= 50;
   const isMed = currentScore >= 20 && !isHigh;
   const isLow = currentScore < 20;
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200 p-8">
@@ -57,16 +85,17 @@ const CreditScorePage = () => {
           </div>
 
           {/* Box Lịch Sử */}
-          <div className="col-span-2 bg-[#1e293b] border border-slate-700 rounded-2xl p-6">
+          <div className="col-span-2 bg-[#1e293b] border border-slate-700 rounded-2xl p-6 flex flex-col h-full">
             <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-6">
               <History size={20} className="text-slate-400" /> Lịch sử biến động điểm
             </h2>
             
-            <div className="space-y-3">
-              {logs?.length ? logs.map(({ reason, createdAt, scoreChange }, index) => {
+            {/* Vùng render danh sách (cho nó fill không gian trống) */}
+            <div className="space-y-3 flex-1">
+              {currentLogs.length ? currentLogs.map(({ id, reason, createdAt, scoreChange }, index) => {
                 const isPositive = scoreChange > 0;
                 return (
-                  <div key={index} className="flex items-center justify-between p-4 bg-[#0f172a] border border-slate-800 rounded-xl hover:border-slate-600 transition-colors">
+                  <div key={id || index} className="flex items-center justify-between p-4 bg-[#0f172a] border border-slate-800 rounded-xl hover:border-slate-600 transition-colors">
                     <div>
                       <p className="text-sm font-semibold text-white">{reason}</p>
                       <p className="text-xs text-slate-500 mt-1">{new Date(createdAt).toLocaleString('vi-VN')}</p>
@@ -83,6 +112,33 @@ const CreditScorePage = () => {
                 </div>
               )}
             </div>
+
+            {/* UI Phân trang (Chỉ hiển thị khi có nhiều hơn 1 trang) */}
+            {totalPages > 1 && (
+              <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-sm">
+                <span className="text-slate-400">
+                  Trang <strong className="text-white">{currentPage}</strong> / {totalPages}
+                </span>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              </div>
+            )}
+            
           </div>
 
         </div>

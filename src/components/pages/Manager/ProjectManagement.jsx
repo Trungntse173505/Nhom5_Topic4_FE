@@ -1,38 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjectManagement } from "../../../hooks/Manager/useProjectManagement";
 
-// IMPORT API
 import authApi from "../../../api/authApi";
 import { CardSpotlight } from "../../common/card-spotlight";
 import { AnimatedButton } from "../../common/AnimatedButton";
 import { AuroraBackground } from "../../common/aurora-background";
-// IMPORT Hook lấy API thống kê
-import { useProjectStats } from "../../../hooks/Manager/useProjectStats";
 
-// COMPONENT CON: Gọi API Stats và hiển thị thẻ Dự án
-const ProjectCardItem = ({ proj, navigate }) => {
-  // Gọi API lấy thống kê riêng cho Project này
-  const { stats, isLoadingStats } = useProjectStats(proj.projectID);
+const ProjectCardItem = React.memo(({ proj, onClick }) => {
+  const totalItems = proj.totalDataItems || 0;
+  const labeledItems = proj.completedItems || 0;
 
-  // MÓC ĐÚNG KEY TỪ API SWAGGER SẾP VỪA ĐƯA
-  const totalItems =
-    stats?.totalItems || proj.totalDataItems || proj.totalItems || 0;
-  const labeledItems = stats?.completedItems || proj.completedItems || 0;
-
-  // Lấy key rateComplete, làm tròn 64.71 -> 65
   let progressRate = 0;
-  if (stats?.rateComplete !== undefined) {
-    progressRate = Math.round(stats.rateComplete);
+  if (proj.rateComplete !== undefined) {
+    progressRate = Math.round(proj.rateComplete);
   } else if (totalItems > 0) {
     progressRate = Math.round((labeledItems / totalItems) * 100);
   }
-  // Chốt chặn an toàn
   progressRate = Math.min(Math.max(progressRate, 0), 100);
 
   return (
     <CardSpotlight
-      onClick={() => navigate(`/manager/projects/${proj.projectID}`)}
+      onClick={() => onClick(proj.projectID)}
       className="rounded-xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-6 shadow-sm hover:border-white/10 transition-colors cursor-pointer flex flex-col justify-between"
     >
       <div>
@@ -63,13 +52,9 @@ const ProjectCardItem = ({ proj, navigate }) => {
       <div className="mt-auto">
         <div className="flex justify-between text-xs mb-2 text-gray-400 font-medium">
           <span>Tiến độ</span>
-          {isLoadingStats ? (
-            <span className="animate-pulse">Đang tải...</span>
-          ) : (
-            <span className={progressRate === 100 ? "text-emerald-400" : ""}>
-              {progressRate}% ({labeledItems}/{totalItems})
-            </span>
-          )}
+          <span className={progressRate === 100 ? "text-emerald-400" : ""}>
+            {progressRate}% ({labeledItems}/{totalItems})
+          </span>
         </div>
         <div className="w-full bg-[#0B1120] h-1.5 rounded-full overflow-hidden border border-white/5">
           <div
@@ -84,7 +69,7 @@ const ProjectCardItem = ({ proj, navigate }) => {
       </div>
     </CardSpotlight>
   );
-};
+});
 
 export default function ProjectManagement() {
   const navigate = useNavigate();
@@ -138,15 +123,25 @@ export default function ProjectManagement() {
 
     fetchUserProfile();
   }, []);
+  const filteredProjects = useMemo(() => {
+    return projects.filter((p) => {
+      if (filter === "All") return true;
+      if (filter === "Open")
+        return p.status === "Open" || p.status === "Active";
+      if (filter === "Closed")
+        return p.status !== "Open" && p.status !== "Active";
 
-  const filteredProjects = projects.filter((p) => {
-    if (filter === "All") return true;
-    if (filter === "Open") return p.status === "Open" || p.status === "Active";
-    if (filter === "Closed") return p.status === "Closed";
-    return p.status === filter;
-  });
+      return p.status === filter;
+    });
+  }, [projects, filter]);
+  const handleProjectClick = useCallback(
+    (id) => {
+      navigate(`/manager/projects/${id}`);
+    },
+    [navigate],
+  );
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!formData.name) {
       alert("Vui lòng nhập Tên dự án!");
       return;
@@ -163,7 +158,7 @@ export default function ProjectManagement() {
         guideline: "",
       });
     }
-  };
+  }, [formData, createNewProject]);
 
   return (
     <AuroraBackground className="font-sans relative w-full !justify-start !items-start !p-0">
@@ -274,13 +269,14 @@ export default function ProjectManagement() {
                 <ProjectCardItem
                   key={proj.projectID || Math.random()}
                   proj={proj}
-                  navigate={navigate}
+                  onClick={handleProjectClick}
                 />
               ))}
             </div>
           )}
         </main>
 
+        {/* MODAL TẠO DỰ ÁN */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
             <div className="bg-[#151D2F] border border-white/10 rounded-xl w-full max-w-lg p-6 shadow-2xl max-h-[90vh] overflow-y-auto">

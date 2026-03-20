@@ -1,0 +1,51 @@
+// Đường dẫn: src/utils/aiHelper.js
+import { AI_DICTIONARY } from "./dictionary";
+
+// 1. Khử dấu tiếng Việt
+export const normalizeText = (text) => {
+  if (!text) return "";
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+};
+
+// 2. HÀM ĐEO MẶT NẠ (Dịch Anh -> Việt để hiện lên màn hình)
+export const getLabelDisplay = (enName) => {
+  if (!enName) return "Không rõ";
+  const lowerName = enName.toLowerCase();
+  // Có trong từ điển thì trả tiếng Việt, không có thì giữ nguyên tiếng Anh
+  return AI_DICTIONARY[lowerName] || enName;
+};
+
+// 3. Tính độ đè khung (IoU)
+export const calculateIoU = (box1, box2) => {
+  const xA = Math.max(box1.x, box2.x);
+  const yA = Math.max(box1.y, box2.y);
+  const xB = Math.min(box1.x + box1.width, box2.x + box2.width);
+  const yB = Math.min(box1.y + box1.height, box2.y + box2.height);
+
+  const interArea = Math.max(0, xB - xA) * Math.max(0, yB - yA);
+  const box1Area = box1.width * box1.height;
+  const box2Area = box2.width * box2.height;
+  return interArea / (box1Area + box2Area - interArea);
+};
+
+// 4. Lọc khung trùng lặp (NMS)
+export const applyNMS = (boxes, iouThreshold = 0.4) => {
+  const sortedBoxes = [...boxes].sort((a, b) => b.score - a.score);
+  const selectedBoxes = [];
+
+  while (sortedBoxes.length > 0) {
+    const currentBox = sortedBoxes.shift();
+    selectedBoxes.push(currentBox);
+
+    for (let i = sortedBoxes.length - 1; i >= 0; i--) {
+      if (calculateIoU(currentBox, sortedBoxes[i]) > iouThreshold) {
+        sortedBoxes.splice(i, 1);
+      }
+    }
+  }
+  return selectedBoxes;
+};

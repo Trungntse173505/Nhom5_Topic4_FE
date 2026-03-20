@@ -24,7 +24,6 @@ const buildErrorMessage = (err) => {
 
   const message =
     data?.message ||
-    data?.Message ||
     data?.detail ||
     data?.title ||
     data?.error ||
@@ -168,8 +167,6 @@ export const useAdminRoles = () => {
 
   return {
     roles,
-    rolesRaw: rolesState.raw,
-    rolesListRaw: rolesState.listRaw,
     rolesLoading,
     rolesError,
     refreshRoles,

@@ -18,7 +18,7 @@ export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
   const successMessage = useMemo(() => {
     const data = forgot.data;
     if (!data) return null;
-    return data?.message || data?.Message || 'Đã gửi OTP. Vui lòng kiểm tra email.';
+    return data?.message ?? 'Đã gửi OTP. Vui lòng kiểm tra email.';
   }, [forgot.data]);
 
     const emailValue = useMemo(() => String(email || '').trim(), [email]);
@@ -149,7 +149,11 @@ export default function ForgotPasswordModal({ open, defaultValue, onClose }) {
                 open={resetOpen}
                 email={emailValue}
                 onClose={() => setResetOpen(false)}
-                onSuccess={() => setResetOpen(false)}
+                onSuccess={() => {
+                    setResetOpen(false);
+                    setAllError(null);
+                    onClose?.();
+                }}
             />
         </div>
     );

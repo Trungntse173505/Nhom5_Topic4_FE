@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import annotatorApi from '../../api/annotatorApi';
+import { normalizeLabels } from '../../utils/utils';
 
 export const useTaskDetail = (taskId) => {
   const [data, setData] = useState(null);
@@ -13,7 +14,10 @@ export const useTaskDetail = (taskId) => {
     setError(null);
     try {
       const response = await annotatorApi.getTaskDetail(taskId);  
-      setData(response);
+      setData({
+        ...response,
+        availableLabels: normalizeLabels(response?.availableLabels || []),
+      });
     } catch (err) {
       setError(err?.response?.data?.message || "Không thể tải chi tiết Task");
     } finally {
@@ -28,6 +32,7 @@ export const useTaskDetail = (taskId) => {
   return {
     taskItems: data?.taskItems || [], 
     availableLabels: data?.availableLabels || [],   
+    guideline: data?.guideline || "",
     taskInfo: {
       taskID: data?.taskID,
       taskName: data?.taskName,

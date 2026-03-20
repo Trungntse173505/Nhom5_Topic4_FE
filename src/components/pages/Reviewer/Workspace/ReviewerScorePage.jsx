@@ -1,42 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trophy, TrendingUp, TrendingDown, ShieldAlert, History, Loader2 } from 'lucide-react';
+import { useReviewerReputation } from '../../../../hooks/Reviewer/useReviewerReputation'; 
 
 const ReviewerCreditScorePage = () => {
   const navigate = useNavigate();
-  
-  const loading = false;
-  const error = null;
-  const currentScore = 85; // Thử đổi thành 45 (Vàng) hoặc 15 (Đỏ) để xem UI thay đổi nhé
-  
-  const logs = [
-    { 
-      reason: "Duyệt chính xác 50 yêu cầu liên tục", 
-      createdAt: "2024-10-25T10:30:00Z", 
-      scoreChange: 10 
-    },
-    { 
-      reason: "Hoàn thành yêu cầu kiểm duyệt #1024", 
-      createdAt: "2024-10-24T14:15:00Z", 
-      scoreChange: 2 
-    },
-    { 
-      reason: "Bị khiếu nại và quyết định bãi bỏ ở task #998", 
-      createdAt: "2024-10-20T09:00:00Z", 
-      scoreChange: -5 
-    },
-    { 
-      reason: "Hoàn thành yêu cầu kiểm duyệt #950", 
-      createdAt: "2024-10-18T16:45:00Z", 
-      scoreChange: 3 
-    },
-    { 
-      reason: "Bỏ qua yêu cầu kiểm duyệt quá hạn 24h", 
-      createdAt: "2024-10-15T08:20:00Z", 
-      scoreChange: -10 
-    }
-  ];
-  // ==========================================
+  const { reputationData, loading, error } = useReviewerReputation();
 
   if (loading) return (
     <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white">
@@ -52,6 +21,9 @@ const ReviewerCreditScorePage = () => {
       </button>
     </div>
   );
+
+  const currentScore = reputationData?.currentScore || 0;
+  const logs = reputationData?.logs || [];
 
   const isHigh = currentScore >= 50;
   const isMed = currentScore >= 20 && !isHigh;
@@ -96,8 +68,8 @@ const ReviewerCreditScorePage = () => {
               <History size={20} className="text-slate-400" /> Lịch sử biến động điểm
             </h2>
             
-            <div className="space-y-3">
-              {logs?.length ? logs.map(({ reason, createdAt, scoreChange }, index) => {
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              {logs.length > 0 ? logs.map(({ reason, createdAt, scoreChange }, index) => {
                 const isPositive = scoreChange > 0;
                 return (
                   <div key={index} className="flex items-center justify-between p-4 bg-[#0f172a] border border-slate-800 rounded-xl hover:border-slate-600 transition-colors">

@@ -116,22 +116,21 @@ const ReviewerSidebarRight = ({
         )}
 
         {currentItem?.annotations?.map((ann) => {
-          const isActive = activeBoxId === ann.idDetail;
           const isApproved = ann.isApproved;
+          const isTextAnnotation = ann.field && ann.field !== "BoundingBox";
+          const displayLabel = isTextAnnotation
+            ? ann.field || ann.label || "Nhãn"
+            : ann.content || ann.label || "Nhãn";
+          const previewText = isTextAnnotation ? ann.content : "";
 
           return (
             <div
               key={ann.idDetail}
-              onClick={() => setActiveBoxId && setActiveBoxId(ann.idDetail)}
-              className={`p-3 rounded-xl border flex flex-col gap-3 cursor-pointer transition-all duration-200 ${
-                isActive
-                  ? "bg-blue-500/10 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)]"
-                  : "bg-[#1e293b] border-slate-700 hover:border-slate-500"
-              }`}
+              className="p-3 rounded-xl border flex flex-col gap-3 transition-all duration-200 bg-[#1e293b] border-slate-700"
             >
               <div className="flex justify-between items-center">
-                <span className={`text-sm font-bold ${isActive ? "text-blue-400" : "text-white"}`}>
-                  {ann.content || "Chưa có nhãn"}
+                <span className="text-sm font-bold text-white">
+                  {displayLabel}
                 </span>
                 {isApproved === true && (
                   <span className="text-xs font-bold text-emerald-400">Đã chấm: Đúng</span>
@@ -140,6 +139,12 @@ const ReviewerSidebarRight = ({
                   <span className="text-xs font-bold text-rose-400">Đã chấm: Lỗi</span>
                 )}
               </div>
+
+              {previewText && (
+                <p className="text-xs text-slate-400 whitespace-pre-line leading-relaxed">
+                  {previewText}
+                </p>
+              )}
 
               <div className="flex gap-2">
                 <button
