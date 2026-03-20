@@ -331,7 +331,7 @@ export default function ProjectManagement() {
                 </div>
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">
-                    Đường dẫn Hướng dẫn (Tùy chọn)
+                    Hướng dẫn (Tùy chọn)
                   </label>
                   <input
                     type="text"
@@ -340,7 +340,7 @@ export default function ProjectManagement() {
                       setFormData({ ...formData, guideline: e.target.value })
                     }
                     className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
-                    placeholder="Nhập đường dẫn tài liệu..."
+                    placeholder="Nhập hướng dẫn..."
                   />
                 </div>
               </div>

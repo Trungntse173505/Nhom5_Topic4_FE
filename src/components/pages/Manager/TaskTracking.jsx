@@ -2,35 +2,35 @@ import React, { useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTaskTracking } from "../../../hooks/Manager/useTaskTracking";
 import { useLabelManagement } from "../../../hooks/Manager/useLabelManagement";
+
 const TaskRowItem = React.memo(
-  ({
-    task,
-    annotators,
-    reviewers,
-    onExtend,
-    onAssign,
-    onRevoke,
-    isActionLoading,
-  }) => {
+  ({ task, annotators, reviewers, onExtend, onAssign, isActionLoading }) => {
     const targetId = task.taskID || task.taskId || task.id;
     const taskName = task.taskName || `Task #${targetId}`;
     const rateComplete = task.rateComplete || 0;
     const totalItems = task.totalItems || 0;
     const isUnassigned = !task.annotatorID;
 
-    const matchedAnn = annotators.find((a) => a.userID === task.annotatorID);
-    const matchedRev = reviewers.find((r) => r.userID === task.reviewerID);
+    // Dự phòng Backend đổi tên biến userID thành userId
+    const matchedAnn = annotators.find(
+      (a) => (a.userID || a.userId) === task.annotatorID,
+    );
+    const matchedRev = reviewers.find(
+      (r) => (r.userID || r.userId) === task.reviewerID,
+    );
 
     const annName = isUnassigned
       ? "Chưa giao"
       : task.annotatorName ||
         matchedAnn?.fullName ||
+        matchedAnn?.name ||
         `User ID: ${task.annotatorID.substring(0, 8)}...`;
 
     const revName = !task.reviewerID
       ? "---"
       : task.reviewerName ||
         matchedRev?.fullName ||
+        matchedRev?.name ||
         `User ID: ${task.reviewerID.substring(0, 8)}...`;
 
     const status = task.status || "Unknown";
@@ -114,13 +114,6 @@ const TaskRowItem = React.memo(
           >
             {isUnassigned ? "Assign" : "Reassign"}
           </button>
-          <button
-            onClick={() => onRevoke(targetId)}
-            disabled={isActionLoading || !targetId}
-            className="text-xs px-3 py-1.5 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors disabled:opacity-50"
-          >
-            Revoke
-          </button>
         </td>
       </tr>
     );
@@ -130,7 +123,6 @@ const TaskRowItem = React.memo(
 export default function TaskTracking({ project, setActiveTab }) {
   const { projectId: paramId } = useParams();
   const projectId = paramId || project?.projectID || project?.id;
-  const navigate = useNavigate();
 
   const {
     tasks,
@@ -140,12 +132,10 @@ export default function TaskTracking({ project, setActiveTab }) {
     isActionLoading,
     extendDeadline,
     reassignTask,
-    revoke,
   } = useTaskTracking(projectId);
 
   const { projectLabels, isLoading: isLabelLoading } =
     useLabelManagement(projectId);
-
   const [searchTerm, setSearchTerm] = useState("");
 
   const [reassignModal, setReassignModal] = useState({
@@ -155,12 +145,14 @@ export default function TaskTracking({ project, setActiveTab }) {
     reviewerId: "",
     isFirstAssign: false,
   });
+
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
       const searchString = `${t.taskID} ${t.taskName}`.toLowerCase();
       return searchString.includes(searchTerm.toLowerCase());
     });
   }, [tasks, searchTerm]);
+
   const submitReassign = useCallback(async () => {
     if (!reassignModal.annotatorId) return alert("Vui lòng chọn Annotator!");
     const success = await reassignTask(
@@ -231,19 +223,6 @@ export default function TaskTracking({ project, setActiveTab }) {
     [extendDeadline],
   );
 
-  const handleRevoke = useCallback(
-    (targetId) => {
-      if (!targetId) return;
-      if (
-        window.confirm(
-          "Bạn có chắc chắn muốn thu hồi (Revoke) task này về kho không?",
-        )
-      )
-        revoke(targetId);
-    },
-    [revoke],
-  );
-
   return (
     <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm relative">
       <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
@@ -308,7 +287,6 @@ export default function TaskTracking({ project, setActiveTab }) {
                     isActionLoading={isActionLoading || isLabelLoading}
                     onExtend={handleExtend}
                     onAssign={handleOpenAssignModal}
-                    onRevoke={handleRevoke}
                   />
                 ))
               )}
@@ -343,6 +321,7 @@ export default function TaskTracking({ project, setActiveTab }) {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-8 custom-scrollbar">
+              {/* Danh sách Annotator */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-lg">🧑‍💻</span>
@@ -353,18 +332,19 @@ export default function TaskTracking({ project, setActiveTab }) {
                 <div className="space-y-3">
                   {annotators.length === 0 ? (
                     <div className="text-sm text-gray-500 italic p-4 border border-dashed border-white/10 rounded-xl text-center">
-                      Không có Annotator nào.
+                      Không có Annotator nào phù hợp.
                     </div>
                   ) : (
                     annotators.map((u) => {
-                      const isSelected = reassignModal.annotatorId === u.userID;
+                      const uid = u.userID || u.userId || u.id; // Dự phòng key
+                      const isSelected = reassignModal.annotatorId === uid;
                       return (
                         <div
-                          key={u.userID}
+                          key={uid}
                           onClick={() =>
                             setReassignModal({
                               ...reassignModal,
-                              annotatorId: u.userID,
+                              annotatorId: uid,
                             })
                           }
                           className={`p-4 rounded-xl border cursor-pointer transition-all ${isSelected ? "bg-blue-500/10 border-blue-500" : "bg-[#0B1120] border-white/5 hover:border-white/20"}`}
@@ -374,7 +354,10 @@ export default function TaskTracking({ project, setActiveTab }) {
                               <div
                                 className={`font-medium ${isSelected ? "text-blue-400" : "text-gray-200"}`}
                               >
-                                {u.fullName}
+                                {u.fullName ||
+                                  u.userName ||
+                                  u.name ||
+                                  "Unknown User"}
                               </div>
                               <div className="text-xs text-gray-500 mt-1">
                                 Chuyên môn: {u.expertise || "Cơ bản"}
@@ -393,6 +376,7 @@ export default function TaskTracking({ project, setActiveTab }) {
                 </div>
               </div>
 
+              {/* Danh sách Reviewer */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-lg">👁️</span>
@@ -412,14 +396,15 @@ export default function TaskTracking({ project, setActiveTab }) {
                     </div>
                   </div>
                   {reviewers.map((u) => {
-                    const isSelected = reassignModal.reviewerId === u.userID;
+                    const uid = u.userID || u.userId || u.id; // Dự phòng key
+                    const isSelected = reassignModal.reviewerId === uid;
                     return (
                       <div
-                        key={u.userID}
+                        key={uid}
                         onClick={() =>
                           setReassignModal({
                             ...reassignModal,
-                            reviewerId: u.userID,
+                            reviewerId: uid,
                           })
                         }
                         className={`p-4 rounded-xl border cursor-pointer transition-all ${isSelected ? "bg-purple-500/10 border-purple-500" : "bg-[#0B1120] border-white/5 hover:border-white/20"}`}
@@ -429,7 +414,10 @@ export default function TaskTracking({ project, setActiveTab }) {
                             <div
                               className={`font-medium ${isSelected ? "text-purple-400" : "text-gray-200"}`}
                             >
-                              {u.fullName}
+                              {u.fullName ||
+                                u.userName ||
+                                u.name ||
+                                "Unknown User"}
                             </div>
                             <div className="text-xs text-gray-500 mt-1">
                               Chuyên môn: {u.expertise || "Cơ bản"}

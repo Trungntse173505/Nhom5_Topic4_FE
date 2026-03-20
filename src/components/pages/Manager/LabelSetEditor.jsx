@@ -301,32 +301,6 @@ export default function LabelSetEditor({ project, onRefresh }) {
           </div>
         </div>
       </div>
-
-      <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm">
-        <div className="mb-4 flex justify-between items-center">
-          <div>
-            <h2 className="text-lg font-semibold text-white">
-              Hướng dẫn Dán nhãn (Guidelines)
-            </h2>
-            <p className="text-sm text-gray-400 mt-1">
-              Quy tắc và hướng dẫn chi tiết cho Annotator
-            </p>
-          </div>
-          <button
-            onClick={saveGuideline}
-            disabled={isActionLoading}
-            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-500/20"
-          >
-            {isActionLoading ? "Đang lưu..." : "Lưu Hướng Dẫn"}
-          </button>
-        </div>
-        <textarea
-          value={guideline}
-          onChange={(e) => setGuideline(e.target.value)}
-          className="w-full h-[200px] rounded-xl border border-white/10 bg-[#0B1120] p-4 text-sm text-gray-300 outline-none focus:border-blue-500/50 resize-none leading-relaxed"
-          placeholder="Viết đường dẫn hoặc nội dung hướng dẫn tại đây (Ví dụ: https://docs.google.com/...)"
-        />
-      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React from "react";
-import { useManagerDisputes } from "../../../hooks/Manager/useManagerDisputes"; 
+import { useManagerDisputes } from "../../../hooks/Manager/useManagerDisputes";
 
 export default function DisputeResolution() {
   const {
@@ -9,17 +9,18 @@ export default function DisputeResolution() {
     isLoadingDetail,
     isResolving,
     fetchDisputeDetail,
-    resolveDispute
+    resolveDispute,
   } = useManagerDisputes();
 
-  const pendingDisputes = disputes.filter(d => d.status === "Pending");
+  const pendingDisputes = disputes.filter((d) => d.status === "Pending");
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">Giải quyết khiếu nại</h1>
         <p className="text-sm text-gray-400 mt-1">
-          Xử lý các xung đột giữa Người gán nhãn (Annotator) và Người duyệt (Reviewer)
+          Xử lý các xung đột giữa Người gán nhãn (Annotator) và Người duyệt
+          (Reviewer)
         </p>
       </div>
 
@@ -29,15 +30,18 @@ export default function DisputeResolution() {
           <h2 className="text-base font-semibold text-white mb-4 shrink-0">
             Khiếu nại chờ xử lý ({pendingDisputes.length})
           </h2>
-          
+
           <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar">
             {isLoadingList ? (
               <p className="text-gray-400 text-sm">Đang tải danh sách...</p>
             ) : pendingDisputes.length === 0 ? (
-              <p className="text-gray-400 text-sm">Tuyệt vời! Không có khiếu nại nào đang chờ.</p>
+              <p className="text-gray-400 text-sm">
+                Tuyệt vời! Không có khiếu nại nào đang chờ.
+              </p>
             ) : (
               pendingDisputes.map((item) => {
-                const isSelected = selectedDispute?.disputeID === item.disputeID;
+                const isSelected =
+                  selectedDispute?.disputeID === item.disputeID;
                 return (
                   <div
                     key={item.disputeID}
@@ -72,7 +76,9 @@ export default function DisputeResolution() {
         {/* Chi tiết phân xử */}
         <div className="lg:col-span-2 rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col min-h-[600px]">
           {isLoadingDetail ? (
-            <div className="flex-1 flex items-center justify-center text-gray-400">Đang tải thông tin chi tiết...</div>
+            <div className="flex-1 flex items-center justify-center text-gray-400">
+              Đang tải thông tin chi tiết...
+            </div>
           ) : !selectedDispute ? (
             <div className="flex-1 flex items-center justify-center text-gray-500 text-sm">
               Vui lòng chọn một khiếu nại từ danh sách bên trái để xem chi tiết
@@ -104,15 +110,20 @@ export default function DisputeResolution() {
                 {/* Khu vực ảnh bằng chứng (Evidence Images) */}
                 <div className="p-5 rounded-xl border border-white/5 bg-[#1E293B]/50">
                   <h3 className="text-sm font-medium text-gray-300 mb-3">
-                    Ảnh bằng chứng ({selectedDispute.evidenceImages?.length || 0})
+                    Ảnh bằng chứng (
+                    {selectedDispute.evidenceImages?.length || 0})
                   </h3>
-                  {selectedDispute.evidenceImages && selectedDispute.evidenceImages.length > 0 ? (
+                  {selectedDispute.evidenceImages &&
+                  selectedDispute.evidenceImages.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       {selectedDispute.evidenceImages.map((imgUrl, idx) => (
-                        <div key={idx} className="aspect-video bg-black/40 rounded-lg overflow-hidden border border-white/5">
-                          <img 
-                            src={imgUrl} 
-                            alt={`Bằng chứng ${idx + 1}`} 
+                        <div
+                          key={idx}
+                          className="aspect-video bg-black/40 rounded-lg overflow-hidden border border-white/5"
+                        >
+                          <img
+                            src={imgUrl}
+                            alt={`Bằng chứng ${idx + 1}`}
                             className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform"
                             onClick={() => window.open(imgUrl, "_blank")}
                           />
@@ -120,7 +131,9 @@ export default function DisputeResolution() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-500 italic">Không có ảnh bằng chứng nào được cung cấp.</p>
+                    <p className="text-xs text-gray-500 italic">
+                      Không có ảnh bằng chứng nào được cung cấp.
+                    </p>
                   )}
                 </div>
               </div>
@@ -128,23 +141,34 @@ export default function DisputeResolution() {
               {/* Action Buttons */}
               <div className="border-t border-white/5 pt-6 mt-auto">
                 <div className="flex gap-4">
-                  <button 
-                    onClick={() => resolveDispute(selectedDispute.disputeID, 'accept')}
-                    disabled={isResolving || selectedDispute.status !== "Pending"}
+                  <button
+                    onClick={() =>
+                      resolveDispute(selectedDispute.disputeID, "accept")
+                    }
+                    disabled={
+                      isResolving || selectedDispute.status !== "Pending"
+                    }
                     className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-lg font-medium transition-colors"
                   >
-                    {isResolving ? "Đang xử lý..." : "Chấp thuận (Annotator thắng)"}
+                    {isResolving
+                      ? "Đang xử lý..."
+                      : "Chấp thuận (Annotator thắng)"}
                   </button>
-                  <button 
-                    onClick={() => resolveDispute(selectedDispute.disputeID, 'reject')}
-                    disabled={isResolving || selectedDispute.status !== "Pending"}
+                  <button
+                    onClick={() =>
+                      resolveDispute(selectedDispute.disputeID, "reject")
+                    }
+                    disabled={
+                      isResolving || selectedDispute.status !== "Pending"
+                    }
                     className="flex-1 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-lg font-medium transition-colors"
                   >
                     {isResolving ? "Đang xử lý..." : "Từ chối (Reviewer thắng)"}
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 text-center mt-3">
-                  Việc chấp thuận sẽ kết thúc Task. Từ chối sẽ trừ 10 điểm của Annotator.
+                  Việc chấp thuận sẽ kết thúc Task. Từ chối sẽ trừ 10 điểm của
+                  Annotator.
                 </p>
               </div>
             </>

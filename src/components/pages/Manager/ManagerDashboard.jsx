@@ -190,14 +190,9 @@ const OverviewContent = ({ project, projectId, allUsers }) => {
             <p className="text-xs text-gray-500 uppercase font-bold mb-2">
               Đường dẫn Hướng dẫn (Guideline)
             </p>
-            <a
-              href={project?.guidelineUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-blue-400 text-sm hover:underline break-all"
-            >
+            <div className="text-gray-300 text-sm break-all whitespace-pre-wrap">
               {project?.guidelineUrl || "Chưa có tài liệu hướng dẫn"}
-            </a>
+            </div>
           </div>
         </CardSpotlight>
 
