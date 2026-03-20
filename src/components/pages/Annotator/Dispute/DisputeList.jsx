@@ -26,10 +26,6 @@ const DisputeItem = memo(({ task, onDetail }) => (
           <Clock size={14} />
           <span>Hạn chót: {task.deadline}</span>
         </div>
-        <div className="flex items-center gap-1.5 text-amber-500/80">
-          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-          <span className="font-bold">Đang xem xét</span>
-        </div>
       </div>
     </div>
 
@@ -64,9 +60,6 @@ const DisputeList = () => {
             Khiếu Nại Của Tôi
           </h1>
           <p className="text-slate-400 mt-2 text-sm font-medium italic italic">Theo dõi tiến độ phúc khảo.</p>
-        </div>
-        <div className="bg-amber-500/10 border border-amber-500/20 px-4 py-2 rounded-2xl hidden md:block">
-          <span className="text-amber-500 font-bold text-sm">{disputedTasks.length} Đang chờ</span>
         </div>
       </header>
 

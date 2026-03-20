@@ -39,7 +39,6 @@ import ReviewerLayout from "./components/pages/Reviewer/ReviewerLayout";
 import ReviewerDashboard from "./components/pages/Reviewer/ReviewerDashboard";
 import ReviewerWorkspace from "./components/pages/Reviewer/Workspace/ReviewerWorkspace"; 
 import ReviewerDisputeList from "./components/pages/Reviewer/Dispute/ReviewerDisputeList";
-import ReviewerDisputeDetail from "./components/pages/Reviewer/Dispute/ReviewerDisputeDetail";
 import ReviewerScorePage from "./components/pages/Reviewer/Workspace/ReviewerScorePage";
 
 const AnalyticsTracker = () => {
@@ -122,7 +121,6 @@ function App() {
           <Route path="dashboard" element={<ReviewerDashboard />} />
           <Route path="/reviewer/workspace/:taskId" element={<ReviewerWorkspace />} />
           <Route path="disputes" element={<ReviewerDisputeList />} />
-            <Route path="disputes/:id" element={<ReviewerDisputeDetail />} />
             <Route path="credit-score" element={<ReviewerScorePage />} />
           </Route>
 

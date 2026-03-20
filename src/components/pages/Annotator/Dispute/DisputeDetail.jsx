@@ -65,27 +65,6 @@ const DisputeDetail = () => {
             </div>
           </section>
         </div>
-
-        <aside className="space-y-6">
-          <div className="bg-[#1e293b] border border-slate-800 rounded-3xl p-6 shadow-xl">
-            <h3 className="text-sm font-bold text-white mb-6 flex items-center gap-2">
-              <History size={18} className="text-slate-400" /> Lịch sử xử lý
-            </h3>
-            
-            <div className="relative space-y-6 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
-              {detail.history.map((item, index) => (
-                <HistoryItem key={index} item={item} />
-              ))}
-            </div>
-          </div>
-          
-          <div className="bg-amber-500/5 border border-amber-500/10 rounded-2xl p-4 flex gap-3 italic">
-            <AlertCircle size={20} className="text-amber-500 shrink-0" />
-            <p className="text-[11px] text-amber-200/60 leading-snug">
-              Phúc khảo thường mất 1-3 ngày làm việc. Kết quả sẽ cập nhật vào điểm tín nhiệm.
-            </p>
-          </div>
-        </aside>
       </div>
     </div>
   );
