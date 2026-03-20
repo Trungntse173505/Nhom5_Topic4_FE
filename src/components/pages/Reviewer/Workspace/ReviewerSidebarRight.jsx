@@ -5,8 +5,8 @@ import {
   CheckCircle,
   XCircle,
   FileImage,
-  MessageSquare,
-  AlertCircle
+  AlertCircle,
+  CheckCheck,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -22,11 +22,50 @@ const ReviewerSidebarRight = ({
   setActiveBoxId,
 }) => {
   const navigate = useNavigate();
-
-  // STATE: Lưu lý do từ chối
   const [taskComment, setTaskComment] = useState("");
+  const [isApprovingAll, setIsApprovingAll] = useState(false); // Cờ chặn spam bấm nút Duyệt nhanh
 
-  // 1. HÀM DUYỆT TASK
+  // 👉 HÀM MỚI: DUYỆT NHANH TẤT CẢ NHÃN TRONG FILE HIỆN TẠI
+  const handleApproveAllInCurrentItem = async () => {
+    if (!currentItem?.annotations || currentItem.annotations.length === 0) {
+      return alert("File này không có nhãn nào để duyệt!");
+    }
+
+    // Lọc ra những nhãn CHƯA ĐƯỢC CHẤM (isApproved đang là null/undefined) hoặc ĐANG BỊ LỖI (false)
+    // Nếu sếp chỉ muốn chấm những cái chưa chấm, thì bỏ cái `|| ann.isApproved === false` đi nhé.
+    const pendingAnnotations = currentItem.annotations.filter(
+      (ann) => ann.isApproved !== true,
+    );
+
+    if (pendingAnnotations.length === 0) {
+      return alert("Tất cả các nhãn trong file này đã được chấm Đúng rồi!");
+    }
+
+    if (
+      !window.confirm(
+        `Bạn có muốn tự động đánh dấu "Đúng" cho ${pendingAnnotations.length} nhãn còn lại trên file này?`,
+      )
+    ) {
+      return;
+    }
+
+    setIsApprovingAll(true);
+    try {
+      // Bắn liên thanh API cho tất cả các nhãn chưa duyệt
+      const promises = pendingAnnotations.map((ann) =>
+        toggleAnnotationApproval(ann.idDetail, true),
+      );
+
+      await Promise.all(promises);
+      // Không cần alert thành công vì UI tự đổi sang màu Xanh do state trong Hook đã lo
+    } catch (error) {
+      alert("Có lỗi xảy ra khi duyệt nhanh. Vui lòng tải lại trang!");
+    } finally {
+      setIsApprovingAll(false);
+    }
+  };
+
+  // 1. HÀM DUYỆT TASK TỔNG
   const handleApprove = async () => {
     let hasUnevaluated = false;
     let hasRejectedBox = false;
@@ -44,13 +83,13 @@ const ReviewerSidebarRight = ({
 
     if (hasUnevaluated) {
       return alert(
-        "⚠️ Bạn phải chấm [Đúng/Lỗi] cho TẤT CẢ các vùng trên TẤT CẢ các file trước khi Duyệt Task!"
+        "⚠️ Bạn phải chấm [Đúng/Lỗi] cho TẤT CẢ các vùng trên TẤT CẢ các file trước khi Duyệt Task!",
       );
     }
 
     if (hasRejectedBox) {
       return alert(
-        "⚠️ Lỗi Logic: Task này đang có nhãn bị đánh 'Lỗi'. Bạn không thể Duyệt, vui lòng bấm TRẢ VỀ!"
+        "⚠️ Lỗi Logic: Task này đang có nhãn bị đánh 'Lỗi'. Bạn không thể Duyệt, vui lòng bấm TRẢ VỀ!",
       );
     }
 
@@ -64,7 +103,7 @@ const ReviewerSidebarRight = ({
     } else alert("❌ Lỗi duyệt: " + res.error);
   };
 
-  // 2. HÀM TRẢ VỀ
+  // 2. HÀM TRẢ VỀ TASK TỔNG
   const handleReject = async () => {
     let hasRejectedBox = false;
     items.forEach((item) => {
@@ -75,7 +114,7 @@ const ReviewerSidebarRight = ({
 
     if (!hasRejectedBox) {
       return alert(
-        "⚠️ Vui lòng đánh dấu 'Lỗi' cho ít nhất một vùng trước khi Trả về!"
+        "⚠️ Vui lòng đánh dấu 'Lỗi' cho ít nhất một vùng trước khi Trả về!",
       );
     }
 
@@ -99,17 +138,38 @@ const ReviewerSidebarRight = ({
 
   return (
     <aside className="w-80 border-l border-slate-800 bg-[#0f172a] flex flex-col shrink-0 text-left">
-      <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-[#1e293b]">
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-          <FileImage size={16} /> File đang xem
-        </h3>
-        <span className="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded-full font-bold">
-          {currentItem?.annotations?.length || 0} Box
-        </span>
+      {/* HEADER CÓ NÚT DUYỆT NHANH */}
+      <div className="p-4 border-b border-slate-800 flex flex-col gap-3 bg-[#1e293b]">
+        <div className="flex justify-between items-center">
+          <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+            <FileImage size={16} /> File đang xem
+          </h3>
+          <span className="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded-full font-bold">
+            {currentItem?.annotations?.length || 0} Box
+          </span>
+        </div>
+
+        {/* 👉 NÚT DUYỆT NHANH TOÀN BỘ NHÃN TRONG FILE */}
+        {currentItem?.annotations?.length > 0 && (
+          <button
+            onClick={handleApproveAllInCurrentItem}
+            disabled={isApprovingAll}
+            className="w-full flex items-center justify-center gap-2 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+          >
+            {isApprovingAll ? (
+              <span className="animate-pulse">Đang duyệt nhanh...</span>
+            ) : (
+              <>
+                <CheckCheck size={16} /> Duyệt nhanh File này
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 custom-scrollbar">
-        {(!currentItem?.annotations || currentItem.annotations.length === 0) && (
+        {(!currentItem?.annotations ||
+          currentItem.annotations.length === 0) && (
           <div className="text-sm text-slate-500 italic text-center p-6 border border-dashed border-slate-700 rounded-xl">
             Không có nhãn nào trên file này.
           </div>
@@ -133,10 +193,14 @@ const ReviewerSidebarRight = ({
                   {displayLabel}
                 </span>
                 {isApproved === true && (
-                  <span className="text-xs font-bold text-emerald-400">Đã chấm: Đúng</span>
+                  <span className="text-xs font-bold text-emerald-400">
+                    Đã chấm: Đúng
+                  </span>
                 )}
                 {isApproved === false && (
-                  <span className="text-xs font-bold text-rose-400">Đã chấm: Lỗi</span>
+                  <span className="text-xs font-bold text-rose-400">
+                    Đã chấm: Lỗi
+                  </span>
                 )}
               </div>
 
@@ -195,14 +259,14 @@ const ReviewerSidebarRight = ({
           ></textarea>
         </div>
 
-        {/* 2 NÚT ACTION */}
+        {/* 2 NÚT ACTION TỔNG */}
         <div className="flex gap-2 mt-1">
           <button
             onClick={handleApprove}
             disabled={isProcessing}
             className="flex-1 flex flex-col items-center justify-center gap-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/20"
           >
-            <ThumbsUp size={18} /> Duyệt
+            <ThumbsUp size={18} /> Duyệt Task
           </button>
           <button
             onClick={handleReject}
