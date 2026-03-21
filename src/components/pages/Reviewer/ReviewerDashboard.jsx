@@ -92,6 +92,21 @@ const ReviewerDashboard = () => {
     return () => clearInterval(intervalId);
   }, [refetch]);
 
+  const stats = useMemo(() => ({
+    totalTasks: tasks?.length || 0,
+    pendingTasks: tasks?.filter((t) => t.status === "PendingReview" || t.status === "Pending").length || 0,
+    doneTasks: tasks?.filter((t) => t.status === "Approved").length || 0,
+  }), [tasks]);
+
+  const filteredTasks = useMemo(() => tasks?.filter((task) => {
+    if (filter === "All") return true;
+    if (filter === "New") return task.status === "New";
+    if (filter === "Pending") return task.status === "PendingReview" || task.status === "Pending";
+    if (filter === "Rejected") return task.status === "Rejected";
+    if (filter === "Done") return task.status === "Approved";
+    return true;
+  }) || [], [tasks, filter]);
+
   if (isLoading && (!tasks || tasks.length === 0))
     return (
       <div className="relative w-full h-full flex flex-col flex-1 overflow-hidden bg-[#0B1120]">
@@ -122,21 +137,6 @@ const ReviewerDashboard = () => {
         </div>
       </div>
     );
-
-  const stats = useMemo(() => ({
-    totalTasks: tasks?.length || 0,
-    pendingTasks: tasks?.filter((t) => t.status === "PendingReview" || t.status === "Pending").length || 0,
-    doneTasks: tasks?.filter((t) => t.status === "Approved").length || 0,
-  }), [tasks]);
-
-  const filteredTasks = useMemo(() => tasks?.filter((task) => {
-    if (filter === "All") return true;
-    if (filter === "New") return task.status === "New";
-    if (filter === "Pending") return task.status === "PendingReview" || task.status === "Pending";
-    if (filter === "Rejected") return task.status === "Rejected";
-    if (filter === "Done") return task.status === "Approved";
-    return true;
-  }) || [], [tasks, filter]);
 
   return (
     <div className="relative w-full h-full flex flex-col flex-1 overflow-hidden bg-[#0B1120]">
