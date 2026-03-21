@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
@@ -18,6 +18,7 @@ import {
 import { useTasks } from "../../../hooks/Reviewer/useTasks";
 import { useScore } from "../../../hooks/Reviewer/useScore";
 import { AuroraBackground } from "../../common/aurora-background";
+import { CardSpotlight } from "../../common/card-spotlight";
 
 const TYPE_ICONS = {
   text: <FileText size={16} className="text-blue-400" />,
@@ -122,20 +123,20 @@ const ReviewerDashboard = () => {
       </div>
     );
 
-  const stats = {
+  const stats = useMemo(() => ({
     totalTasks: tasks?.length || 0,
     pendingTasks: tasks?.filter((t) => t.status === "PendingReview" || t.status === "Pending").length || 0,
     doneTasks: tasks?.filter((t) => t.status === "Approved").length || 0,
-  };
+  }), [tasks]);
 
-  const filteredTasks = tasks?.filter((task) => {
+  const filteredTasks = useMemo(() => tasks?.filter((task) => {
     if (filter === "All") return true;
     if (filter === "New") return task.status === "New";
     if (filter === "Pending") return task.status === "PendingReview" || task.status === "Pending";
     if (filter === "Rejected") return task.status === "Rejected";
     if (filter === "Done") return task.status === "Approved";
     return true;
-  }) || [];
+  }) || [], [tasks, filter]);
 
   return (
     <div className="relative w-full h-full flex flex-col flex-1 overflow-hidden bg-[#0B1120]">
@@ -173,18 +174,18 @@ const ReviewerDashboard = () => {
           {/* Stat Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 shrink-0">
             {STAT_CARDS.map(({ icon: Icon, color, label, key }) => (
-              <div
+              <CardSpotlight
                 key={key}
                 className="bg-[#151D2F]/80 backdrop-blur-md border border-white/5 p-6 rounded-2xl flex items-center gap-4 hover:border-white/20 transition-all shadow-xl"
               >
-                <div className={`p-4 bg-${color}-500/20 rounded-xl text-${color}-400`}>
+                <div className={`p-4 bg-${color}-500/20 rounded-xl text-${color}-400 relative z-10`}>
                   <Icon size={28} />
                 </div>
-                <div>
+                <div className="relative z-10">
                   <p className="text-sm text-slate-400 font-medium">{label}</p>
                   <p className="text-3xl font-bold text-white drop-shadow-md">{stats[key]}</p>
                 </div>
-              </div>
+              </CardSpotlight>
             ))}
           </div>
 

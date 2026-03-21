@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useLabelManagement } from "../../../hooks/Manager/useLabelManagement";
 import { useProjectActions } from "../../../hooks/Manager/useProjectActions";
+import { CardSpotlight } from "../../common/card-spotlight";
 
 import { getLabelDisplay, normalizeText } from "../../../utils/aiHelper";
 import { VI_TO_EN_DICT } from "../../../utils/dictionary";
@@ -210,8 +211,8 @@ export default function LabelSetEditor({ project, onRefresh }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col h-[500px]">
-          <div className="mb-6">
+        <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col h-[500px]">
+          <div className="mb-6 relative z-10">
             <h2 className="text-lg font-semibold text-white">Kho Nhãn Mẫu</h2>
             <p className="text-sm text-gray-400 mt-1">
               Bấm vào chủ đề để xem và Nhập nhãn
@@ -237,10 +238,10 @@ export default function LabelSetEditor({ project, onRefresh }) {
               ))
             )}
           </div>
-        </div>
+        </CardSpotlight>
 
-        <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col h-[500px]">
-          <div className="mb-6">
+        <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col h-[500px]">
+          <div className="mb-6 relative z-10">
             <h2 className="text-lg font-semibold text-white">Nhãn Của Dự Án</h2>
             <p className="text-sm text-gray-400 mt-1">
               Các nhãn đang được dùng trong dự án này
@@ -299,7 +300,7 @@ export default function LabelSetEditor({ project, onRefresh }) {
               </button>
             </div>
           </div>
-        </div>
+        </CardSpotlight>
       </div>
     </div>
   );
