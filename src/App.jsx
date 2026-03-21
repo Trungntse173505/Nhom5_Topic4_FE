@@ -40,6 +40,7 @@ import ReviewerDashboard from "./components/pages/Reviewer/ReviewerDashboard";
 import ReviewerWorkspace from "./components/pages/Reviewer/Workspace/ReviewerWorkspace"; 
 import ReviewerDisputeList from "./components/pages/Reviewer/Dispute/ReviewerDisputeList";
 import ReviewerScorePage from "./components/pages/Reviewer/Workspace/ReviewerScorePage";
+import ReviewerDisputeDetail from "./components/pages/Reviewer/Dispute/ReviewerDisputeDetail";
 
 const AnalyticsTracker = () => {
   const location = useLocation();
@@ -121,7 +122,8 @@ function App() {
           <Route path="dashboard" element={<ReviewerDashboard />} />
           <Route path="/reviewer/workspace/:taskId" element={<ReviewerWorkspace />} />
           <Route path="disputes" element={<ReviewerDisputeList />} />
-            <Route path="credit-score" element={<ReviewerScorePage />} />
+          <Route path="credit-score" element={<ReviewerScorePage />} />
+          <Route path="/reviewer/disputes/:id" element={<ReviewerDisputeDetail />} />
           </Route>
 
         </Route>

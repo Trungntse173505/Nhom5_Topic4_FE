@@ -8,10 +8,12 @@ export const useReviewerDisputes = () => {
   const fetchDisputes = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await reviewerApi.getDisputes();
-      setDisputes(data || []);
+      const response = await reviewerApi.getDisputes();
+      const data = response.data || response;
+      setDisputes(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Lỗi khi tải danh sách khiếu nại:", error);
+      setDisputes([]);
     } finally {
       setIsLoading(false);
     }
