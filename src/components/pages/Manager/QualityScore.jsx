@@ -32,10 +32,7 @@ export default function QualityScore() {
     <AuroraBackground className="font-sans relative">
       <div className="p-8 max-w-5xl mx-auto space-y-6 relative z-20 w-full">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-white">
-            Bảng Xếp Hạng Uy Tín
-          </h1>
-          <p className="text-sm text-gray-400 mt-2">
+          <p className="text-3xl text-white mt-2">
             Theo dõi điểm chất lượng tổng thể của nhân sự trong dự án
           </p>
         </div>

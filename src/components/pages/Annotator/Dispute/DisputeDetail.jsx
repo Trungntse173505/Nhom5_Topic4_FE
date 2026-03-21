@@ -219,7 +219,7 @@ const DisputeDetail = () => {
                     detail.adminFeedback ||
                     (isPending
                       ? "Quản lý đang xem xét đơn khiếu nại của bạn..."
-                      : "Đã xử lý (Không có lời nhắn)")}
+                      : "Đã xử lý")}
                 </div>
               </div>
             </div>
