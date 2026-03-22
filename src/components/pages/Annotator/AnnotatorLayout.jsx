@@ -4,6 +4,7 @@ const menuItems = [
   { path: "/annotator", label: "Quản Lý Nhiệm Vụ", icon: "📋" },
   { path: "/annotator/disputes", label: "Khiếu Nại Của Tôi", icon: "⚖️" }, 
   { path: "/annotator/score", label: "Điểm Cá Nhân", icon: "🏆" },
+  { path: "/annotator/statistics", label: "Thống Kê", icon: "📊" },
 ];
 
 export default function AnnotatorLayout() {
