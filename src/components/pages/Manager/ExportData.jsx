@@ -121,7 +121,7 @@ export default function ExportData() {
               </div>
 
               <button
-                onClick={handleExport}
+                onClick={() => handleExport(format)}
                 disabled={!selectedProjectId || isExporting}
                 className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed text-white py-3 rounded-lg font-medium transition-colors flex justify-center items-center gap-2"
               >
