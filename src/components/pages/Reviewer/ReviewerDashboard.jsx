@@ -64,10 +64,11 @@ const ACTION_STYLES = {
   },
 };
 
+// ĐÃ FIX: Viết tường minh class để không bị lỗi Tailwind
 const STAT_CARDS = [
-  { icon: FolderOpen, color: "blue", label: "Tổng Task", key: "totalTasks" },
-  { icon: CheckCircle2, color: "green", label: "Đã Duyệt", key: "doneTasks" },
-  { icon: AlertCircle, color: "yellow", label: "Chờ Duyệt", key: "pendingTasks" },
+  { icon: FolderOpen, colorClass: "bg-blue-500/20 text-blue-400", label: "Tổng Task", key: "totalTasks" },
+  { icon: CheckCircle2, colorClass: "bg-green-500/20 text-green-400", label: "Đã Duyệt", key: "doneTasks" },
+  { icon: AlertCircle, colorClass: "bg-yellow-500/20 text-yellow-400", label: "Chờ Duyệt", key: "pendingTasks" },
 ];
 
 const FILTERS = [
@@ -171,19 +172,22 @@ const ReviewerDashboard = () => {
             </button>
           </div>
 
-          {/* Stat Cards */}
+          {/* Stat Cards - ĐÃ FIX LỖI GIAO DIỆN BỊ KÉO GIÃN */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 shrink-0">
-            {STAT_CARDS.map(({ icon: Icon, color, label, key }) => (
+            {STAT_CARDS.map(({ icon: Icon, colorClass, label, key }) => (
               <CardSpotlight
                 key={key}
-                className="bg-[#151D2F]/80 backdrop-blur-md border border-white/5 p-6 rounded-2xl flex items-center gap-4 hover:border-white/20 transition-all shadow-xl"
+                className="bg-[#151D2F]/80 backdrop-blur-md border border-white/5 p-6 rounded-2xl hover:border-white/20 transition-all shadow-xl"
               >
-                <div className={`p-4 bg-${color}-500/20 rounded-xl text-${color}-400 relative z-10`}>
-                  <Icon size={28} />
-                </div>
-                <div className="relative z-10">
-                  <p className="text-sm text-slate-400 font-medium">{label}</p>
-                  <p className="text-3xl font-bold text-white drop-shadow-md">{stats[key]}</p>
+                {/* Dùng flex-row ép nằm ngang, và set cứng w-14 h-14 để vuông vức */}
+                <div className="flex flex-row items-center gap-5 relative z-10">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${colorClass}`}>
+                    <Icon size={28} />
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="text-sm text-slate-400 font-medium mb-1">{label}</p>
+                    <p className="text-3xl font-bold text-white drop-shadow-md">{stats[key]}</p>
+                  </div>
                 </div>
               </CardSpotlight>
             ))}
@@ -227,13 +231,11 @@ const ReviewerDashboard = () => {
                 {filteredTasks.length > 0 ? (
                   filteredTasks.map((task) => {
                     let currentStatus = task.status;
-                    // Chuẩn hóa trạng thái hiển thị (giữ nguyên logic cũ cho các trạng thái nộp)
                     if (currentStatus === "Pending" || currentStatus === "Submitted") currentStatus = "PendingReview";
 
                     const action = ACTION_STYLES[currentStatus] || ACTION_STYLES.New;
                     const statusStyle = STATUS_STYLES[currentStatus] || "bg-gray-500/20 text-gray-400 border border-gray-500/30";
 
-                    // Chuyển text trạng thái sang tiếng Việt
                     let statusText = "Chưa rõ";
                     if (currentStatus === "New") statusText = "Mới";
                     if (currentStatus === "PendingReview") statusText = "Chờ duyệt";
