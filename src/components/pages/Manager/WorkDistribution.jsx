@@ -1,6 +1,8 @@
 import React, { useState, useCallback } from "react";
 import { useWorkDistribution } from "../../../hooks/Manager/useWorkDistribution";
 import { AnimatedButton } from "../../common/AnimatedButton";
+import { CardSpotlight } from "../../common/card-spotlight";
+
 const UnassignedFileItem = React.memo(({ item, isSelected, onToggle }) => {
   const targetId = item.dataItemId || item.id || item.dataID;
   const targetName = item.fileName || item.name || `File #${targetId}`;
@@ -34,6 +36,7 @@ export default function WorkDistribution({ project, onRefresh }) {
 
   const [selectedIds, setSelectedIds] = useState([]);
   const [taskData, setTaskData] = useState({ taskName: "", deadline: "" });
+
   const toggleSelection = useCallback((id) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
@@ -43,6 +46,16 @@ export default function WorkDistribution({ project, onRefresh }) {
   const handleSubmit = useCallback(async () => {
     if (!taskData.taskName || !taskData.deadline) {
       alert("Vui lòng nhập Tên Task và Hạn chót!");
+      return;
+    }
+
+    // 👉 CHỐT CHẶN NGÀY QUÁ KHỨ (Xử lý gõ tay)
+    const selectedDate = new Date(taskData.deadline);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset giờ về 0h để so sánh đúng ngày
+
+    if (selectedDate < today) {
+      alert("⚠️ Lỗi: Không thể chọn hạn chót (deadline) ở trong quá khứ!");
       return;
     }
 
@@ -60,11 +73,14 @@ export default function WorkDistribution({ project, onRefresh }) {
     }
   }, [taskData, selectedIds, createBatch]);
 
+  // Lấy ngày hôm nay dưới dạng YYYY-MM-DD để khóa lịch HTML
+  const todayString = new Date().toISOString().split("T")[0];
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* CỘT 1: CHỌN FILE */}
-      <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col h-[500px]">
-        <div className="mb-4 flex justify-between items-center">
+      <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col h-[500px]">
+        <div className="mb-4 flex justify-between items-center relative z-10">
           <div>
             <h2 className="text-lg font-semibold text-white">
               Dữ Liệu Chưa Phân Công
@@ -101,11 +117,11 @@ export default function WorkDistribution({ project, onRefresh }) {
             })
           )}
         </div>
-      </div>
+      </CardSpotlight>
 
       {/* CỘT 2: FORM TẠO TASK */}
-      <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm h-fit">
-        <h2 className="text-lg font-semibold text-white mb-6">Tạo Task Mới</h2>
+      <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm h-fit">
+        <h2 className="text-lg font-semibold text-white mb-6 relative z-10">Tạo Task Mới</h2>
 
         <div className="space-y-6">
           <div>
@@ -130,6 +146,7 @@ export default function WorkDistribution({ project, onRefresh }) {
             <input
               type="date"
               value={taskData.deadline}
+              min={todayString} // 👉 KHÓA LỊCH HTML: Không cho bấm vào ngày quá khứ
               onChange={(e) =>
                 setTaskData({ ...taskData, deadline: e.target.value })
               }
@@ -147,7 +164,7 @@ export default function WorkDistribution({ project, onRefresh }) {
             </AnimatedButton>
           </div>
         </div>
-      </div>
+      </CardSpotlight>
     </div>
   );
 }

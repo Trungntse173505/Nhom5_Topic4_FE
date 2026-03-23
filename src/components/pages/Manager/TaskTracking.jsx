@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTaskTracking } from "../../../hooks/Manager/useTaskTracking";
 import { useLabelManagement } from "../../../hooks/Manager/useLabelManagement";
+import { CardSpotlight } from "../../common/card-spotlight";
 
 const TaskRowItem = React.memo(
   ({ task, annotators, reviewers, onExtend, onAssign, isActionLoading }) => {
@@ -224,8 +225,8 @@ export default function TaskTracking({ project, setActiveTab }) {
   );
 
   return (
-    <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm relative">
-      <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+    <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm relative">
+      <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4 relative z-10">
         <div>
           <h2 className="text-lg font-semibold text-white">Task Tracking</h2>
           <p className="text-sm text-gray-400 mt-1">
@@ -456,6 +457,6 @@ export default function TaskTracking({ project, setActiveTab }) {
           </div>
         </div>
       )}
-    </div>
+    </CardSpotlight>
   );
 }

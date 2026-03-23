@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import SidebarLayout from "../../common/SidebarLayout";
 import authApi from "../../../api/authApi";
+import { AuroraBackground } from "../../common/aurora-background";
 
 // Đẩy menu ra ngoài để không bị tạo lại mỗi lần render
 const menuItems = [
@@ -61,13 +62,18 @@ const ManagerGlobalLayout = React.memo(() => {
   }, []);
 
   return (
-    <SidebarLayout
-      menuItems={menuItems}
-      title="LabelMaster"
-      menuLabel="Danh mục Quản lý"
-      basePath="/manager"
-      userInfo={userInfo}
-    />
+    <AuroraBackground className="font-sans relative w-full h-screen !justify-start !items-start !p-0 overflow-hidden">
+      <div className="absolute inset-0 bg-[#0B1120]/60 z-0 pointer-events-none"></div>
+      <div className="w-full flex h-full z-20 relative">
+        <SidebarLayout
+          menuItems={menuItems}
+          title="LabelMaster"
+          menuLabel="Danh mục Quản lý"
+          basePath="/manager"
+          userInfo={userInfo}
+        />
+      </div>
+    </AuroraBackground>
   );
 });
 
