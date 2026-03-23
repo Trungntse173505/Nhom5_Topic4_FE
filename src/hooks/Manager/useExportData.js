@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import {
   getProjectsList,
-  exportProjectData,
   getExportHistories,
 } from "../../api/managerApi";
+import {
+  exportCocoProjectData,
+  exportYoloProjectData,
+} from "../../api/managerExportApi";
 
 export const useExportData = () => {
   const [projects, setProjects] = useState([]);
@@ -46,6 +49,37 @@ export const useExportData = () => {
     }
   };
 
+  const downloadBlob = (data, filename) => {
+    const blob = data instanceof Blob ? data : new Blob([data]);
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = filename;
+    link.style.display = "none";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.setTimeout(() => {
+      window.URL.revokeObjectURL(url);
+    }, 1000);
+  };
+
+  const exportRequests = {
+    YOLO: {
+      label: "YOLO",
+      filename: (projectId) => `project-${projectId}-yolo.zip`,
+      request: exportYoloProjectData,
+    },
+    COCO: {
+      label: "COCO",
+      filename: (projectId) => `project-${projectId}-coco.zip`,
+      request: exportCocoProjectData,
+    },
+  };
+
   useEffect(() => {
     if (selectedProjectId) {
       fetchHistory(selectedProjectId);
@@ -55,14 +89,22 @@ export const useExportData = () => {
   }, [selectedProjectId]);
 
   // 3. Bấm nút Xuất dữ liệu
-  const handleExport = async () => {
+  const handleExport = async (format) => {
     if (!selectedProjectId) return alert("Vui lòng chọn dự án!");
+
+    const exportJob = exportRequests[String(format || "").toUpperCase()];
+    if (!exportJob) {
+      return alert("Chỉ hỗ trợ xuất dữ liệu theo định dạng YOLO hoặc COCO.");
+    }
+
     setIsExporting(true);
     try {
-      await exportProjectData(selectedProjectId);
+      const res = await exportJob.request(selectedProjectId);
+      downloadBlob(res, exportJob.filename(selectedProjectId));
       alert(
-        "Yêu cầu xuất dữ liệu thành công! Vui lòng chờ giây lát và xem trong lịch sử.",
+        `Yêu cầu xuất dữ liệu ${exportJob.label} thành công! File đã được tải xuống.`,
       );
+
       await fetchHistory(selectedProjectId); // Tải lại bảng lịch sử để thấy file mới
     } catch (error) {
       alert(error.message);
