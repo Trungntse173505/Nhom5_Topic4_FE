@@ -22,5 +22,7 @@ export const reviewerApi = {
   // all khiếu nại
   getDisputes: () => axiosClient.get('/api/reviewer/disputes'),
   // xem điểm
-  getReputation: () => axiosClient.get('/api/reviewer/reputation')
+  getReputation: () => axiosClient.get('/api/reviewer/reputation'),
+
+  getStats: () => axiosClient.get('/api/Score'),
 };

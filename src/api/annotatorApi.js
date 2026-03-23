@@ -36,6 +36,8 @@ const annotatorApi = {
   getReputation: () => axiosClient.get("/api/annotator/reputation"),
   // Lấy danh sách lịch sử khiếu nại của chính Annotator (GET)
   getDisputes: () => axiosClient.get("/api/annotator/disputes"),
+
+  getStats: () => axiosClient.get("/api/annotator/my-stats"),
 };
 
 export default annotatorApi;
