@@ -16,16 +16,6 @@ export default function ExportData() {
     handleExport,
   } = useExportData();
 
-  // Hàm render màu cho trạng thái export
-  const getStatusColor = (status) => {
-    const s = (status || "").toLowerCase();
-    if (s.includes("success") || s.includes("done") || s.includes("completed"))
-      return "bg-emerald-500/10 text-emerald-400";
-    if (s.includes("fail") || s.includes("error"))
-      return "bg-rose-500/10 text-rose-400";
-    return "bg-amber-500/10 text-amber-400"; // Processing, Pending...
-  };
-
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="mb-8">
@@ -211,10 +201,7 @@ export default function ExportData() {
                           Ngày tạo
                         </th>
                         <th className="px-6 py-4 font-medium border-b border-white/5">
-                          Trạng thái
-                        </th>
-                        <th className="px-6 py-4 font-medium text-right border-b border-white/5">
-                          Hành động
+                          Format
                         </th>
                       </tr>
                     </thead>
@@ -227,10 +214,12 @@ export default function ExportData() {
                           `EXP-${idx}`;
                         const date =
                           hist.exportDate || hist.createdAt || hist.date;
-                        const status =
-                          hist.status || hist.exportStatus || "Processing";
-                        const fileUrl =
-                          hist.fileUrl || hist.downloadUrl || hist.url;
+                        const exportFormat =
+                          hist.format ||
+                          hist.exportFormat ||
+                          hist.fileFormat ||
+                          hist.type ||
+                          "-";
 
                         return (
                           <tr
@@ -245,28 +234,8 @@ export default function ExportData() {
                                 ? new Date(date).toLocaleString("vi-VN")
                                 : "N/A"}
                             </td>
-                            <td className="px-6 py-4">
-                              <span
-                                className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider ${getStatusColor(status)}`}
-                              >
-                                {status}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              {fileUrl ? (
-                                <a
-                                  href={fileUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded transition-colors text-xs font-bold"
-                                >
-                                  Tải File {format}
-                                </a>
-                              ) : (
-                                <span className="text-gray-500 text-xs italic">
-                                  Đang xử lý...
-                                </span>
-                              )}
+                            <td className="px-6 py-4 text-gray-300 font-medium">
+                              {exportFormat}
                             </td>
                           </tr>
                         );
