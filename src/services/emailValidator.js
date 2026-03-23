@@ -5,6 +5,13 @@ const ABSTRACT_API_KEY =
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const readApiBool = (value) => {
+  if (value && typeof value === 'object' && 'value' in value) {
+    return value.value;
+  }
+  return value;
+};
+
 export const checkEmailExists = async (email) => {
   // 1. Kiểm tra định dạng cơ bản trước (để tiết kiệm lượt gọi API)
   if (!EMAIL_REGEX.test(email)) {
@@ -42,14 +49,19 @@ export const checkEmailExists = async (email) => {
 
     const isDeliverable = String(deliverabilityRaw || '').toUpperCase() === 'DELIVERABLE';
 
-    const smtpOk =
-      data?.is_smtp_valid?.value === true ||
-      data?.email_deliverability?.is_smtp_valid === true ||
-      data?.email_reputation?.is_smtp_valid === true;
+    const smtpValue = readApiBool(
+      data?.is_smtp_valid ??
+      data?.email_deliverability?.is_smtp_valid ??
+      data?.email_reputation?.is_smtp_valid
+    );
+    const smtpOk = smtpValue === true;
+    const smtpInvalid = smtpValue === false;
 
-    const formatOk =
-      data?.is_valid_format?.value === true ||
-      data?.email_deliverability?.is_format_valid === true;
+    const formatValue = readApiBool(
+      data?.is_valid_format ??
+      data?.email_deliverability?.is_format_valid
+    );
+    const formatOk = formatValue === true;
 
     const disposable =
       data?.is_disposable_email?.value === true ||
@@ -58,6 +70,10 @@ export const checkEmailExists = async (email) => {
 
     if (disposable) {
       return { isValid: false, message: 'Vui lòng không sử dụng email ảo.' };
+    }
+
+    if (smtpInvalid) {
+      return { isValid: false, message: 'Email này không xác thực được qua SMTP.' };
     }
 
     if (isDeliverable || smtpOk) {

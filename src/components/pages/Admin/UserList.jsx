@@ -290,9 +290,9 @@ export default function UserList() {
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end gap-2">
                                         <button onClick={() => openDetail(user)} className="text-xs bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded-lg">Sửa</button>
-                                        <button onClick={() => handleResetPassword(user)} disabled={isBusy || resettingId === user.id} title="Đặt lại Mật Khẩu" className="text-xs bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 px-3 py-1.5 rounded-lg">
+                                        {/* <button onClick={() => handleResetPassword(user)} disabled={isBusy || resettingId === user.id} title="Đặt lại Mật Khẩu" className="text-xs bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 px-3 py-1.5 rounded-lg">
                                             {resettingId === user.id ? '...' : '🔑'}
-                                        </button>
+                                        </button> */}
                                         <button onClick={() => handleToggleStatus(user)} disabled={isBusy || togglingId === user.id} className={`text-xs px-3 py-1.5 rounded-lg font-bold ${user.status === 'Active' ? 'bg-rose-600/10 hover:bg-rose-600/20 text-rose-400' : 'bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400'}`}>
                                             {togglingId === user.id ? '...' : user.status === 'Active' ? 'Vô hiệu' : 'Kích hoạt'}
                                         </button>
