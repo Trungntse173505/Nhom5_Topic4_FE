@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useManagerDisputes } from "../../../hooks/Manager/useManagerDisputes";
 
 export default function DisputeResolution() {
@@ -12,21 +12,40 @@ export default function DisputeResolution() {
     resolveDispute,
   } = useManagerDisputes();
 
+  const [managerComment, setManagerComment] = useState("");
+
   const pendingDisputes = disputes.filter((d) => d.status === "Pending");
+
+  // Hàm gom chung xử lý Accept/Reject
+  const handleResolve = async (action) => {
+    if (!managerComment.trim()) {
+      alert("Vui lòng nhập phản hồi cho Annotator trước khi quyết định!");
+      return;
+    }
+    
+    try {
+      const success = await resolveDispute(selectedDispute.disputeID, action, managerComment);
+      if (success) {
+        setManagerComment(""); // Reset ô nhập sau khi thành công
+        alert(action === 'accept' ? 'Đã bênh vực Annotator! Task được duyệt thành công.' : 'Đã bênh vực Reviewer! Annotator bị phạt.');
+      }
+    } catch (error) {
+      alert("Lỗi: Không thể xử lý khiếu nại.");
+    }
+  };
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">Giải quyết khiếu nại</h1>
         <p className="text-sm text-gray-400 mt-1">
-          Xử lý các xung đột giữa Người gán nhãn (Annotator) và Người duyệt
-          (Reviewer)
+          Xử lý các xung đột giữa Người gán nhãn (Annotator) và Người duyệt (Reviewer)
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Hàng chờ Dispute */}
-        <div className="lg:col-span-1 rounded-xl border border-white/5 bg-[#151D2F] p-5 shadow-sm overflow-hidden flex flex-col h-[600px]">
+        <div className="lg:col-span-1 rounded-xl border border-white/5 bg-[#151D2F] p-5 shadow-sm overflow-hidden flex flex-col h-[650px]">
           <h2 className="text-base font-semibold text-white mb-4 shrink-0">
             Khiếu nại chờ xử lý ({pendingDisputes.length})
           </h2>
@@ -40,12 +59,14 @@ export default function DisputeResolution() {
               </p>
             ) : (
               pendingDisputes.map((item) => {
-                const isSelected =
-                  selectedDispute?.disputeID === item.disputeID;
+                const isSelected = selectedDispute?.disputeID === item.disputeID;
                 return (
                   <div
                     key={item.disputeID}
-                    onClick={() => fetchDisputeDetail(item.disputeID)}
+                    onClick={() => {
+                      fetchDisputeDetail(item.disputeID);
+                      setManagerComment(""); // Reset ô nhập khi đổi task khác
+                    }}
                     className={`p-4 rounded-lg border cursor-pointer transition-colors ${
                       isSelected
                         ? "border-blue-500/50 bg-blue-500/5"
@@ -60,9 +81,7 @@ export default function DisputeResolution() {
                         Đang khiếu nại
                       </span>
                     </div>
-                    <p className="text-xs text-gray-400 truncate">
-                      Dự án: {item.projectName}
-                    </p>
+                    <p className="text-xs text-gray-400 truncate">Dự án: {item.projectName}</p>
                     <p className="text-xs text-gray-500 mt-1">
                       {new Date(item.createdAt).toLocaleDateString("vi-VN")}
                     </p>
@@ -74,7 +93,7 @@ export default function DisputeResolution() {
         </div>
 
         {/* Chi tiết phân xử */}
-        <div className="lg:col-span-2 rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col min-h-[600px]">
+        <div className="lg:col-span-2 rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm flex flex-col min-h-[650px]">
           {isLoadingDetail ? (
             <div className="flex-1 flex items-center justify-center text-gray-400">
               Đang tải thông tin chi tiết...
@@ -110,17 +129,12 @@ export default function DisputeResolution() {
                 {/* Khu vực ảnh bằng chứng (Evidence Images) */}
                 <div className="p-5 rounded-xl border border-white/5 bg-[#1E293B]/50">
                   <h3 className="text-sm font-medium text-gray-300 mb-3">
-                    Ảnh bằng chứng (
-                    {selectedDispute.evidenceImages?.length || 0})
+                    Ảnh bằng chứng ({selectedDispute.evidenceImages?.length || 0})
                   </h3>
-                  {selectedDispute.evidenceImages &&
-                  selectedDispute.evidenceImages.length > 0 ? (
+                  {selectedDispute.evidenceImages && selectedDispute.evidenceImages.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       {selectedDispute.evidenceImages.map((imgUrl, idx) => (
-                        <div
-                          key={idx}
-                          className="aspect-video bg-black/40 rounded-lg overflow-hidden border border-white/5"
-                        >
+                        <div key={idx} className="aspect-video bg-black/40 rounded-lg overflow-hidden border border-white/5">
                           <img
                             src={imgUrl}
                             alt={`Bằng chứng ${idx + 1}`}
@@ -131,10 +145,19 @@ export default function DisputeResolution() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-500 italic">
-                      Không có ảnh bằng chứng nào được cung cấp.
-                    </p>
+                    <p className="text-xs text-gray-500 italic">Không có ảnh bằng chứng nào được cung cấp.</p>
                   )}
+                </div>
+
+                {/* Ô NHẬP LỜI NHẮN CỦA QUẢN LÝ */}
+                <div className="p-5 rounded-xl border border-white/5 bg-[#1E293B]/50">
+                  <h3 className="text-sm font-medium text-amber-400 mb-2">Phản hồi của bạn (Bắt buộc)</h3>
+                  <textarea
+                    value={managerComment}
+                    onChange={(e) => setManagerComment(e.target.value)}
+                    placeholder="Nhập nhận xét của bạn để giải thích tại sao bạn bênh vực Annotator hoặc Reviewer..."
+                    className="w-full bg-[#0F172A] border border-white/10 rounded-lg p-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 min-h-[100px] resize-none"
+                  />
                 </div>
               </div>
 
@@ -142,33 +165,22 @@ export default function DisputeResolution() {
               <div className="border-t border-white/5 pt-6 mt-auto">
                 <div className="flex gap-4">
                   <button
-                    onClick={() =>
-                      resolveDispute(selectedDispute.disputeID, "accept")
-                    }
-                    disabled={
-                      isResolving || selectedDispute.status !== "Pending"
-                    }
+                    onClick={() => handleResolve("accept")}
+                    disabled={isResolving || selectedDispute.status !== "Pending"}
                     className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-lg font-medium transition-colors"
                   >
-                    {isResolving
-                      ? "Đang xử lý..."
-                      : "Chấp thuận (Annotator thắng)"}
+                    {isResolving ? "Đang xử lý..." : "Annotator đúng 100% (Duyệt Task)"}
                   </button>
                   <button
-                    onClick={() =>
-                      resolveDispute(selectedDispute.disputeID, "reject")
-                    }
-                    disabled={
-                      isResolving || selectedDispute.status !== "Pending"
-                    }
+                    onClick={() => handleResolve("reject")}
+                    disabled={isResolving || selectedDispute.status !== "Pending"}
                     className="flex-1 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-lg font-medium transition-colors"
                   >
-                    {isResolving ? "Đang xử lý..." : "Từ chối (Reviewer thắng)"}
+                    {isResolving ? "Đang xử lý..." : "Reviewer đúng (Từ chối Khiếu nại)"}
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 text-center mt-3">
-                  Việc chấp thuận sẽ kết thúc Task. Từ chối sẽ trừ 10 điểm của
-                  Annotator.
+                  Việc <b>Chấp thuận</b> sẽ tính là Annotator làm đúng và hoàn thành (Done) Task. <b>Từ chối</b> sẽ trừ điểm Annotator và bắt sửa lại.
                 </p>
               </div>
             </>

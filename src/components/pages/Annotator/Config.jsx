@@ -1,4 +1,3 @@
-//Config.jsx
 import React from 'react';
 import { FileText, Headphones, Image as ImageIcon, FolderOpen, CheckCircle2, XCircle } from 'lucide-react';
 
@@ -15,6 +14,7 @@ export const STATUS_NAME = {
   PendingReview: 'Đang Duyệt',
   Rejected: 'Từ Chối',
   Approved: 'Hoàn Thành',
+  Disputed: 'Đang Khiếu Nại',
 };
 
 export const STATUS_STYLES = {
@@ -23,12 +23,14 @@ export const STATUS_STYLES = {
   PendingReview: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
   Rejected: 'bg-red-500/20 text-red-400 border-red-500/30',
   Approved: 'bg-green-500/20 text-green-400 border-green-500/30',
+  Disputed: 'bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30',
 };
 
 export const ACTION_STYLES = {
   New: { label: 'Bắt đầu', cls: 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20' },
   Rejected: { label: 'Sửa lỗi', cls: 'bg-red-600 hover:bg-red-500 shadow-red-500/20' },
   Done: { label: 'Xem lại', cls: 'bg-slate-700 hover:bg-slate-600 border border-slate-600' },
+  Disputed: { label: 'Xem chi tiết', cls: 'bg-fuchsia-600 hover:bg-fuchsia-500 shadow-fuchsia-500/20' },
   default: { label: 'Tiếp tục', cls: 'bg-yellow-600 hover:bg-yellow-500 shadow-yellow-500/20' },
 };
 
@@ -44,5 +46,6 @@ export const FILTERS = [
   { name: "Đang Thực Hiện", status: "InProgress" },
   { name: "Đang duyệt", status: "PendingReview" },
   { name: "Từ Chối", status: "Rejected" },
-  { name: "Hoàn Thành", status: "Approved" }
+  { name: "Hoàn Thành", status: "Approved" },
+  { name: "Đang khiếu nại", status: "Disputed" } 
 ];

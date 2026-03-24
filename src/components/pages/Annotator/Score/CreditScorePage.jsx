@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Trophy, TrendingUp, TrendingDown, ShieldAlert, 
-  History, Loader2, ChevronLeft, ChevronRight 
+  History, Loader2, ChevronLeft, ChevronRight, Minus 
 } from 'lucide-react';
 import { useReputation } from '../../../../hooks/Annotator/useReputation';
 
@@ -94,14 +94,16 @@ const CreditScorePage = () => {
             <div className="space-y-3 flex-1">
               {currentLogs.length ? currentLogs.map(({ id, reason, createdAt, scoreChange }, index) => {
                 const isPositive = scoreChange > 0;
+                const isNeutral = scoreChange === 0;
+
                 return (
                   <div key={id || index} className="flex items-center justify-between p-4 bg-[#0f172a] border border-slate-800 rounded-xl hover:border-slate-600 transition-colors">
                     <div>
                       <p className="text-sm font-semibold text-white">{reason}</p>
                       <p className="text-xs text-slate-500 mt-1">{new Date(createdAt).toLocaleString('vi-VN')}</p>
                     </div>
-                    <div className={`flex items-center gap-1.5 font-bold text-lg ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                      {isPositive ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
+                    <div className={`flex items-center gap-1.5 font-bold text-lg ${isPositive ? 'text-green-500' : isNeutral ? 'text-slate-500' : 'text-red-500'}`}>
+                      {isPositive ? <TrendingUp size={20} /> : isNeutral ? <Minus size={20} /> : <TrendingDown size={20} />}
                       {isPositive ? `+${scoreChange}` : scoreChange}
                     </div>
                   </div>

@@ -18,7 +18,6 @@ const TextEditor = ({
   const [error, setError] = useState(null);
   const [menuData, setMenuData] = useState(null);
 
-  // Lấy dữ liệu file Text
   useEffect(() => {
     const fetchTextContent = async () => {
       if (fileData?.url) {
@@ -43,7 +42,6 @@ const TextEditor = ({
     fetchTextContent();
   }, [fileData?.url, fileData?.content]);
 
-  // Chức năng Hoàn tác / Xóa toàn bộ
   const handleUndo = () => {
     if (annotations.length > 0) {
       setAnnotations((prev) => (prev || []).slice(0, -1));
@@ -58,7 +56,6 @@ const TextEditor = ({
     }
   };
 
-  // Logic bôi đen văn bản
   const handleMouseUp = () => {
     const selection = window.getSelection();
     if (!selection.rangeCount || selection.isCollapsed || !selectedLabel) return;
@@ -76,7 +73,8 @@ const TextEditor = ({
 
     setAnnotations((prev) => {
       const newId = `txt-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      const newAnnotation = { id: newId, start, end, label: selectedLabel, text: highlightedText };
+      
+      const newAnnotation = { id: newId, start, end, label: selectedLabel, text: highlightedText, isApproved: "New" };
       
       const sorted = [...(prev || []), newAnnotation].sort((a, b) => a.start - b.start);
 
@@ -98,7 +96,6 @@ const TextEditor = ({
     });
   };
 
-  // TỐI ƯU: Dùng useCallback để Component con không bị re-render vô ích
   const handleHighlightClick = useCallback((e, hl) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
@@ -118,10 +115,12 @@ const TextEditor = ({
     );
     setAnnotations(
       annotations.map((ann) =>
-        ann.id === annId ? { ...ann, label: newLabelName, labelId: matchedLabel?.id } : ann
+        // 🔥 ĐÃ FIX: Chỉnh sửa nhãn là tước quyền Reviewer, reset về "New"
+        ann.id === annId ? { ...ann, label: newLabelName, labelId: matchedLabel?.id, isApproved: "New" } : ann
       )
     );
-    setMenuData((prev) => ({ ...prev, label: newLabelName }));
+    // Cập nhật State cho Menu để viền đỏ/xanh biến mất ngay lập tức
+    setMenuData((prev) => ({ ...prev, label: newLabelName, isApproved: "New" }));
   };
 
   const handleDeleteBox = (annId) => {
@@ -131,7 +130,6 @@ const TextEditor = ({
 
   return (
     <div ref={wrapperRef} className="w-full h-full bg-[#1e293b] flex flex-col relative group p-6 overflow-hidden">
-      {/* TOOLBAR */}
       <div className="absolute top-8 right-10 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
         <button onClick={handleUndo} className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-300 bg-[#0f172a]/80 backdrop-blur-md rounded-lg border border-slate-700 hover:text-white hover:bg-slate-800 transition-all shadow-xl">
           <RotateCcw size={14} /> Hoàn tác

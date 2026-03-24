@@ -1,4 +1,4 @@
-import axiosClient from './axiosClient'; // Đường dẫn trỏ tới file axiosClient của bạn
+import axiosClient from './axiosClient';
 
 export const managerDisputeApi = {
   // Lấy danh sách tất cả khiếu nại
@@ -11,8 +11,12 @@ export const managerDisputeApi = {
     return axiosClient.get(`/api/manager/projects/disputes/${disputeId}`);
   },
 
-  // Giải quyết khiếu nại (action: 'accept' hoặc 'reject')
-  resolveDispute: (disputeId, action) => {
-    return axiosClient.patch(`/api/manager/projects/disputes/${disputeId}?action=${action}`);
+  // 🔥 ĐÃ FIX: Giải quyết khiếu nại (truyền thêm managerComment vào body)
+  resolveDispute: (disputeId, action, managerComment) => {
+    return axiosClient.patch(
+      `/api/manager/projects/disputes/${disputeId}?action=${action}`,
+      JSON.stringify(managerComment), // Gửi body dạng chuỗi JSON
+      { headers: { 'Content-Type': 'application/json' } }
+    );
   }
 };

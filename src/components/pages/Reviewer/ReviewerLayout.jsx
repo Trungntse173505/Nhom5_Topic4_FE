@@ -9,6 +9,7 @@ const menuItems = [
   { path: "/reviewer", label: "Dashboard", icon: "🔍" },
   { path: "/reviewer/disputes", label: "Khiếu Nại", icon: "⚖️" }, 
   { path: "/reviewer/credit-score", label: "Điểm Tín Nhiệm", icon: "🏆" },
+  { path: "/reviewer/statistics", label: "Thống Kê", icon: "📊" },
 ];
 
 export default function ReviewerLayout() {

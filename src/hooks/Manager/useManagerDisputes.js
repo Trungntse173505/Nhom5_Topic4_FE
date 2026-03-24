@@ -9,12 +9,10 @@ export const useManagerDisputes = () => {
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
 
-  // Lấy danh sách Disputes
   const fetchDisputes = useCallback(async () => {
     setIsLoadingList(true);
     try {
       const data = await managerDisputeApi.getAllDisputes();
-      // Lọc ưu tiên hiển thị trạng thái Pending lên đầu
       setDisputes(data);
     } catch (error) {
       console.error("Lỗi khi tải danh sách khiếu nại:", error);
@@ -23,7 +21,6 @@ export const useManagerDisputes = () => {
     }
   }, []);
 
-  // Lấy chi tiết 1 Dispute
   const fetchDisputeDetail = async (disputeId) => {
     setIsLoadingDetail(true);
     try {
@@ -36,24 +33,21 @@ export const useManagerDisputes = () => {
     }
   };
 
-  // Xử lý Accept/Reject
-  const resolveDispute = async (disputeId, action) => {
+  const resolveDispute = async (disputeId, action, comment) => {
     setIsResolving(true);
     try {
-      await managerDisputeApi.resolveDispute(disputeId, action);
-      // Xử lý thành công -> Tải lại danh sách & Xóa selected
+      await managerDisputeApi.resolveDispute(disputeId, action, comment);
       await fetchDisputes();
       setSelectedDispute(null);
-      alert(action === 'accept' ? 'Đã chấp thuận khiếu nại (Annotator thắng)!' : 'Đã từ chối khiếu nại (Reviewer thắng)!');
+      return true; 
     } catch (error) {
       console.error(`Lỗi khi ${action} khiếu nại:`, error);
-      alert('Có lỗi xảy ra khi xử lý!');
+      throw error; 
     } finally {
       setIsResolving(false);
     }
   };
 
-  // Tự động fetch danh sách lần đầu mount hook
   useEffect(() => {
     fetchDisputes();
   }, [fetchDisputes]);

@@ -50,36 +50,6 @@ const DisputeItem = memo(({ task, onDetail }) => {
             {task.taskName || "Nhiệm vụ không tên"}
           </h3>
         </div>
-
-        <div className="bg-[#0f172a]/50 p-3 rounded-xl border border-slate-800/50">
-          <p className="text-sm text-slate-400 flex items-start gap-2 line-clamp-2">
-            <MessageSquare
-              size={16}
-              className="text-amber-500 mt-0.5 shrink-0"
-            />
-            <span className="italic">
-              "{task.reason || task.disputeReason || "Không có lý do"}"
-            </span>
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-5 text-xs text-slate-500 font-medium pt-1">
-          <div className="flex items-center gap-1.5">
-            <Clock size={14} />
-            <span>
-              Tạo ngày:{" "}
-              {task.createdAt
-                ? new Date(task.createdAt).toLocaleDateString("vi-VN")
-                : "N/A"}
-            </span>
-          </div>
-          <div className={`flex items-center gap-1.5 ${statusInfo.color}`}>
-            <div
-              className={`w-1.5 h-1.5 rounded-full ${statusInfo.bg} ${statusInfo.pulse ? "animate-pulse" : ""}`}
-            />
-            <span className="font-bold">{statusInfo.text}</span>
-          </div>
-        </div>
       </div>
 
       <button
@@ -130,11 +100,6 @@ const DisputeList = () => {
           <p className="text-slate-400 mt-2 text-sm font-medium italic">
             Theo dõi tiến độ phúc khảo.
           </p>
-        </div>
-        <div className="bg-amber-500/10 border border-amber-500/20 px-4 py-2 rounded-2xl hidden md:block">
-          <span className="text-amber-500 font-bold text-sm">
-            {disputes.length} Đơn khiếu nại
-          </span>
         </div>
       </header>
 

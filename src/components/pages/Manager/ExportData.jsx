@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useExportData } from "../../../hooks/Manager/useExportData";
 
 export default function ExportData() {
-  const [format, setFormat] = useState("JSON"); // Mặc định để JSON đi vì API xuất json thường phổ biến nhất
+  const [format, setFormat] = useState("YOLO"); // Mặc định để YOLO vì đây là định dạng export đang được hỗ trợ
 
   // Lấy toàn bộ data và hàm từ Hook
   const {
@@ -69,7 +69,7 @@ export default function ExportData() {
                   Export Format
                 </label>
                 <div className="grid grid-cols-2 gap-3">
-                  {["YOLO", "VOC", "JSON", "CSV"].map((fmt) => (
+                  {["YOLO", "COCO", "VOC", "JSON", "CSV"].map((fmt) => (
                     <button
                       key={fmt}
                       onClick={() => setFormat(fmt)}
@@ -121,7 +121,7 @@ export default function ExportData() {
               </div>
 
               <button
-                onClick={handleExport}
+                onClick={() => handleExport(format)}
                 disabled={!selectedProjectId || isExporting}
                 className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed text-white py-3 rounded-lg font-medium transition-colors flex justify-center items-center gap-2"
               >

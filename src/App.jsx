@@ -16,6 +16,7 @@ import AnnotatorWorkspace from "./components/pages/Annotator/Workspace/Annotator
 import CreditScorePage from "./components/pages/Annotator/Score/CreditScorePage";
 import DisputeList from "./components/pages/Annotator/Dispute/DisputeList";
 import DisputeDetail from "./components/pages/Annotator/Dispute/DisputeDetail";
+import AnnotatorStatistics from "./components/pages/Annotator/AnnotatorStatistics";
 
 // ================= ADMIN =================
 import AdminGlobalLayout from "./components/pages/Admin/AdminGlobalLayout";
@@ -39,8 +40,9 @@ import ReviewerLayout from "./components/pages/Reviewer/ReviewerLayout";
 import ReviewerDashboard from "./components/pages/Reviewer/ReviewerDashboard";
 import ReviewerWorkspace from "./components/pages/Reviewer/Workspace/ReviewerWorkspace"; 
 import ReviewerDisputeList from "./components/pages/Reviewer/Dispute/ReviewerDisputeList";
-import ReviewerDisputeDetail from "./components/pages/Reviewer/Dispute/ReviewerDisputeDetail";
 import ReviewerScorePage from "./components/pages/Reviewer/Workspace/ReviewerScorePage";
+import ReviewerDisputeDetail from "./components/pages/Reviewer/Dispute/ReviewerDisputeDetail";
+import ReviewerStatistics from "./components/pages/Reviewer/ReviewerStatistics";
 
 const AnalyticsTracker = () => {
   const location = useLocation();
@@ -112,6 +114,7 @@ function App() {
             <Route path="score" element={<CreditScorePage />} />
             <Route path="disputes" element={<DisputeList />} />
             <Route path="disputes/:id" element={<DisputeDetail />} />
+            <Route path="statistics" element={<AnnotatorStatistics />} />
           </Route>
         </Route>
 
@@ -122,8 +125,9 @@ function App() {
           <Route path="dashboard" element={<ReviewerDashboard />} />
           <Route path="/reviewer/workspace/:taskId" element={<ReviewerWorkspace />} />
           <Route path="disputes" element={<ReviewerDisputeList />} />
-            <Route path="disputes/:id" element={<ReviewerDisputeDetail />} />
-            <Route path="credit-score" element={<ReviewerScorePage />} />
+          <Route path="credit-score" element={<ReviewerScorePage />} />
+          <Route path="/reviewer/disputes/:id" element={<ReviewerDisputeDetail />} />
+          <Route path="statistics" element={<ReviewerStatistics />} />
           </Route>
 
         </Route>

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Image as ImageIcon, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Image as ImageIcon, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 
-const SidebarLeft = ({ files = [], currentItemId, onSelectItem, taskStatus }) => {
+const SidebarLeft = ({ files = [], currentItemId, onSelectItem }) => {
   return (
     <aside className="w-64 border-r border-slate-800 bg-[#0f172a] flex flex-col h-full overflow-hidden shrink-0">
       
@@ -12,7 +12,7 @@ const SidebarLeft = ({ files = [], currentItemId, onSelectItem, taskStatus }) =>
       </div>
 
       {/* --- PHẦN DANH SÁCH FILE --- */}
-      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
+      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3 custom-scrollbar">
         {files.map(({ id, name, status }) => {
           const isActive = currentItemId === id;
           const containerClass = isActive 
@@ -40,12 +40,16 @@ const SidebarLeft = ({ files = [], currentItemId, onSelectItem, taskStatus }) =>
                 <span className={`text-sm font-medium truncate flex-1 ${textClass}`} title={name}>
                   {name}
                 </span>
-                {taskStatus === 'Rejected' ? (
-                  <AlertTriangle size={14} className="text-red-500 shrink-0" title="Task bị từ chối, cần kiểm tra lại" />
-                ) : status === 'Done' ? (
-                  <CheckCircle size={14} className="text-green-500 shrink-0" />
-                ) : status === 'Rejected' && (
-                  <AlertTriangle size={14} className="text-red-500 shrink-0" title="Bị báo lỗi" />
+                
+                {/* 🔥 ICON TRẠNG THÁI CHUẨN UX */}
+                {status === 'Error' && (
+                  <XCircle size={15} className="text-red-500 shrink-0" title="Có nhãn làm sai (False), cần sửa!" />
+                )}
+                {status === 'Flagged' && (
+                  <AlertTriangle size={15} className="text-amber-500 shrink-0" title="File đã báo lỗi (Flagged)" />
+                )}
+                {status === 'Done' && (
+                  <CheckCircle size={15} className="text-emerald-500 shrink-0" title="Hoàn thành hợp lệ" />
                 )}
               </div>
             </div>
