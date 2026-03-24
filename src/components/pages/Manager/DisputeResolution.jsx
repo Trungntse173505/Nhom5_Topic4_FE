@@ -27,7 +27,7 @@ export default function DisputeResolution() {
       const success = await resolveDispute(selectedDispute.disputeID, action, managerComment);
       if (success) {
         setManagerComment(""); // Reset ô nhập sau khi thành công
-        alert(action === 'accept' ? 'Đã bênh vực Annotator! Task được duyệt thành công.' : 'Đã bênh vực Reviewer! Annotator bị phạt.');
+        alert(action === 'accept' ? 'Task được duyệt thành công.' : 'Annotator bị phạt.');
       }
     } catch (error) {
       alert("Lỗi: Không thể xử lý khiếu nại.");

@@ -37,7 +37,7 @@ export default function UserList() {
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editForm, setEditForm] = useState(null);
-    const [createForm, setCreateForm] = useState({ name: '', username: '', email: '', role: 'ANNOTATOR', password: '' });
+    const [createForm, setCreateForm] = useState({ name: '', username: '', email: '', role: 'ANNOTATOR', password: '', expertise: '' });
     const [createError, setCreateError] = useState('');
 
     // --- CÁC HÀM XỬ LÝ LOGIC ---
@@ -63,7 +63,7 @@ export default function UserList() {
             setUsers(prev => [{ id: createdId, ...createForm, status: 'Active' }, ...prev]);
         }
         setIsCreateOpen(false);
-        setCreateForm({ name: '', username: '', email: '', role: 'ANNOTATOR', password: '' });
+        setCreateForm({ name: '', username: '', email: '', role: 'ANNOTATOR', password: '', expertise: '' });
     };
 
     const handleToggleStatus = async (user) => {
@@ -331,6 +331,12 @@ export default function UserList() {
                                 <option value="ANNOTATOR">ANNOTATOR</option>
                                 <option value="REVIEWER">REVIEWER</option>
                             </FormField>
+                            <FormField
+                                label="Kinh nghiệm / Chuyên môn"
+                                value={createForm.expertise}
+                                onChange={e => setCreateForm(p => ({ ...p, expertise: e.target.value }))}
+                                placeholder="Ví dụ: Image Labeling, Medical Data..."
+                            />
                             <FormField type="password" label="Mật khẩu" value={createForm.password} onChange={e => setCreateForm(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" />
                         </div>
                         <div className="px-8 py-6 bg-white/[0.02] border-t border-white/5 flex gap-3">
