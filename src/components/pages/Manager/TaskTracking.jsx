@@ -34,7 +34,7 @@ const TaskRowItem = React.memo(
         matchedRev?.name ||
         `User ID: ${task.reviewerID.substring(0, 8)}...`;
 
-    const status = task.status || "Unknown";
+    const status = task.status || "Không xác định";
 
     const getStatusColor = (s) => {
       const st = (s || "").toLowerCase();
@@ -74,7 +74,7 @@ const TaskRowItem = React.memo(
             <span
               className={`px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider ${getStatusColor(status)}`}
             >
-              {status === "0" ? "In Progress" : status}
+              {status === "0" ? "Đang xử lý" : status}
             </span>
           </div>
         </td>
@@ -106,14 +106,14 @@ const TaskRowItem = React.memo(
             disabled={isActionLoading || !targetId}
             className="text-xs px-3 py-1.5 rounded bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-colors disabled:opacity-50"
           >
-            Extend
+            Gia hạn
           </button>
           <button
             onClick={() => onAssign(targetId, task, isUnassigned)}
             disabled={isActionLoading || !targetId}
             className={`text-xs px-3 py-1.5 rounded transition-colors disabled:opacity-50 ${isUnassigned ? "bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-bold" : "bg-white/5 hover:bg-white/10 text-gray-300"}`}
           >
-            {isUnassigned ? "Assign" : "Reassign"}
+            {isUnassigned ? "Giao việc" : "Giao lại"}
           </button>
         </td>
       </tr>
@@ -228,7 +228,7 @@ export default function TaskTracking({ project, setActiveTab }) {
     <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm relative">
       <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4 relative z-10">
         <div>
-          <h2 className="text-lg font-semibold text-white">Task Tracking</h2>
+          <h2 className="text-lg font-semibold text-white">Theo dõi Task</h2>
           <p className="text-sm text-gray-400 mt-1">
             Giám sát tiến độ, gia hạn hoặc giao việc cho nhân sự.
           </p>
@@ -261,10 +261,10 @@ export default function TaskTracking({ project, setActiveTab }) {
             <thead className="bg-[#0B1120] text-gray-400 border-b border-white/5">
               <tr>
                 <th className="px-4 py-3 rounded-tl-lg font-medium">
-                  Task Info
+                  Thông tin Task
                 </th>
                 <th className="px-4 py-3 font-medium">Tiến độ</th>
-                <th className="px-4 py-3 font-medium">Nhân sự (Ann / Rev)</th>
+                <th className="px-4 py-3 font-medium">Nhân sự</th>
                 <th className="px-4 py-3 font-medium">Hạn chót</th>
                 <th className="px-4 py-3 rounded-tr-lg font-medium text-right">
                   Thao tác
@@ -333,7 +333,7 @@ export default function TaskTracking({ project, setActiveTab }) {
                 <div className="space-y-3">
                   {annotators.length === 0 ? (
                     <div className="text-sm text-gray-500 italic p-4 border border-dashed border-white/10 rounded-xl text-center">
-                      Không có Annotator nào phù hợp.
+                      Không có nhân viên ghi nhãn nào phù hợp.
                     </div>
                   ) : (
                     annotators.map((u) => {
@@ -358,7 +358,7 @@ export default function TaskTracking({ project, setActiveTab }) {
                                 {u.fullName ||
                                   u.userName ||
                                   u.name ||
-                                  "Unknown User"}
+                                  "Người dùng chưa tên"}
                               </div>
                               <div className="text-xs text-gray-500 mt-1">
                                 Chuyên môn: {u.expertise || "Cơ bản"}

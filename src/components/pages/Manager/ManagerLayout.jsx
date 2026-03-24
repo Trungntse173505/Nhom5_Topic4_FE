@@ -42,7 +42,7 @@ const MANAGER_TABS = [
   },
   {
     id: "distribution",
-    label: "Tạo Task",
+    label: "Tạo Nhiệm Vụ",
     icon: (
       <svg
         className="w-4 h-4"
@@ -147,7 +147,6 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
             <h1 className="text-lg font-semibold tracking-wide text-white">
               Không gian làm việc Dự án {projectId ? `#${projectId}` : ""}
             </h1>
-            <p className="text-sm text-gray-400">test@gmail.com</p>
           </div>
         </div>
       </header>

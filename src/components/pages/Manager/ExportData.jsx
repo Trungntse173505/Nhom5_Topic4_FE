@@ -29,9 +29,9 @@ export default function ExportData() {
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Export Dataset</h1>
+        <h1 className="text-2xl font-bold text-white">Xuất Dữ Liệu</h1>
         <p className="text-sm text-gray-400 mt-1">
-          Download approved annotations in your preferred format
+          Tải xuống các chú thích đã phê duyệt với định dạng bạn chọn
         </p>
       </div>
 
@@ -43,7 +43,7 @@ export default function ExportData() {
               {/* Chọn dự án */}
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Select Project
+                  Chọn Dự Án
                 </label>
                 <select
                   value={selectedProjectId}
@@ -51,7 +51,7 @@ export default function ExportData() {
                   disabled={isLoadingProjects}
                   className="w-full rounded-lg border border-white/10 bg-[#0B1120] px-4 py-3 text-sm text-white outline-none focus:border-blue-500/50"
                 >
-                  <option value="">-- Choose a project --</option>
+                  <option value="">-- Chọn một dự án --</option>
                   {projects.map((p) => {
                     const pid = p.projectID || p.id;
                     return (
@@ -66,7 +66,7 @@ export default function ExportData() {
               {/* Chọn định dạng (Chỉ làm màu UI vì API POST /exports chưa nhận params này) */}
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-3">
-                  Export Format
+                  Định Dạng Xuất
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   {["YOLO", "COCO", "VOC", "JSON", "CSV"].map((fmt) => (
@@ -107,16 +107,16 @@ export default function ExportData() {
                   </svg>
                   <span className="text-sm font-medium">
                     {selectedProjectId
-                      ? "Ready to Export"
-                      : "Waiting for project selection..."}
+                      ? "Sẵn sàng Xuất"
+                      : "Chờ sự lựa chọn dự án..."}
                   </span>
                 </div>
                 <p
                   className={`text-xs ${selectedProjectId ? "text-emerald-500/70" : "text-gray-500"}`}
                 >
                   {selectedProjectId
-                    ? `Approved tasks will be compiled into a ${format} file.`
-                    : "Please select a project to proceed."}
+                    ? `Các task đã duyệt sẽ được biên dịch thành tớp ${format}.`
+                    : "Vui lòng chọn một dự án để tiếp tục."}
                 </p>
               </div>
 
@@ -164,7 +164,7 @@ export default function ExportData() {
                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                       ></path>
                     </svg>
-                    Download Dataset
+                    Tải Xuống {format}
                   </>
                 )}
               </button>
@@ -177,7 +177,7 @@ export default function ExportData() {
           <div className="bg-[#151D2F] border border-white/5 rounded-xl shadow-sm overflow-hidden h-full min-h-[500px] flex flex-col">
             <div className="p-6 border-b border-white/5">
               <h2 className="text-lg font-semibold text-white">
-                Export History
+                Lịch sử xuất dữ liệu
               </h2>
               <p className="text-sm text-gray-400 mt-1">
                 Lịch sử xuất dữ liệu của dự án được chọn

@@ -172,7 +172,7 @@ export default function DatasetUpload({ project }) {
       }
     },
     [fileType],
-  ); 
+  );
 
   const handleStartUpload = useCallback(async () => {
     if (selectedFiles.length === 0) {
@@ -215,11 +215,11 @@ export default function DatasetUpload({ project }) {
               disabled // KHÓA CỨNG DROPDOWN NÀY LẠI
               className="bg-[#0B1120] border border-white/10 rounded-lg px-3 py-1.5 text-gray-400 text-sm outline-none cursor-not-allowed opacity-80"
             >
-              <option value="Pic">Pic (Ảnh)</option>
-              <option value="Text">Text (Văn bản)</option>
-              <option value="Audio">Audio (Âm thanh)</option>
+              <option value="Pic">Ảnh</option>
+              <option value="Text">Văn bản</option>
+              <option value="Audio">Âm thanh</option>
               <option value="Video">Video</option>
-              <option value="Mixed">Mixed (Hỗn hợp)</option>
+              <option value="Mixed">Hỗn hợp</option>
             </select>
             <p className="text-[10px] text-rose-400/80 mt-1 italic text-right">
               * Cố định theo dự án
