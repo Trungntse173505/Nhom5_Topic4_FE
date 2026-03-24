@@ -1,13 +1,14 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Stage, Layer, Rect, Text, Image as KonvaImage } from "react-konva";
 import useImage from "use-image";
+import { getLabelDisplay } from "../../../../utils/aiHelper";
 
 const ReviewerCanvas = ({
   currentItem,
   toggleAnnotationApproval,
   activeBoxId,
   setActiveBoxId,
-  availableLabels = [], 
+  availableLabels = [],
 }) => {
   const containerRef = useRef(null);
   const [img, status] = useImage(currentItem?.filePath || "", "anonymous");
@@ -89,7 +90,10 @@ const ReviewerCanvas = ({
             {(currentItem?.annotations || []).map((ann) => {
               if (activeBoxId && activeBoxId !== ann.idDetail) return null;
 
-              let bx = 0, by = 0, bw = 0, bh = 0;
+              let bx = 0,
+                by = 0,
+                bw = 0,
+                bh = 0;
 
               try {
                 let parsedData = ann.annotationData;
@@ -98,8 +102,16 @@ const ReviewerCanvas = ({
                 }
                 bx = Number(parsedData?.x || parsedData?.xmin) || 0;
                 by = Number(parsedData?.y || parsedData?.ymin) || 0;
-                bw = Number(parsedData?.width || (parsedData?.xmax ? parsedData.xmax - bx : 0)) || 0;
-                bh = Number(parsedData?.height || (parsedData?.ymax ? parsedData.ymax - by : 0)) || 0;
+                bw =
+                  Number(
+                    parsedData?.width ||
+                      (parsedData?.xmax ? parsedData.xmax - bx : 0),
+                  ) || 0;
+                bh =
+                  Number(
+                    parsedData?.height ||
+                      (parsedData?.ymax ? parsedData.ymax - by : 0),
+                  ) || 0;
               } catch (e) {
                 return null;
               }
@@ -107,10 +119,12 @@ const ReviewerCanvas = ({
               if (bw === 0 || bh === 0) return null;
 
               const labelName = ann.content || "Chưa có nhãn";
-              const labelDef = availableLabels.find(l => l.name?.toLowerCase() === labelName.toLowerCase());
-              
+              const labelDef = availableLabels.find(
+                (l) => l.name?.toLowerCase() === labelName.toLowerCase(),
+              );
+
               // 🎨 Lấy chuẩn 1 màu duy nhất từ CSDL cho cả KHUNG và NỀN CHỮ
-              const themeColor = labelDef?.color || "#3B82F6"; 
+              const themeColor = labelDef?.color || "#3B82F6";
 
               const invScale = 1 / renderData.scale;
 
@@ -123,13 +137,16 @@ const ReviewerCanvas = ({
                     width={bw}
                     height={bh}
                     stroke={themeColor}
-                    strokeWidth={(activeBoxId === ann.idDetail ? 4 : 2) * invScale}
+                    strokeWidth={
+                      (activeBoxId === ann.idDetail ? 4 : 2) * invScale
+                    }
                     fill={`${themeColor}${activeBoxId === ann.idDetail ? "40" : "1A"}`}
                     onMouseEnter={(e) => {
                       e.target.getStage().container().style.cursor = "pointer";
                     }}
                     onMouseLeave={(e) => {
-                      e.target.getStage().container().style.cursor = "crosshair";
+                      e.target.getStage().container().style.cursor =
+                        "crosshair";
                     }}
                     onClick={(e) => {
                       e.cancelBubble = true;
@@ -152,7 +169,7 @@ const ReviewerCanvas = ({
                   <Text
                     x={bx + 4 * invScale}
                     y={by - 18 * invScale}
-                    text={labelName}
+                    text={getLabelDisplay(labelName)}
                     fontSize={12 * invScale}
                     fill="#fff"
                     fontStyle="bold"
