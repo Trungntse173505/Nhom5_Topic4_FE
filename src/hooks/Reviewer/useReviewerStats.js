@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { reviewerApi } from '../../api/reviewerService'; 
+
 export const useReviewerStats = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -12,6 +13,7 @@ export const useReviewerStats = () => {
         const response = await reviewerApi.getStats();
         setStats(response.data || response);
       } catch (err) {
+        console.error("Lỗi API Thống kê:", err);
         setError(err.message || "Lỗi tải thống kê Reviewer");
       } finally {
         setLoading(false);

@@ -74,7 +74,6 @@ const TextEditor = ({
     setAnnotations((prev) => {
       const newId = `txt-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       
-      // 🔥 ĐÃ THÊM isApproved: "New" VÀO ĐÂY
       const newAnnotation = { id: newId, start, end, label: selectedLabel, text: highlightedText, isApproved: "New" };
       
       const sorted = [...(prev || []), newAnnotation].sort((a, b) => a.start - b.start);
@@ -116,10 +115,12 @@ const TextEditor = ({
     );
     setAnnotations(
       annotations.map((ann) =>
-        ann.id === annId ? { ...ann, label: newLabelName, labelId: matchedLabel?.id } : ann
+        // 🔥 ĐÃ FIX: Chỉnh sửa nhãn là tước quyền Reviewer, reset về "New"
+        ann.id === annId ? { ...ann, label: newLabelName, labelId: matchedLabel?.id, isApproved: "New" } : ann
       )
     );
-    setMenuData((prev) => ({ ...prev, label: newLabelName }));
+    // Cập nhật State cho Menu để viền đỏ/xanh biến mất ngay lập tức
+    setMenuData((prev) => ({ ...prev, label: newLabelName, isApproved: "New" }));
   };
 
   const handleDeleteBox = (annId) => {

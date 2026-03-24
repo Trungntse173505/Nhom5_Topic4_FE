@@ -14,7 +14,6 @@ import { useReputation } from "../../../hooks/Annotator/useReputation";
 import { useStartTask } from "../../../hooks/Annotator/useStartTask";
 
 import {
-  TYPE_ICONS,
   STATUS_NAME,
   STATUS_STYLES,
   ACTION_STYLES,
@@ -172,14 +171,12 @@ const AnnotatorDashboard = () => {
             {currentTasks.length > 0 ? (
               currentTasks.map((task) => {
                 const action = ACTION_STYLES[task.status] ?? ACTION_STYLES.default;
-                const IconType = TYPE_ICONS[task.type] || TYPE_ICONS.image;
                 const isCurrentAction = actionTaskId === task.taskID;
 
                 return (
                   <tr key={task.taskID} className="border-t border-slate-700 hover:bg-slate-800/50 transition-colors">
                     <td className="p-4">
                       <div className="flex items-center gap-2 font-bold text-white mb-1">
-                        {IconType}
                         {task.taskName}
                       </div>
                     </td>

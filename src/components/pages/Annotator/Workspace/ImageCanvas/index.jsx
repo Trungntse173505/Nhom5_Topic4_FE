@@ -57,7 +57,7 @@ const ImageCanvas = ({
     setIsDrawing(true);
     setNewAnnotation({
       x, y, width: 0, height: 0, label: selectedLabel, id: `box-${Date.now()}`,
-      isApproved: "New" // 🔥 KHUNG MỚI LUÔN LÀ "New"
+      isApproved: "New" // Khung vẽ mới luôn là New
     });
   };
 
@@ -82,7 +82,8 @@ const ImageCanvas = ({
     const matchedLabel = availableLabels.find((l) => l.name === newLabelName);
     setAnnotations(
       annotations.map((ann) =>
-        ann.id === annId ? { ...ann, label: newLabelName, labelId: matchedLabel?.id } : ann
+        // 🔥 ĐÃ FIX: Chỉnh sửa nhãn là tước quyền Reviewer, reset về "New"
+        ann.id === annId ? { ...ann, label: newLabelName, labelId: matchedLabel?.id, isApproved: "New" } : ann
       )
     );
   };

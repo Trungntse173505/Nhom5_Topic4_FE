@@ -7,7 +7,7 @@ const ReviewerStatistics = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-full items-center justify-center bg-[#0f172a] text-blue-500">
+      <div className="flex min-h-screen items-center justify-center bg-[#0f172a] text-blue-500">
         <Loader2 className="animate-spin" size={48} />
       </div>
     );
@@ -15,17 +15,20 @@ const ReviewerStatistics = () => {
 
   if (error) {
     return (
-      <div className="flex min-h-full items-center justify-center bg-[#0f172a] text-rose-500">
-        <p>Lỗi tải dữ liệu: {error}</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#0f172a] text-rose-500">
+        <div className="text-center">
+           <p className="text-xl font-bold">⚠️ Có lỗi xảy ra</p>
+           <p className="text-slate-400 mt-2">{error}</p>
+        </div>
       </div>
     );
   }
 
-  // Map data từ API
+  // Map data từ API BE trả về (Đã khớp hoàn toàn các key)
   const safeStats = {
     totalReviewedTasks: stats?.totalReviewedTasks || 0,
-    totalReviewHours: stats?.totalReviewHours || 0,
-    avgReviewHours: stats?.avgReviewHours || 0,
+    totalReviewHours: Number(stats?.totalReviewHours || 0).toFixed(1), // Làm tròn 1 chữ số thập phân
+    avgReviewHours: Number(stats?.avgReviewHours || 0).toFixed(2),
     disputedTasksStreak: stats?.disputedTasksStreak || 0,
     currentPerfectRejectStreak: stats?.currentPerfectRejectStreak || 0,
     experience: stats?.experience || 0,
@@ -33,37 +36,18 @@ const ReviewerStatistics = () => {
   };
 
   return (
-    <div className="p-8 min-h-full bg-[#0f172a] text-slate-200">
+    <div className="p-8 min-h-screen bg-[#0f172a] text-slate-200">
       <div className="mb-10">
         <h1 className="text-3xl font-black flex items-center gap-3 tracking-tight text-white uppercase">
           <Eye className="text-blue-500" size={36} />
           Hiệu Suất Review
         </h1>
         <p className="text-slate-400 mt-2 text-sm">
-          Tổng quan về tốc độ duyệt bài và độ chính xác của bạn.
+          Tổng quan về tốc độ duyệt bài và độ chính xác của bạn từ Database.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-gradient-to-br from-indigo-900/40 to-[#1e293b] border border-indigo-500/20 rounded-3xl p-6 flex items-center gap-6 shadow-xl">
-          <div className="w-16 h-16 rounded-full bg-indigo-500/20 flex items-center justify-center shrink-0">
-            <Trophy size={32} className="text-indigo-400" />
-          </div>
-          <div>
-            <p className="text-slate-400 text-sm font-bold uppercase tracking-widest mb-1">Kinh nghiệm (XP)</p>
-            <h3 className="text-4xl font-black text-white">{safeStats.experience}</h3>
-          </div>
-        </div>
-        
-        <div className="bg-gradient-to-br from-emerald-900/40 to-[#1e293b] border border-emerald-500/20 rounded-3xl p-6 flex items-center gap-6 shadow-xl">
-          <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-            <Star size={32} className="text-emerald-400" />
-          </div>
-          <div>
-            <p className="text-slate-400 text-sm font-bold uppercase tracking-widest mb-1">Điểm tín nhiệm</p>
-            <h3 className="text-4xl font-black text-white">{safeStats.reputationPoints}/100</h3>
-          </div>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -71,7 +55,6 @@ const ReviewerStatistics = () => {
         <StatCard icon={<Clock size={24} className="text-purple-400" />} title="Tổng Giờ Duyệt" value={`${safeStats.totalReviewHours}h`} bgClass="bg-purple-500/10" />
         <StatCard icon={<Timer size={24} className="text-emerald-400" />} title="Tốc Độ TB / Task" value={`${safeStats.avgReviewHours}h`} bgClass="bg-emerald-500/10" />
         <StatCard icon={<ShieldCheck size={24} className="text-green-400" />} title="Chuỗi Bắt Lỗi Đúng" value={`${safeStats.currentPerfectRejectStreak} Lần`} bgClass="bg-green-500/10" />
-        <StatCard icon={<Flame size={24} className="text-rose-400" />} title="Chuỗi Bị Khiếu Nại" value={safeStats.disputedTasksStreak} bgClass="bg-rose-500/10" />
       </div>
     </div>
   );

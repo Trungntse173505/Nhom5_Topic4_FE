@@ -5,30 +5,19 @@ import {
   Clock,
   FolderOpen,
   Filter,
-  FileText,
-  Headphones,
-  Image as ImageIcon,
   Loader2,
   Trophy,
   XCircle,
-  MessageSquareWarning,
   AlertCircle,
-  PlusCircle,
 } from "lucide-react";
 import { useTasks } from "../../../hooks/Reviewer/useTasks";
 import { useScore } from "../../../hooks/Reviewer/useScore";
 import { AuroraBackground } from "../../common/aurora-background";
 import { CardSpotlight } from "../../common/card-spotlight";
 
-const TYPE_ICONS = {
-  text: <FileText size={16} className="text-blue-400" />,
-  audio: <Headphones size={16} className="text-amber-400" />,
-  image: <ImageIcon size={16} className="text-green-400" />,
-};
-
 // ĐỊNH DẠNG MÀU SẮC TRẠNG THÁI (TIẾNG VIỆT)
 const STATUS_STYLES = {
-  New: "bg-sky-500/20 text-sky-400 border border-sky-500/30",           // Trạng thái Mới
+  New: "bg-sky-500/20 text-sky-400 border border-sky-500/30",  
   PendingReview: "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30",
   Approved: "bg-green-500/20 text-green-400 border border-green-500/30",
   Rejected: "bg-orange-500/20 text-orange-400 border border-orange-500/30",
@@ -172,14 +161,13 @@ const ReviewerDashboard = () => {
             </button>
           </div>
 
-          {/* Stat Cards - ĐÃ FIX LỖI GIAO DIỆN BỊ KÉO GIÃN */}
+          {/* Stat Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 shrink-0">
             {STAT_CARDS.map(({ icon: Icon, colorClass, label, key }) => (
               <CardSpotlight
                 key={key}
                 className="bg-[#151D2F]/80 backdrop-blur-md border border-white/5 p-6 rounded-2xl hover:border-white/20 transition-all shadow-xl"
               >
-                {/* Dùng flex-row ép nằm ngang, và set cứng w-14 h-14 để vuông vức */}
                 <div className="flex flex-row items-center gap-5 relative z-10">
                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${colorClass}`}>
                     <Icon size={28} />
@@ -220,8 +208,9 @@ const ReviewerDashboard = () => {
             <table className="w-full text-left border-collapse">
               <thead className="bg-black/20 text-slate-400 text-sm border-b border-white/5">
                 <tr>
-                  {["Tên Task", "Người làm", "Trạng thái", "Hạn chót", ""].map((h, i) => (
-                    <th key={i} className={`p-4 font-semibold tracking-wide uppercase text-[11px] ${i === 4 ? "text-right w-px" : ""}`}>
+                  {/* Bỏ "Người làm", cập nhật index ở class `i === 3` */}
+                  {["Tên Task", "Trạng thái", "Hạn chót", ""].map((h, i) => (
+                    <th key={i} className={`p-4 font-semibold tracking-wide uppercase text-[11px] ${i === 3 ? "text-right w-px" : ""}`}>
                       {h}
                     </th>
                   ))}
@@ -245,24 +234,13 @@ const ReviewerDashboard = () => {
                     if (currentStatus === "Fail") statusText = "Thất bại";
 
                     const theTaskId = task.taskId || task.taskID;
-                    const annotatorName = task.annotatorName || "Chưa gán";
 
                     return (
                       <tr key={theTaskId} className="border-b border-white/5 hover:bg-white/5 transition-colors last:border-0">
                         <td className="p-4">
-                          <div className="flex items-center gap-3 font-bold text-white mb-1">
-                            <div className="p-2 bg-blue-500/10 rounded-lg">{TYPE_ICONS.image}</div>
+                          {/* Đã dọn icon, ID và Current Round */}
+                          <div className="font-bold text-white">
                             {task.taskName || `Task ${theTaskId?.substring(0, 5)}`}
-                          </div>
-                          <p className="text-xs text-slate-400 ml-10">ID: {theTaskId?.substring(0, 8)}... • Vòng: {task.currentRound || 0}</p>
-                        </td>
-
-                        <td className="p-4">
-                          <div className="flex items-center gap-2 text-sm text-slate-300">
-                            <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold">
-                              {annotatorName.charAt(0).toUpperCase()}
-                            </div>
-                            {annotatorName}
                           </div>
                         </td>
 
@@ -293,7 +271,8 @@ const ReviewerDashboard = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan="5" className="p-12 text-center text-slate-500 italic">
+                    {/* Giảm colSpan xuống 4 vì đã bỏ cột Người làm */}
+                    <td colSpan="4" className="p-12 text-center text-slate-500 italic">
                       Không tìm thấy task nào phù hợp.
                     </td>
                   </tr>

@@ -32,7 +32,7 @@ export const useWorkspace = (taskId) => {
           coords = typeof ann.annotationData === 'string' ? JSON.parse(ann.annotationData) : (ann.annotationData || {}); 
         } catch {}
         
-        const isText = ann.field !== 'BoundingBox' && coords.start !== undefined;
+        const isText = ann.field !== 'BoundingBox' && ann.field !== 'Tag' && coords.start !== undefined;
 
         return {
           id: `ann-${idx}-${Date.now()}`,
@@ -58,13 +58,23 @@ export const useWorkspace = (taskId) => {
         return {
           annotationData: JSON.stringify({ start: ann.start, end: ann.end }),
           content: ann.text || "",
-          field: ann.label || "" 
+          field: ann.label || "",
+          isApproved: "Complete" 
+        };
+      }
+      if (!ann.width && !ann.height) {
+        return {
+          annotationData: "[]",
+          content: String(ann.label),
+          field: "Tag",
+          isApproved: "Complete" 
         };
       }
       return {
         annotationData: JSON.stringify({ x: ann.x, y: ann.y, width: ann.width, height: ann.height }),
         content: String(ann.label),
-        field: "BoundingBox"
+        field: "BoundingBox",
+        isApproved: "Complete" 
       };
     });
   };
@@ -85,11 +95,9 @@ export const useWorkspace = (taskId) => {
     }
   };
 
-  // 🔥 ĐÃ FIX LỖI AUTO SAVE TẠI ĐÂY: Thêm biến canSaveCurrent 
   const handleSelectFile = (newFileId, canSaveCurrent = false) => {
     if (newFileId === currentFileId) return;
 
-    // Chỉ lưu ngầm nếu biến canSaveCurrent là true (tức là đã bấm nút Mở khóa)
     if (canSaveCurrent && (status === 'InProgress' || status === 'Rejected')) {
       const idToSave = currentFileId;
       const annotationsToSave = [...annotations];
@@ -107,10 +115,29 @@ export const useWorkspace = (taskId) => {
     setCurrentFileId(newFileId);
   };
 
-  const files = useMemo(() => taskItems.map(ti => ({
-    id: ti.itemID, name: ti.fileName, url: ti.filePath,
-    status: ti.isFlagged ? 'Rejected' : (ti.annotations?.length ? 'Done' : 'New'),
-  })), [taskItems]);
+  // 🔥 ĐÃ FIX LỖI UX TẠI ĐÂY: Quét từng nhãn để tìm lỗi False
+  const files = useMemo(() => taskItems.map(ti => {
+    // Tìm xem file này có nhãn nào bị Reviewer chấm False không (cẩn thận check hoa/thường)
+    const hasError = ti.annotations?.some(ann => 
+      String(ann.isApproved || ann.IsApproved).toLowerCase() === 'false'
+    );
+
+    let currentStatus = 'New';
+    if (ti.isFlagged) {
+      currentStatus = 'Flagged';
+    } else if (hasError) {
+      currentStatus = 'Error'; // Bị dính ít nhất 1 nhãn False
+    } else if (ti.annotations?.length > 0) {
+      currentStatus = 'Done'; // Có nhãn và không có False
+    }
+
+    return {
+      id: ti.itemID, 
+      name: ti.fileName, 
+      url: ti.filePath,
+      status: currentStatus,
+    };
+  }), [taskItems]);
 
   return {
     files, 

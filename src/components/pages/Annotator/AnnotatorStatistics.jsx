@@ -45,26 +45,7 @@ const AnnotatorStatistics = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-gradient-to-br from-blue-900/40 to-[#1e293b] border border-blue-500/20 rounded-3xl p-6 flex items-center gap-6 shadow-xl">
-          <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
-            <Trophy size={32} className="text-blue-400" />
-          </div>
-          <div>
-            <p className="text-slate-400 text-sm font-bold uppercase tracking-widest mb-1">Kinh nghiệm (XP)</p>
-            <h3 className="text-4xl font-black text-white">{safeStats.experience}</h3>
-          </div>
-        </div>
-        
-        <div className="bg-gradient-to-br from-amber-900/40 to-[#1e293b] border border-amber-500/20 rounded-3xl p-6 flex items-center gap-6 shadow-xl">
-          <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
-            <Star size={32} className="text-amber-400" />
-          </div>
-          <div>
-            <p className="text-slate-400 text-sm font-bold uppercase tracking-widest mb-1">Điểm tín nhiệm</p>
-            <h3 className="text-4xl font-black text-white">{safeStats.reputationPoints}/100</h3>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">        
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

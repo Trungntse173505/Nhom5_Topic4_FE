@@ -30,7 +30,7 @@ const RejectTaskModals = ({ mode, setMode, taskId }) => {
   const { dispute } = useDisputeTask();
   const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
 
-  // 1. XỬ LÝ SUBMIT KHIẾU NẠI (GỌI API TỪ ĐÂY LUÔN)
+  // XỬ LÝ SUBMIT KHIẾU NẠI
   const handleDisputeSubmit = async (reason, selectedFiles = []) => {
     try {
       setIsUploadingEvidence(true);
@@ -44,7 +44,7 @@ const RejectTaskModals = ({ mode, setMode, taskId }) => {
       await dispute(taskId, reason, evidenceUrls);
       alert("Đã gửi khiếu nại thành công! Quản lý sẽ xem xét lại kết quả của bạn.");
       setMode("none");
-      navigate("/annotator"); // Gửi xong thì văng ra ngoài Dashboard luôn
+      navigate("/annotator"); 
     } catch (err) {
       alert(err?.response?.data || err.message || "Không thể gửi khiếu nại lúc này.");
     } finally {
@@ -66,8 +66,9 @@ const RejectTaskModals = ({ mode, setMode, taskId }) => {
             </div>
             <h2 className="text-2xl font-bold text-white mb-3">Task Bị Từ Chối!</h2>
             <p className="text-slate-300 mb-6 text-sm leading-relaxed">
-              Reviewer đã đánh giá không đạt một số dữ liệu của bạn (xem các nhãn có dấu <span className="text-red-400 font-bold">✗</span>). <br /><br />
-              <b>Chức năng Lưu & Nộp đang bị khóa.</b> Hãy kiểm tra lại lỗi sai. Nếu bạn thấy mình làm đúng, hãy chọn <b>Khiếu nại</b>. Nếu bạn đồng ý sửa lại, hãy nhấn <b>Bỏ qua</b> ở góc trên bên phải.
+              Reviewer đã đánh giá không đạt một số dữ liệu của bạn. <br /><br />
+              ⚠️ <b>CẢNH BÁO:</b> Chỉ chọn Khiếu Nại nếu bạn <b>chắc chắn mình đúng 100%</b>. Nếu Quản lý đồng ý, Task sẽ được chuyển thành Hoàn thành (Done). Nhưng nếu bạn cãi cố và sai, bạn sẽ bị phạt nặng!<br /><br />
+              Nếu nhận ra mình có sai sót, hãy nhấn <b>Bỏ qua & Sửa lại</b>.
             </p>
             <button
               onClick={() => setMode("deciding")}

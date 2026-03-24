@@ -31,5 +31,5 @@ export const reviewerApi = {
   getReputation: () => axiosClient.get('/api/reviewer/reputation'),
 
   // lấy số liệu
-  getStats: () => axiosClient.get('/api/Score'),
+  getStats: () => axiosClient.get('/api/reviewer/my-stats'),
 };
