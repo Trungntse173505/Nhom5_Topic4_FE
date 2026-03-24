@@ -43,7 +43,8 @@ export const useWorkspace = (taskId) => {
           y: coords.y || 0, 
           width: coords.width || 0, 
           height: coords.height || 0,
-          label: isText ? ann.field : ann.content 
+          label: isText ? ann.field : ann.content,
+          isApproved: ann.isApproved || "New" 
         };
       }));
     } catch (err) { console.error("Lỗi đồng bộ:", err); }
@@ -84,10 +85,12 @@ export const useWorkspace = (taskId) => {
     }
   };
 
-  const handleSelectFile = (newFileId) => {
+  // 🔥 ĐÃ FIX LỖI AUTO SAVE TẠI ĐÂY: Thêm biến canSaveCurrent 
+  const handleSelectFile = (newFileId, canSaveCurrent = false) => {
     if (newFileId === currentFileId) return;
 
-    if (status === 'InProgress' || status === 'Rejected') {
+    // Chỉ lưu ngầm nếu biến canSaveCurrent là true (tức là đã bấm nút Mở khóa)
+    if (canSaveCurrent && (status === 'InProgress' || status === 'Rejected')) {
       const idToSave = currentFileId;
       const annotationsToSave = [...annotations];
 
@@ -121,7 +124,6 @@ export const useWorkspace = (taskId) => {
     annotations, 
     setAnnotations, 
     isSaving: isManualSaving, 
-    
     handleSave,
     status,
     isLoading: loadingTask || loadingItem, 

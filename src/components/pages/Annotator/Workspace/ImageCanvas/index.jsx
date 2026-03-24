@@ -57,6 +57,7 @@ const ImageCanvas = ({
     setIsDrawing(true);
     setNewAnnotation({
       x, y, width: 0, height: 0, label: selectedLabel, id: `box-${Date.now()}`,
+      isApproved: "New" // 🔥 KHUNG MỚI LUÔN LÀ "New"
     });
   };
 

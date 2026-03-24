@@ -17,7 +17,12 @@ const TagList = ({ annotations, availableLabels, onDeleteTag }) => {
         <div className="flex flex-wrap gap-3">
           {annotations.map((ann, idx) => {
             const matchedDef = availableLabels.find((l) => l.name === ann.label);
-            const color = matchedDef ? matchedDef.color : "#3b82f6";
+            const color = matchedDef ? matchedDef.color : "#3b82f6"; // Giữ nguyên màu
+            
+            // 🔥 THÊM ICON ĐÚNG/SAI
+            let statusIcon = "";
+            if (ann.isApproved === "True") statusIcon = " ✓";
+            else if (ann.isApproved === "False") statusIcon = " ✗";
 
             return (
               <div
@@ -30,7 +35,7 @@ const TagList = ({ annotations, availableLabels, onDeleteTag }) => {
                   style={{ backgroundColor: color }}
                 ></div>
                 <span className="text-white text-sm font-bold tracking-wide">
-                  {getLabelDisplay(ann.label)}
+                  {getLabelDisplay(ann.label)}{statusIcon}
                 </span>
 
                 <button
