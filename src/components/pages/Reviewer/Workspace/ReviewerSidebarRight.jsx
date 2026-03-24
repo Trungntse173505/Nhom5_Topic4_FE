@@ -9,6 +9,7 @@ import {
   CheckCheck,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getLabelDisplay } from "../../../../utils/aiHelper";
 
 const ReviewerSidebarRight = ({
   taskId,
@@ -229,8 +230,11 @@ const ReviewerSidebarRight = ({
               className="p-3 rounded-xl border flex flex-col gap-3 transition-all duration-200 bg-[#1e293b] border-slate-700"
             >
               <div className="flex justify-between items-center">
-                <span className="text-sm font-bold text-white">
-                  {displayLabel}
+                <span
+                  className="text-sm font-bold text-white"
+                  title={displayLabel}
+                >
+                  {getLabelDisplay(displayLabel)}
                 </span>
                 {isApproved === true && (
                   <span className="text-xs font-bold text-emerald-400">

@@ -1,12 +1,13 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Stage, Layer, Rect, Text } from "react-konva";
+import { getLabelDisplay } from "../../../../utils/aiHelper";
 
 const ReviewerVideoCanvas = ({
   currentItem,
   toggleAnnotationApproval,
   activeBoxId,
   setActiveBoxId,
-  availableLabels = [], 
+  availableLabels = [],
 }) => {
   const containerRef = useRef(null);
   const videoRef = useRef(null);
@@ -104,8 +105,12 @@ const ReviewerVideoCanvas = ({
                 {(currentItem?.annotations || []).map((ann) => {
                   if (activeBoxId && activeBoxId !== ann.idDetail) return null;
 
-                  let bx = 0, by = 0, bw = 0, bh = 0;
-                  let startTime = 0, endTime = 999999;
+                  let bx = 0,
+                    by = 0,
+                    bw = 0,
+                    bh = 0;
+                  let startTime = 0,
+                    endTime = 999999;
 
                   try {
                     let parsedData = ann.annotationData;
@@ -114,21 +119,34 @@ const ReviewerVideoCanvas = ({
                     }
                     bx = Number(parsedData?.x || parsedData?.xmin) || 0;
                     by = Number(parsedData?.y || parsedData?.ymin) || 0;
-                    bw = Number(parsedData?.width || (parsedData?.xmax ? parsedData.xmax - bx : 0)) || 0;
-                    bh = Number(parsedData?.height || (parsedData?.ymax ? parsedData.ymax - by : 0)) || 0;
+                    bw =
+                      Number(
+                        parsedData?.width ||
+                          (parsedData?.xmax ? parsedData.xmax - bx : 0),
+                      ) || 0;
+                    bh =
+                      Number(
+                        parsedData?.height ||
+                          (parsedData?.ymax ? parsedData.ymax - by : 0),
+                      ) || 0;
 
-                    if (parsedData?.startTime !== undefined) startTime = Number(parsedData.startTime);
-                    if (parsedData?.endTime !== undefined) endTime = Number(parsedData.endTime);
+                    if (parsedData?.startTime !== undefined)
+                      startTime = Number(parsedData.startTime);
+                    if (parsedData?.endTime !== undefined)
+                      endTime = Number(parsedData.endTime);
                   } catch (e) {
                     return null;
                   }
 
                   if (bw === 0 || bh === 0) return null;
-                  if (currentTime < startTime || currentTime > endTime) return null;
+                  if (currentTime < startTime || currentTime > endTime)
+                    return null;
 
                   const labelName = ann.content || "Chưa có nhãn";
-                  const labelDef = availableLabels.find(l => l.name?.toLowerCase() === labelName.toLowerCase());
-                  
+                  const labelDef = availableLabels.find(
+                    (l) => l.name?.toLowerCase() === labelName.toLowerCase(),
+                  );
+
                   // 🎨 Lấy chuẩn 1 màu duy nhất từ CSDL cho cả KHUNG và NỀN CHỮ
                   const themeColor = labelDef?.color || "#3B82F6";
 
@@ -142,13 +160,17 @@ const ReviewerVideoCanvas = ({
                         width={bw}
                         height={bh}
                         stroke={themeColor}
-                        strokeWidth={(activeBoxId === ann.idDetail ? 4 : 2) * invScale}
+                        strokeWidth={
+                          (activeBoxId === ann.idDetail ? 4 : 2) * invScale
+                        }
                         fill={`${themeColor}${activeBoxId === ann.idDetail ? "40" : "1A"}`}
                         onMouseEnter={(e) => {
-                          e.target.getStage().container().style.cursor = "pointer";
+                          e.target.getStage().container().style.cursor =
+                            "pointer";
                         }}
                         onMouseLeave={(e) => {
-                          e.target.getStage().container().style.cursor = "crosshair";
+                          e.target.getStage().container().style.cursor =
+                            "crosshair";
                         }}
                         onClick={(e) => {
                           e.cancelBubble = true;
@@ -167,7 +189,7 @@ const ReviewerVideoCanvas = ({
                       <Text
                         x={bx + 4 * invScale}
                         y={by - 18 * invScale}
-                        text={labelName}
+                        text={getLabelDisplay(labelName)}
                         fontSize={12 * invScale}
                         fill="#fff"
                         fontStyle="bold"

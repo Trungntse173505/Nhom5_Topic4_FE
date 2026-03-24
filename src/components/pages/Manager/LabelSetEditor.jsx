@@ -219,7 +219,7 @@ export default function LabelSetEditor({ project, onRefresh }) {
             </p>
           </div>
 
-          <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1">
+          <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-0">
             {Object.keys(groupedLibrary).length === 0 ? (
               <p className="text-center text-gray-600 text-sm py-10">
                 Kho nhãn trống.
@@ -248,7 +248,7 @@ export default function LabelSetEditor({ project, onRefresh }) {
             </p>
           </div>
 
-          <div className="space-y-3 mb-8 overflow-y-auto pr-2 flex-1 custom-scrollbar">
+          <div className="space-y-3 mb-8 overflow-y-auto pr-2 flex-1 custom-scrollbar min-h-0">
             {projectLabels.length === 0 ? (
               <div className="text-center py-10">
                 <p className="text-gray-500 text-sm">Dự án chưa có nhãn nào.</p>

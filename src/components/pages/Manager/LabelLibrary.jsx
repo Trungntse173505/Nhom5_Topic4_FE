@@ -254,7 +254,7 @@ export default function LabelLibrary() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">
-                  Chủ đề (Category)
+                  Phân loại
                 </label>
                 <input
                   type="text"

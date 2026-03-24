@@ -121,12 +121,14 @@ export default function WorkDistribution({ project, onRefresh }) {
 
       {/* CỘT 2: FORM TẠO TASK */}
       <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm h-fit">
-        <h2 className="text-lg font-semibold text-white mb-6 relative z-10">Tạo Task Mới</h2>
+        <h2 className="text-lg font-semibold text-white mb-6 relative z-10">
+          Tạo Nhiệm Vụ Mới
+        </h2>
 
         <div className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">
-              Tên Task <span className="text-rose-500">*</span>
+              Tên Nhiệm Vụ <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
@@ -141,7 +143,7 @@ export default function WorkDistribution({ project, onRefresh }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">
-              Hạn chót (Deadline) <span className="text-rose-500">*</span>
+              Hạn chót <span className="text-rose-500">*</span>
             </label>
             <input
               type="date"
@@ -160,11 +162,12 @@ export default function WorkDistribution({ project, onRefresh }) {
               disabled={selectedIds.length === 0 || isProcessing}
               className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 hover:ring-emerald-500 shadow-emerald-500/20"
             >
-              Tạo Task ({selectedIds.length} file)
+              Tạo Nhiệm Vụ ({selectedIds.length} file)
             </AnimatedButton>
           </div>
         </div>
       </CardSpotlight>
+      {/* CỘT 2: FORM TẠO TASK */}
     </div>
   );
 }

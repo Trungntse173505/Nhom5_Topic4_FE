@@ -309,11 +309,11 @@ export default function ProjectManagement() {
                     }
                     className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
                   >
-                    <option value="Image">Ảnh (Image)</option>
-                    <option value="Text">Văn bản (Text)</option>
-                    <option value="Audio">Âm thanh (Audio)</option>
+                    <option value="Image">Ảnh</option>
+                    <option value="Text">Văn bản</option>
+                    <option value="Audio">Âm thanh</option>
                     <option value="Video">Video</option>
-                    <option value="Mixed">Hỗn hợp (Mixed)</option>
+                    <option value="Mixed">Hỗn hợp</option>
                   </select>
                 </div>
                 <div>
