@@ -9,60 +9,12 @@ import { useParams, useLocation } from "react-router-dom";
 import { useDatasetUpload } from "../../../hooks/Manager/useDatasetUpload";
 import { CardContainer, CardBody, CardItem } from "../../common/3d-card";
 import { AnimatedButton } from "../../common/AnimatedButton";
-
-// =====================================================================
-// BÍ KÍP 3: CÁI VỎ HỘP ĐÓNG BĂNG CHO TỪNG DÒNG DATA (Chống Lag Bảng)
-// =====================================================================
-const DataRowItem = React.memo(({ item }) => {
-  const finalLink = item.filePath || item.fileUrl || item.url || "";
-  const isAssigned = item.isAssigned === true;
-  const statusText = isAssigned ? "Đã giao Task" : "Chưa giao";
-
-  return (
-    <tr className="hover:bg-white/[0.04] transition-colors">
-      <td
-        className="px-4 py-4 text-gray-200 truncate max-w-[200px]"
-        title={finalLink}
-      >
-        {finalLink ? (
-          <a
-            href={finalLink}
-            target="_blank"
-            rel="noreferrer"
-            className="text-blue-400 hover:text-blue-300 transition-colors"
-          >
-            {item.fileName || finalLink.split("/").pop() || "Xem file"}
-          </a>
-        ) : (
-          <span className="text-rose-400">Không có link</span>
-        )}
-      </td>
-      <td className="px-4 py-4">
-        <span
-          className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-            isAssigned
-              ? "bg-emerald-500/10 text-emerald-400"
-              : "bg-gray-500/10 text-gray-400"
-          }`}
-        >
-          {statusText}
-        </span>
-      </td>
-      <td className="px-4 py-4 text-right">
-        {finalLink && (
-          <a
-            href={finalLink}
-            target="_blank"
-            rel="noreferrer"
-            className="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded transition-colors text-xs"
-          >
-            Mở xem
-          </a>
-        )}
-      </td>
-    </tr>
-  );
-});
+import {
+  FILE_TYPE_COLORS,
+  FILE_TYPE_LABELS,
+  FILE_TYPE_ICONS,
+  groupDataByType,
+} from "../../../utils/fileTypeDetector";
 
 export default function DatasetUpload({ project }) {
   const { projectId: paramProjectId } = useParams();
@@ -76,6 +28,22 @@ export default function DatasetUpload({ project }) {
   const fileInputRef = useRef(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [fileType, setFileType] = useState("Pic");
+
+  // ✅ State để track expand/collapse các group
+  const [expandedGroups, setExpandedGroups] = useState({
+    IMAGE: true,
+    VIDEO: true,
+    AUDIO: true,
+    TEXT: true,
+    OTHER: false,
+  });
+
+  const toggleGroup = useCallback((typeKey) => {
+    setExpandedGroups((prev) => ({
+      ...prev,
+      [typeKey]: !prev[typeKey],
+    }));
+  }, []);
   useEffect(() => {
     if (project?.projectType) {
       const type = project.projectType.toLowerCase();
@@ -343,25 +311,138 @@ export default function DatasetUpload({ project }) {
                 Dự án này chưa có data nào. Hãy upload ở trên nhé!
               </div>
             ) : (
-              <table className="w-full text-left text-sm">
-                <thead className="text-gray-400 border-b border-white/5">
-                  <tr>
-                    <th className="px-4 py-4 rounded-tl-lg font-medium">
-                      Link Dữ liệu
-                    </th>
-                    <th className="px-4 py-4 font-medium">Trạng thái</th>
-                    <th className="px-4 py-4 rounded-tr-lg font-medium text-right">
-                      Thao tác
-                    </th>
-                  </tr>
-                </thead>
-                {/* ĐÃ TỐI ƯU: GỌI COMPONENT ĐÓNG BĂNG Ở ĐÂY */}
-                <tbody className="divide-y divide-white/5">
-                  {dataItems.map((item, i) => (
-                    <DataRowItem key={item.dataID || i} item={item} />
-                  ))}
-                </tbody>
-              </table>
+              <div className="space-y-2">
+                {/* ✅ Render grouped data với collapse/expand */}
+                {(() => {
+                  const grouped = groupDataByType(dataItems);
+                  const typeOrder = [
+                    "IMAGE",
+                    "VIDEO",
+                    "AUDIO",
+                    "TEXT",
+                    "OTHER",
+                  ];
+
+                  return typeOrder.map((typeKey) => {
+                    const itemsInGroup = grouped[typeKey];
+                    if (!itemsInGroup || itemsInGroup.length === 0) return null;
+
+                    const isExpanded = expandedGroups[typeKey];
+                    const typeLabel = FILE_TYPE_LABELS[typeKey];
+                    const typeIcon = FILE_TYPE_ICONS[typeKey];
+                    const typeColor = FILE_TYPE_COLORS[typeKey];
+
+                    return (
+                      <div
+                        key={typeKey}
+                        className="border border-white/10 rounded-lg overflow-hidden"
+                      >
+                        {/* Group Header - Collapsible */}
+                        <button
+                          onClick={() => toggleGroup(typeKey)}
+                          className="w-full flex items-center justify-between px-4 py-3 bg-[#0B1120] hover:bg-[#151D2F] transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium ${typeColor}`}
+                            >
+                              {typeIcon} {typeLabel}
+                            </span>
+                            <span className="text-gray-400 text-sm">
+                              {itemsInGroup.length} file
+                            </span>
+                          </div>
+                          <span className="text-gray-400 transition-transform">
+                            {isExpanded ? "▼" : "▶"}
+                          </span>
+                        </button>
+
+                        {/* Group Items */}
+                        {isExpanded && (
+                          <table className="w-full text-left text-sm">
+                            <thead className="text-gray-400 border-t border-white/5 text-xs">
+                              <tr>
+                                <th className="px-4 py-2 font-medium">
+                                  Tên File
+                                </th>
+                                <th className="px-4 py-2 font-medium">
+                                  Trạng thái
+                                </th>
+                                <th className="px-4 py-2 font-medium text-right">
+                                  Thao tác
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                              {itemsInGroup.map((item, i) => (
+                                <tr
+                                  key={item.dataID || `${typeKey}_${i}`}
+                                  className="hover:bg-white/[0.02] transition-colors"
+                                >
+                                  <td className="px-4 py-3 text-gray-200 truncate max-w-[300px]">
+                                    <a
+                                      href={
+                                        item.filePath ||
+                                        item.fileUrl ||
+                                        item.url ||
+                                        ""
+                                      }
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-blue-400 hover:text-blue-300 transition-colors"
+                                      title={
+                                        item.displayName ||
+                                        item.fileName ||
+                                        "file"
+                                      }
+                                    >
+                                      {/* ✅ Hiển thị displayName: "Ảnh 1", "Video 1", ... */}
+                                      {item.displayName ||
+                                        item.fileName ||
+                                        "File"}
+                                    </a>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span
+                                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                        item.isAssigned === true
+                                          ? "bg-emerald-500/10 text-emerald-400"
+                                          : "bg-gray-500/10 text-gray-400"
+                                      }`}
+                                    >
+                                      {item.isAssigned === true
+                                        ? "Đã giao Task"
+                                        : "Chưa giao"}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-right">
+                                    {item.filePath ||
+                                    item.fileUrl ||
+                                    item.url ? (
+                                      <a
+                                        href={
+                                          item.filePath ||
+                                          item.fileUrl ||
+                                          item.url
+                                        }
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1 rounded transition-colors text-xs"
+                                      >
+                                        Mở xem
+                                      </a>
+                                    ) : null}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
             )}
           </CardItem>
         </CardBody>

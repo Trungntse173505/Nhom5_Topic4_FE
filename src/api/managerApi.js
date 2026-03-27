@@ -72,10 +72,22 @@ export const updateProjectGuideline = async (projectId, guidelineUrl) => {
 // NHÓM 2: QUẢN LÝ DỮ LIỆU (DATA)
 // =============================================================================
 
-export const uploadDataToProject = async (projectId, fileUrls, fileType) => {
+export const uploadDataToProject = async (projectId, dataItems, fileType) => {
   try {
+    // Xử lý cả format cũ (mảng URL strings) và format mới (mảng objects với fileName + fileUrl)
+    const formattedData = Array.isArray(dataItems)
+      ? dataItems.map((item) => {
+          if (typeof item === "string") {
+            // Format cũ: chỉ có URL string
+            return { fileUrl: item };
+          }
+          // Format mới: object với {fileName, fileUrl}
+          return item;
+        })
+      : [];
+
     return await axiosClient.post(`/api/manager/projects/${projectId}/data`, {
-      fileUrls,
+      dataItems: formattedData,
       fileType,
     });
   } catch (error) {

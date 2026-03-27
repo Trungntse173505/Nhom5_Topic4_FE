@@ -2,10 +2,23 @@ import React, { useState, useCallback } from "react";
 import { useWorkDistribution } from "../../../hooks/Manager/useWorkDistribution";
 import { AnimatedButton } from "../../common/AnimatedButton";
 import { CardSpotlight } from "../../common/card-spotlight";
+import {
+  FILE_TYPE_COLORS,
+  FILE_TYPE_LABELS,
+  FILE_TYPE_ICONS,
+  groupDataByType,
+} from "../../../utils/fileTypeDetector";
 
 const UnassignedFileItem = React.memo(({ item, isSelected, onToggle }) => {
   const targetId = item.dataItemId || item.id || item.dataID;
-  const targetName = item.fileName || item.name || `File #${targetId}`;
+  // ✅ Dùng displayName thay vì fileName
+  const targetName =
+    item.displayName || item.fileName || item.name || `File #${targetId}`;
+  const dataType = item.dataType || "OTHER";
+  const typeLabel = FILE_TYPE_LABELS[dataType] || "Khác";
+  const typeIcon = FILE_TYPE_ICONS[dataType] || "📎";
+  const typeColor =
+    FILE_TYPE_COLORS[dataType] || "bg-gray-500/10 text-gray-400";
 
   return (
     <label
@@ -21,9 +34,16 @@ const UnassignedFileItem = React.memo(({ item, isSelected, onToggle }) => {
         checked={isSelected}
         onChange={() => onToggle(targetId)}
       />
-      <span className="text-gray-300 text-sm font-medium truncate">
-        {targetName}
-      </span>
+      <div className="flex-1 min-w-0">
+        <span className="text-gray-300 text-sm font-medium truncate block">
+          {targetName}
+        </span>
+        <span
+          className={`inline-block mt-1 px-2 py-0.5 rounded text-xs font-medium ${typeColor}`}
+        >
+          {typeIcon} {typeLabel}
+        </span>
+      </div>
     </label>
   );
 });
@@ -37,10 +57,26 @@ export default function WorkDistribution({ project, onRefresh }) {
   const [selectedIds, setSelectedIds] = useState([]);
   const [taskData, setTaskData] = useState({ taskName: "", deadline: "" });
 
+  // ✅ State để track expand/collapse các group
+  const [expandedGroups, setExpandedGroups] = useState({
+    IMAGE: true,
+    VIDEO: true,
+    AUDIO: true,
+    TEXT: true,
+    OTHER: false,
+  });
+
   const toggleSelection = useCallback((id) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
+  }, []);
+
+  const toggleGroup = useCallback((typeKey) => {
+    setExpandedGroups((prev) => ({
+      ...prev,
+      [typeKey]: !prev[typeKey],
+    }));
   }, []);
 
   const handleSubmit = useCallback(async () => {
@@ -104,17 +140,66 @@ export default function WorkDistribution({ project, onRefresh }) {
               Kho dữ liệu trống.
             </div>
           ) : (
-            unassignedItems.map((item, idx) => {
-              const targetId = item.dataItemId || item.id || item.dataID;
-              return (
-                <UnassignedFileItem
-                  key={targetId || idx}
-                  item={item}
-                  isSelected={selectedIds.includes(targetId)}
-                  onToggle={toggleSelection}
-                />
-              );
-            })
+            /* ✅ Render grouped data với collapse/expand */
+            (() => {
+              const grouped = groupDataByType(unassignedItems);
+              const typeOrder = ["IMAGE", "VIDEO", "AUDIO", "TEXT", "OTHER"];
+
+              return typeOrder.map((typeKey) => {
+                const itemsInGroup = grouped[typeKey];
+                if (!itemsInGroup || itemsInGroup.length === 0) return null;
+
+                const isExpanded = expandedGroups[typeKey];
+                const typeLabel = FILE_TYPE_LABELS[typeKey];
+                const typeIcon = FILE_TYPE_ICONS[typeKey];
+                const typeColor = FILE_TYPE_COLORS[typeKey];
+
+                return (
+                  <div
+                    key={typeKey}
+                    className="border border-white/10 rounded-lg overflow-hidden"
+                  >
+                    {/* Group Header - Collapsible */}
+                    <button
+                      onClick={() => toggleGroup(typeKey)}
+                      className="w-full flex items-center justify-between px-3 py-2 bg-[#0B1120] hover:bg-[#151D2F] transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-medium ${typeColor}`}
+                        >
+                          {typeIcon} {typeLabel}
+                        </span>
+                        <span className="text-gray-400 text-xs">
+                          ({itemsInGroup.length})
+                        </span>
+                      </div>
+                      <span className="text-gray-400 transition-transform text-xs">
+                        {isExpanded ? "▼" : "▶"}
+                      </span>
+                    </button>
+
+                    {/* Group Items */}
+                    {isExpanded && (
+                      <div className="space-y-1 p-2 border-t border-white/5">
+                        {itemsInGroup.map((item, idx) => {
+                          const targetId =
+                            item.dataItemId || item.id || item.dataID;
+                          return (
+                            <UnassignedFileItem
+                              key={targetId || idx}
+                              item={item}
+                              isSelected={selectedIds.includes(targetId)}
+                              onToggle={toggleSelection}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              });
+            })()
           )}
         </div>
       </CardSpotlight>
