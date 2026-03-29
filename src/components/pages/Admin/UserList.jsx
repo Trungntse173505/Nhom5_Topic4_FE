@@ -37,7 +37,7 @@ export default function UserList() {
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editForm, setEditForm] = useState(null);
-    const [createForm, setCreateForm] = useState({ name: '', username: '', email: '', role: 'ANNOTATOR', password: '' });
+    const [createForm, setCreateForm] = useState({ name: '', username: '', email: '', role: 'ANNOTATOR', password: '', expertise: 'Cơ bản' });
     const [createError, setCreateError] = useState('');
 
     // --- CÁC HÀM XỬ LÝ LOGIC ---
@@ -63,7 +63,7 @@ export default function UserList() {
             setUsers(prev => [{ id: createdId, ...createForm, status: 'Active' }, ...prev]);
         }
         setIsCreateOpen(false);
-        setCreateForm({ name: '', username: '', email: '', role: 'ANNOTATOR', password: '' });
+        setCreateForm({ name: '', username: '', email: '', role: 'ANNOTATOR', password: '', expertise: 'Cơ bản' });
     };
 
     const handleToggleStatus = async (user) => {
@@ -331,7 +331,14 @@ export default function UserList() {
                                 <option value="ANNOTATOR">ANNOTATOR</option>
                                 <option value="REVIEWER">REVIEWER</option>
                             </FormField>
-                            <FormField wrapperClass="sm:col-span-2 !p-3 md:!p-4" labelClassName="!mb-0.5 !text-[11px] md:!text-sm" fieldClassName="!p-2 md:!p-2.5 !text-sm md:!text-base" type="password" label="Mật khẩu" value={createForm.password} onChange={e => setCreateForm(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" />
+                            <FormField wrapperClass="!p-3 md:!p-4" labelClassName="!mb-0.5 !text-[11px] md:!text-sm" fieldClassName="!p-2 md:!p-2.5 !text-sm md:!text-base" type="password" label="Mật khẩu" value={createForm.password} onChange={e => setCreateForm(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" />
+                            <FormField wrapperClass="!p-3 md:!p-4" labelClassName="!mb-0.5 !text-[11px] md:!text-sm" fieldClassName="!p-2 md:!p-2.5 !text-sm md:!text-base" isSelect label="Kinh nghiệm" value={createForm.expertise} onChange={e => setCreateForm(p => ({ ...p, expertise: e.target.value }))}>
+                                <option value="Ảnh">Ảnh</option>
+                                <option value="Video">Video</option>
+                                <option value="Audio">Audio</option>
+                                <option value="Text">Text</option>
+                                <option value="Cơ bản">Cơ bản</option>
+                            </FormField>
                         </div>
                         <div className="px-4 py-3 md:px-8 md:py-6 bg-white/[0.02] border-t border-white/5 grid grid-cols-2 gap-2 md:gap-3">
                             <button onClick={handleActionCreate} disabled={loading || verifying} className="w-full bg-emerald-600 hover:bg-emerald-500 py-2.5 md:py-3 text-xs md:text-sm rounded-xl font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed">
