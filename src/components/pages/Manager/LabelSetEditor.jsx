@@ -83,9 +83,7 @@ const CategoryAccordion = React.memo(
                       Nhập
                     </button>
                   ) : (
-                    <span className="text-[10px] text-emerald-600 flex-shrink-0 font-bold">
-                      ✔ Đã thêm
-                    </span>
+                    <span className="text-[10px] text-emerald-600 flex-shrink-0 font-bold">✔ Đã thêm</span>
                   )}
                 </div>
               );
@@ -97,8 +95,7 @@ const CategoryAccordion = React.memo(
   },
 );
 
-const ProjectLabelItem = React.memo(({ label, onRemove }) => {
-  // 👉 FIX: Đã thêm chính xác chữ `projectLabelID` (Chữ ID viết hoa) theo đúng cấu trúc BE trả về!
+const ProjectLabelItem = React.memo(({ label, onRemove, libraryLabels = [] }) => {
   const targetId =
     label.projectLabelID || label.projectLabelId || label.id || label.labelID;
 
@@ -107,38 +104,42 @@ const ProjectLabelItem = React.memo(({ label, onRemove }) => {
   const targetColor =
     label.colorCode || label.defaultColor || label.color || "#64748b";
 
+  // Lùc reross-reference: tìm nhãn tương ứng trong kho để lấy category
+  const libMatch = libraryLabels.find(
+    (l) => (l.labelID || l.id) === (label.labelID || label.id)
+  );
+  const topicName = label.category || label.topic || libMatch?.category || null;
+
   return (
     <div className="flex justify-between items-center rounded-xl border border-white/5 bg-[#1E293B] px-4 py-3 group hover:border-white/20 transition-colors">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
         <div
           className="w-4 h-4 rounded flex-shrink-0"
           style={{ backgroundColor: targetColor }}
         ></div>
-        <span className="text-sm text-gray-200" title={targetName}>
-          {getLabelDisplay(targetName)}
-        </span>
+        <div className="flex flex-col min-w-0">
+          <span className="text-sm text-gray-200 truncate" title={targetName}>
+            {getLabelDisplay(targetName)}
+          </span>
+          {/* Badge hiển thị Topic mà nhãn được nhập từ */}
+          {topicName && (
+            <span className="text-[9px] text-blue-400/80 bg-blue-500/10 px-1.5 py-0.5 rounded-full mt-0.5 w-fit uppercase tracking-wide font-medium">
+              {topicName}
+            </span>
+          )}
+        </div>
 
         {label.isCustom && (
-          <span className="text-[9px] bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded uppercase tracking-wider">
+          <span className="text-[9px] bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded uppercase tracking-wider flex-shrink-0">
             Tùy chỉnh
           </span>
         )}
       </div>
       <button
-        onClick={() => {
-          console.log("🛠 Đang gửi ID này xuống BE để xóa:", targetId);
-          onRemove(targetId);
-        }}
-        className="text-gray-500 opacity-0 group-hover:opacity-100 hover:text-rose-400 transition-all flex-shrink-0"
+        onClick={() => onRemove(targetId)}
+        className="text-gray-500 opacity-0 group-hover:opacity-100 hover:text-rose-400 transition-all flex-shrink-0 ml-2"
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
@@ -159,6 +160,7 @@ export default function LabelSetEditor({ project, onRefresh }) {
     removeLabel,
   } = useLabelManagement(projectId);
 
+  // eslint-disable-next-line no-unused-vars
   const { isActionLoading, handleUpdateGuideline } =
     useProjectActions(projectId);
 
@@ -168,6 +170,7 @@ export default function LabelSetEditor({ project, onRefresh }) {
   const [expandedCategory, setExpandedCategory] = useState(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (project?.guidelineUrl) setGuideline(project.guidelineUrl);
   }, [project]);
 
@@ -200,6 +203,7 @@ export default function LabelSetEditor({ project, onRefresh }) {
     if (success) setNewLabel({ name: "", color: "#3B82F6" });
   }, [newLabel, createCustom]);
 
+  // eslint-disable-next-line no-unused-vars
   const saveGuideline = useCallback(() => {
     handleUpdateGuideline(guideline, onRefresh);
   }, [guideline, handleUpdateGuideline, onRefresh]);
@@ -267,6 +271,7 @@ export default function LabelSetEditor({ project, onRefresh }) {
                   }
                   label={label}
                   onRemove={removeLabel}
+                  libraryLabels={libraryLabels}
                 />
               ))
             )}

@@ -91,7 +91,13 @@ const TaskRowItem = React.memo(
             className={`text-sm ${task.isOverdue ? "text-rose-400 font-bold" : "text-gray-300"}`}
           >
             {task.deadline
-              ? new Date(task.deadline).toLocaleDateString("vi-VN")
+              ? new Date(task.deadline).toLocaleString("vi-VN", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })
               : "Chưa đặt"}
           </div>
           {task.isOverdue && (
@@ -145,6 +151,13 @@ export default function TaskTracking({ project, setActiveTab }) {
     annotatorId: "",
     reviewerId: "",
     isFirstAssign: false,
+  });
+
+  // Modal gia hạn deadline (có giờ:phút, thay thế prompt() củ kỹ)
+  const [extendModal, setExtendModal] = useState({
+    show: false,
+    taskId: null,
+    value: "",
   });
 
   const filteredTasks = useMemo(() => {
@@ -205,24 +218,25 @@ export default function TaskTracking({ project, setActiveTab }) {
     [projectLabels, setActiveTab],
   );
 
-  const handleExtend = useCallback(
-    (targetId, currentDeadline) => {
-      if (!targetId) return alert("Task này chưa có ID, không thể thao tác!");
-      const newDate = prompt(
-        "Nhập ngày gia hạn mới (YYYY-MM-DD):",
-        currentDeadline ? currentDeadline.split("T")[0] : "",
-      );
-      if (newDate) {
-        try {
-          const isoString = new Date(newDate).toISOString();
-          extendDeadline(targetId, isoString);
-        } catch (err) {
-          alert("Định dạng ngày không hợp lệ!");
-        }
-      }
-    },
-    [extendDeadline],
-  );
+  const handleExtend = useCallback((targetId, currentDeadline) => {
+    if (!targetId) return alert("Task này chưa có ID, không thể thao tác!");
+    // Mở modal datetime-local thay vì prompt()
+    const defaultVal = currentDeadline
+      ? new Date(currentDeadline).toISOString().slice(0, 16)
+      : new Date().toISOString().slice(0, 16);
+    setExtendModal({ show: true, taskId: targetId, value: defaultVal });
+  }, []);
+
+  const submitExtend = useCallback(() => {
+    if (!extendModal.value) return alert("Vui lòng chọn ngày giờ!");
+    try {
+      const isoString = new Date(extendModal.value).toISOString();
+      extendDeadline(extendModal.taskId, isoString);
+      setExtendModal({ show: false, taskId: null, value: "" });
+    } catch {
+      alert("Ngày giờ không hợp lệ!");
+    }
+  }, [extendModal, extendDeadline]);
 
   return (
     <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm relative">
@@ -296,6 +310,7 @@ export default function TaskTracking({ project, setActiveTab }) {
         )}
       </div>
 
+      {/* 👉 MODAL CHUYỂN GIAO NHÂN SỰ */}
       {reassignModal.show && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-[#151D2F] border border-white/10 rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
@@ -452,6 +467,67 @@ export default function TaskTracking({ project, setActiveTab }) {
                 className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-blue-500/20"
               >
                 {isActionLoading ? "Đang xử lý..." : "Xác nhận giao Task"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 👉 MODAL GIA HẠN DEADLINE (VỪA ĐƯỢC BỔ SUNG) */}
+      {extendModal.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#151D2F] border border-white/10 rounded-2xl shadow-2xl w-full max-w-md flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-white/5 flex justify-between items-center">
+              <div>
+                <h3 className="text-xl font-bold text-white">
+                  Gia hạn Deadline
+                </h3>
+                <p className="text-sm text-gray-400 mt-1">
+                  Chọn ngày và giờ mới cho Task này.
+                </p>
+              </div>
+              <button
+                onClick={() =>
+                  setExtendModal({ show: false, taskId: null, value: "" })
+                }
+                className="text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-lg transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Ngày giờ hoàn thành <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  value={extendModal.value}
+                  min={new Date().toISOString().slice(0, 16)}
+                  onChange={(e) =>
+                    setExtendModal({ ...extendModal, value: e.target.value })
+                  }
+                  className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-3 text-sm text-white outline-none focus:border-blue-500 [color-scheme:dark]"
+                />
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-white/5 bg-[#0B1120]/50 flex justify-end gap-3">
+              <button
+                onClick={() =>
+                  setExtendModal({ show: false, taskId: null, value: "" })
+                }
+                className="px-5 py-2.5 text-sm font-medium text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={submitExtend}
+                disabled={isActionLoading || !extendModal.value}
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-blue-500/20"
+              >
+                {isActionLoading ? "Đang xử lý..." : "Xác nhận gia hạn"}
               </button>
             </div>
           </div>

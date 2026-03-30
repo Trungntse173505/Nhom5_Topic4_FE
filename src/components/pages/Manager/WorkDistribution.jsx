@@ -70,8 +70,11 @@ export default function WorkDistribution({ project, onRefresh }) {
     }
   }, [taskData, selectedIds, createBatch]);
 
-  // Lấy ngày hôm nay dưới dạng YYYY-MM-DD để khóa lịch HTML
-  const todayString = new Date().toISOString().split("T")[0];
+  // Lấy ngày giờ hiện tại dưới dạng YYYY-MM-DDThh:mm để khóa lịch HTML (có tính toán múi giờ local)
+  const tzOffset = new Date().getTimezoneOffset() * 60000;
+  const todayString = new Date(Date.now() - tzOffset)
+    .toISOString()
+    .slice(0, 16);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -118,7 +121,7 @@ export default function WorkDistribution({ project, onRefresh }) {
                 return (
                   <div
                     key={typeKey}
-                    className="border border-white/10 rounded-lg overflow-hidden"
+                    className="border border-white/10 rounded-lg overflow-hidden relative z-10"
                   >
                     {/* Group Header - Collapsible */}
                     <button
@@ -278,7 +281,7 @@ export default function WorkDistribution({ project, onRefresh }) {
           Tạo Nhiệm Vụ Mới
         </h2>
 
-        <div className="space-y-6">
+        <div className="space-y-6 relative z-10">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">
               Tên Nhiệm Vụ <span className="text-rose-500">*</span>
@@ -299,9 +302,9 @@ export default function WorkDistribution({ project, onRefresh }) {
               Hạn chót <span className="text-rose-500">*</span>
             </label>
             <input
-              type="date"
+              type="datetime-local" // 👉 ĐỔI THÀNH DATETIME-LOCAL Ở ĐÂY NÈ SẾP
               value={taskData.deadline}
-              min={todayString} // 👉 KHÓA LỊCH HTML: Không cho bấm vào ngày quá khứ
+              min={todayString} // 👉 Khóa lịch bằng cái biến todayString vừa tút lại ở trên
               onChange={(e) =>
                 setTaskData({ ...taskData, deadline: e.target.value })
               }
@@ -320,7 +323,6 @@ export default function WorkDistribution({ project, onRefresh }) {
           </div>
         </div>
       </CardSpotlight>
-      {/* CỘT 2: FORM TẠO TASK */}
     </div>
   );
 }
