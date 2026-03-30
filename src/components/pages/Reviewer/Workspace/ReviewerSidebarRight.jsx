@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ThumbsUp,
   ThumbsDown,
@@ -10,6 +10,13 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getLabelDisplay } from "../../../../utils/aiHelper";
+
+// Hàm xử lý việc C# thỉnh thoảng trả về "True" / "False" (string) thay vì boolean chuẩn
+const parseBoolean = (val) => {
+  if (val === true || val === "true" || val === "True" || val === 1) return true;
+  if (val === false || val === "false" || val === "False" || val === 0) return false;
+  return null;
+};
 
 const ReviewerSidebarRight = ({
   taskId,
@@ -27,6 +34,48 @@ const ReviewerSidebarRight = ({
 
   // 👉 BỘ NHỚ TẠM (OPTIMISTIC UI): Lưu trạng thái tức thời để giao diện đổi màu ngay lập tức
   const [optimisticStatus, setOptimisticStatus] = useState({});
+
+  // Tham chiếu đến danh sách container để tự động cuộn
+  const listRef = useRef(null);
+
+  // ĐỒNG BỘ: Mỗi khi đổi ảnh hoặc load trang, lấy trạng thái từ backend đổ vào bộ nhớ tạm
+  // YÊU CẦU: "tự chấm lỗi trước" -> Mặc định gán false (Lỗi) nếu chưa có trạng thái
+  useEffect(() => {
+    if (currentItem?.annotations && currentItem.annotations.length > 0) {
+      console.log("=== THÔNG TIN ANNOTATIONS CỦA FILE HIỆN TẠI ===", currentItem.annotations);
+      const initialStatus = {};
+      currentItem.annotations.forEach((ann) => {
+        const uniqueId = ann.idDetail || ann.id || ann.annotationId; // Fallback các id có thể có
+        if (!uniqueId) return;
+
+        const parsedStatus = parseBoolean(ann.isApproved);
+        console.log(`Nhãn ${uniqueId}: isApproved =`, ann.isApproved, "-> Parsed:", parsedStatus);
+        
+        if (parsedStatus !== null) {
+          // Xử lý string "false" / "true" từ API C#
+          initialStatus[uniqueId] = parsedStatus;
+        } else {
+          // BẮT BUỘC: Nếu null/undefined (chưa chấm) thì ép về Lỗi (false) theo yêu cầu User
+          initialStatus[uniqueId] = false; 
+        }
+      });
+      // eslint-disable-next-line
+      setOptimisticStatus(initialStatus);
+    } else {
+      // eslint-disable-next-line
+      setOptimisticStatus({});
+    }
+  }, [currentItem]);
+
+  // TỰ ĐỘNG CUỘN ĐẾN BOX ĐANG ĐƯỢC CHỌN (ACTIVATED)
+  useEffect(() => {
+    if (activeBoxId && listRef.current) {
+      const element = document.getElementById(`ann-${activeBoxId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, [activeBoxId]);
 
   // =====================================================================
   // HÀM 1: BẤM NÚT LẺ TỪNG NHÃN (Chạy ngầm API)
@@ -203,7 +252,10 @@ const ReviewerSidebarRight = ({
       </div>
 
       {/* DANH SÁCH NHÃN */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 custom-scrollbar">
+      <div 
+        ref={listRef} 
+        className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 custom-scrollbar"
+      >
         {(!currentItem?.annotations ||
           currentItem.annotations.length === 0) && (
           <div className="text-sm text-slate-500 italic text-center p-6 border border-dashed border-slate-700 rounded-xl">
@@ -212,11 +264,13 @@ const ReviewerSidebarRight = ({
         )}
 
         {currentItem?.annotations?.map((ann) => {
-          // 👉 Ưu tiên hiển thị trạng thái ẢO (nếu có), nếu không thì dùng trạng thái thật từ Hook
-          const isApproved =
-            optimisticStatus[ann.idDetail] !== undefined
-              ? optimisticStatus[ann.idDetail]
-              : ann.isApproved;
+          const uniqueId = ann.idDetail || ann.id || ann.annotationId; // Fallback các id có thể có
+          
+          // 👉 Trạng thái cuối cùng đã được sanitize qua boolean chuẩn
+          let isApproved = optimisticStatus[uniqueId];
+          if (isApproved === undefined) {
+            isApproved = parseBoolean(ann.isApproved);
+          }
 
           const isTextAnnotation = ann.field && ann.field !== "BoundingBox";
           const displayLabel = isTextAnnotation
@@ -226,15 +280,22 @@ const ReviewerSidebarRight = ({
 
           return (
             <div
-              key={ann.idDetail}
-              className="p-3 rounded-xl border flex flex-col gap-3 transition-all duration-200 bg-[#1e293b] border-slate-700"
+              id={`ann-${uniqueId}`}
+              key={uniqueId}
+              onClick={() => setActiveBoxId(uniqueId)} // Ấn vào thẻ list cũng sẽ chọn box trên ảnh
+              className={`p-3 rounded-xl border flex flex-col gap-3 transition-all duration-300 cursor-pointer ${
+                activeBoxId === uniqueId 
+                  ? "bg-[#1e293b] border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)] ring-1 ring-blue-500 scale-[1.02]" 
+                  : "bg-[#1e293b]/60 border-slate-700 hover:border-slate-500 hover:bg-[#1e293b]"
+              }`}
             >
               <div className="flex justify-between items-center">
                 <span
-                  className="text-sm font-bold text-white"
+                  className="text-sm font-bold text-white flex items-center gap-2"
                   title={displayLabel}
                 >
                   {getLabelDisplay(displayLabel)}
+                  <span className="text-[9px] text-slate-600 bg-slate-800 px-1 rounded hidden">#{String(uniqueId).substring(0,4)}</span>
                 </span>
                 {isApproved === true && (
                   <span className="text-xs font-bold text-emerald-400">
@@ -256,7 +317,7 @@ const ReviewerSidebarRight = ({
 
               <div className="flex gap-2">
                 <button
-                  onClick={(e) => handleSingleToggle(ann.idDetail, true, e)}
+                  onClick={(e) => handleSingleToggle(uniqueId, true, e)}
                   className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-bold transition-colors ${
                     isApproved === true
                       ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
@@ -266,7 +327,7 @@ const ReviewerSidebarRight = ({
                   <CheckCircle size={14} /> Đúng
                 </button>
                 <button
-                  onClick={(e) => handleSingleToggle(ann.idDetail, false, e)}
+                  onClick={(e) => handleSingleToggle(uniqueId, false, e)}
                   className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-bold transition-colors ${
                     isApproved === false
                       ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20"
