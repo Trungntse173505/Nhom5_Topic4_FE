@@ -34,6 +34,7 @@ import ExportData from "./components/pages/Manager/ExportData";
 import QualityScore from "./components/pages/Manager/QualityScore";
 import ManagerDashboard from "./components/pages/Manager/ManagerDashboard";
 import LabelLibrary from "./components/pages/Manager/LabelLibrary";
+import ProjectOverview from "./components/pages/Manager/ProjectOverview";
 
 // ================= REVIEWER =================
 import ReviewerLayout from "./components/pages/Reviewer/ReviewerLayout";
@@ -97,6 +98,7 @@ function App() {
         <Route element={<ProtectedRoute allowedRoles={["manager"]} />}>
           <Route path="/manager" element={<ManagerGlobalLayout />}>
             <Route index element={<ProjectManagement />} />
+            <Route path="overview-project" element={<ProjectOverview />} />
             <Route path="labels" element={<LabelLibrary />} />
             <Route path="disputes" element={<DisputeResolution />} />
             <Route path="quality" element={<QualityScore />} />
