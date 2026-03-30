@@ -12,7 +12,7 @@ export const useReputation = () => {
       const { currentScore = 0, logs = [] } = await annotatorApi.getReputation() || {};
       setReputation({ currentScore, logs });
     } catch (err) {
-      setError(err?.response?.data?.message || "Không thể tải thông tin tín nhiệm.");
+      setError(err?.response?.data?.message || "Không thể tải thông tin điểm tín nhiệm.");
     } finally {
       setLoading(false);
     }

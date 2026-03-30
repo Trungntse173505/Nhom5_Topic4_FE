@@ -115,9 +115,7 @@ export const useWorkspace = (taskId) => {
     setCurrentFileId(newFileId);
   };
 
-  // 🔥 ĐÃ FIX LỖI UX TẠI ĐÂY: Quét từng nhãn để tìm lỗi False
   const files = useMemo(() => taskItems.map(ti => {
-    // Tìm xem file này có nhãn nào bị Reviewer chấm False không (cẩn thận check hoa/thường)
     const hasError = ti.annotations?.some(ann => 
       String(ann.isApproved || ann.IsApproved).toLowerCase() === 'false'
     );
@@ -126,9 +124,9 @@ export const useWorkspace = (taskId) => {
     if (ti.isFlagged) {
       currentStatus = 'Flagged';
     } else if (hasError) {
-      currentStatus = 'Error'; // Bị dính ít nhất 1 nhãn False
+      currentStatus = 'Error'; 
     } else if (ti.annotations?.length > 0) {
-      currentStatus = 'Done'; // Có nhãn và không có False
+      currentStatus = 'Done'; 
     }
 
     return {

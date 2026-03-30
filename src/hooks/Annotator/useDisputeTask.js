@@ -17,7 +17,6 @@ export const useDisputeTask = () => {
     setIsDisputing(true);
     setError(null);
     try {
-      // 👉 Gói thêm evidenceImages vào túi đồ gửi cho Backend
       const response = await annotatorApi.disputeTask(taskId, {
         reason: reason,
         evidenceImages: evidenceUrls,

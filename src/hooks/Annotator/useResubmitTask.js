@@ -7,7 +7,7 @@ export const useResubmitTask = () => {
 
   /**
    * Hàm nộp lại bài sau khi đã sửa lỗi theo yêu cầu của Reviewer
-   * @param {string} taskId - ID của Task cần nộp lại
+   * @param {string} taskId - ID Task cần nộp lại
    */
   const resubmit = async (taskId) => {
     if (!taskId) return;
