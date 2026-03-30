@@ -196,81 +196,84 @@ export default function DatasetUpload({ project }) {
         </div>
 
         {/* --- KHU VỰC 3D CARD UPLOAD --- */}
-        <CardContainer containerClassName="w-full mt-2" className="w-full">
-          <CardBody
-            className="w-full h-auto min-h-[250px] bg-[#0B1120] border-2 border-dashed border-white/10 hover:border-blue-500/50 rounded-xl p-10 flex flex-col items-center justify-center text-center transition-colors cursor-pointer group/card"
-            style={{ transformStyle: "preserve-3d" }}
-          >
-            <CardItem
-              translateZ="20"
-              className="w-full h-full flex flex-col items-center justify-center"
+        {/* ✅ FIX TẬN GỐC: Dùng thẻ label natives để trỏ trực tiếp đến input id, đảm bảo 100% click được */}
+        <input
+          id="file-upload" // Đặt ID cho label trỏ tới
+          type="file"
+          multiple
+          accept={acceptTypes}
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        
+        <label htmlFor="file-upload" className="block w-full cursor-pointer mt-2">
+          <CardContainer containerClassName="w-full" className="w-full pointer-events-none">
+            <CardBody
+              className="w-full h-auto min-h-[250px] bg-[#0B1120] border-2 border-dashed border-white/10 hover:border-blue-500/50 rounded-xl p-10 flex flex-col items-center justify-center text-center transition-colors group/card"
               style={{ transformStyle: "preserve-3d" }}
-              onClick={() => fileInputRef.current?.click()}
             >
-              {selectedFiles.length > 0 ? (
-                <CardItem
-                  translateZ="60"
-                  className="text-emerald-400 font-medium flex flex-col items-center"
-                >
-                  <svg
-                    className="mx-auto h-16 w-16 mb-4 opacity-80 drop-shadow-2xl"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                  </svg>
-                  <span className="text-lg drop-shadow-md">
-                    Đã chọn {selectedFiles.length} file chờ upload
-                  </span>
-                </CardItem>
-              ) : (
-                <>
+              <CardItem
+                translateZ="20"
+                className="w-full h-full flex flex-col items-center justify-center"
+                style={{ transformStyle: "preserve-3d" }}
+              >
+                {selectedFiles.length > 0 ? (
                   <CardItem
-                    translateZ="80"
-                    className="mb-5 text-gray-400 group-hover/card:text-blue-400 transition-colors drop-shadow-2xl"
+                    translateZ="60"
+                    className="text-emerald-400 font-medium flex flex-col items-center"
                   >
                     <svg
-                      width="60"
-                      height="60"
+                      className="mx-auto h-16 w-16 mb-4 opacity-80 drop-shadow-2xl"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="1.5"
+                      strokeWidth="2"
                     >
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="17 8 12 3 7 8"></polyline>
-                      <line x1="12" y1="3" x2="12" y2="15"></line>
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                      <polyline points="22 4 12 14.01 9 11.01"></polyline>
                     </svg>
+                    <span className="text-lg drop-shadow-md">
+                      Đã chọn {selectedFiles.length} file chờ upload
+                    </span>
                   </CardItem>
-                  <CardItem
-                    translateZ="50"
-                    className="text-xl font-medium text-white mb-2 drop-shadow-md"
-                  >
-                    Bấm vào đây để chọn Files
-                  </CardItem>
-                  <CardItem
-                    translateZ="30"
-                    className="text-sm text-blue-400/80 mt-1 font-medium"
-                  >
-                    {supportedText}
-                  </CardItem>
-                </>
-              )}
-
-              <input
-                type="file"
-                multiple
-                accept={acceptTypes} // LỚP BẢO VỆ SỐ 1 ĐÃ ĐƯỢC TỐI ƯU
-                ref={fileInputRef}
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-            </CardItem>
-          </CardBody>
-        </CardContainer>
+                ) : (
+                  <>
+                    <CardItem
+                      translateZ="80"
+                      className="mb-5 text-gray-400 group-hover/card:text-blue-400 transition-colors drop-shadow-2xl"
+                    >
+                      <svg
+                        width="60"
+                        height="60"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      >
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                      </svg>
+                    </CardItem>
+                    <CardItem
+                      translateZ="50"
+                      className="text-xl font-medium text-white mb-2 drop-shadow-md"
+                    >
+                      Bấm vào đây để chọn Files
+                    </CardItem>
+                    <CardItem
+                      translateZ="30"
+                      className="text-sm text-blue-400/80 mt-1 font-medium"
+                    >
+                      {supportedText}
+                    </CardItem>
+                  </>
+                )}
+              </CardItem>
+            </CardBody>
+          </CardContainer>
+        </label>
 
         {selectedFiles.length > 0 && (
           <div className="mt-4 flex justify-end">

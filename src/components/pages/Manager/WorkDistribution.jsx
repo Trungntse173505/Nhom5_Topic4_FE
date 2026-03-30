@@ -9,45 +9,6 @@ import {
   groupDataByType,
 } from "../../../utils/fileTypeDetector";
 
-const UnassignedFileItem = React.memo(({ item, isSelected, onToggle }) => {
-  const targetId = item.dataItemId || item.id || item.dataID;
-  // ✅ Dùng displayName thay vì fileName
-  const targetName =
-    item.displayName || item.fileName || item.name || `File #${targetId}`;
-  const dataType = item.dataType || "OTHER";
-  const typeLabel = FILE_TYPE_LABELS[dataType] || "Khác";
-  const typeIcon = FILE_TYPE_ICONS[dataType] || "📎";
-  const typeColor =
-    FILE_TYPE_COLORS[dataType] || "bg-gray-500/10 text-gray-400";
-
-  return (
-    <label
-      className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition-colors ${
-        isSelected
-          ? "border-blue-500 bg-blue-500/10"
-          : "border-white/5 bg-[#0B1120] hover:border-white/20"
-      }`}
-    >
-      <input
-        type="checkbox"
-        className="w-4 h-4 rounded cursor-pointer"
-        checked={isSelected}
-        onChange={() => onToggle(targetId)}
-      />
-      <div className="flex-1 min-w-0">
-        <span className="text-gray-300 text-sm font-medium truncate block">
-          {targetName}
-        </span>
-        <span
-          className={`inline-block mt-1 px-2 py-0.5 rounded text-xs font-medium ${typeColor}`}
-        >
-          {typeIcon} {typeLabel}
-        </span>
-      </div>
-    </label>
-  );
-});
-
 export default function WorkDistribution({ project, onRefresh }) {
   const projectId = project?.projectID || project?.id;
 
@@ -162,39 +123,146 @@ export default function WorkDistribution({ project, onRefresh }) {
                     {/* Group Header - Collapsible */}
                     <button
                       onClick={() => toggleGroup(typeKey)}
-                      className="w-full flex items-center justify-between px-3 py-2 bg-[#0B1120] hover:bg-[#151D2F] transition-colors"
+                      className="w-full flex items-center justify-between px-4 py-3 bg-[#0B1120] hover:bg-[#151D2F] transition-colors"
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <span
-                          className={`px-2 py-0.5 rounded text-xs font-medium ${typeColor}`}
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${typeColor}`}
                         >
                           {typeIcon} {typeLabel}
                         </span>
-                        <span className="text-gray-400 text-xs">
-                          ({itemsInGroup.length})
+                        <span className="text-gray-400 text-sm">
+                          {itemsInGroup.length} file
                         </span>
                       </div>
-                      <span className="text-gray-400 transition-transform text-xs">
+                      <span className="text-gray-400 transition-transform">
                         {isExpanded ? "▼" : "▶"}
                       </span>
                     </button>
 
-                    {/* Group Items */}
+                    {/* Group Items - Table Format */}
                     {isExpanded && (
-                      <div className="space-y-1 p-2 border-t border-white/5">
-                        {itemsInGroup.map((item, idx) => {
-                          const targetId =
-                            item.dataItemId || item.id || item.dataID;
-                          return (
-                            <UnassignedFileItem
-                              key={targetId || idx}
-                              item={item}
-                              isSelected={selectedIds.includes(targetId)}
-                              onToggle={toggleSelection}
-                            />
-                          );
-                        })}
-                      </div>
+                      <table className="w-full text-left text-sm">
+                        <thead className="text-gray-400 border-t border-white/5 text-xs">
+                          <tr>
+                            <th className="px-3 py-2 font-medium w-8">
+                              <input
+                                type="checkbox"
+                                checked={itemsInGroup.every((item) =>
+                                  selectedIds.includes(
+                                    item.dataItemId || item.id || item.dataID,
+                                  ),
+                                )}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    const newIds = itemsInGroup.map(
+                                      (item) =>
+                                        item.dataItemId ||
+                                        item.id ||
+                                        item.dataID,
+                                    );
+                                    setSelectedIds((prev) => [
+                                      ...prev,
+                                      ...newIds.filter(
+                                        (id) => !prev.includes(id),
+                                      ),
+                                    ]);
+                                  } else {
+                                    const itemIds = itemsInGroup.map(
+                                      (item) =>
+                                        item.dataItemId ||
+                                        item.id ||
+                                        item.dataID,
+                                    );
+                                    setSelectedIds((prev) =>
+                                      prev.filter(
+                                        (id) => !itemIds.includes(id),
+                                      ),
+                                    );
+                                  }
+                                }}
+                                className="w-4 h-4 rounded cursor-pointer"
+                              />
+                            </th>
+                            <th className="px-3 py-2 font-medium">Tên File</th>
+                            <th className="px-3 py-2 font-medium">
+                              Trạng thái
+                            </th>
+                            <th className="px-3 py-2 font-medium text-right">
+                              Thao tác
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {itemsInGroup.map((item, idx) => {
+                            const targetId =
+                              item.dataItemId || item.id || item.dataID;
+                            const isSelected = selectedIds.includes(targetId);
+                            return (
+                              <tr
+                                key={targetId || idx}
+                                className="hover:bg-white/[0.02] transition-colors"
+                              >
+                                <td className="px-3 py-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => toggleSelection(targetId)}
+                                    className="w-4 h-4 rounded cursor-pointer"
+                                  />
+                                </td>
+                                <td className="px-3 py-2 text-gray-200 truncate max-w-xs">
+                                  <a
+                                    href={
+                                      item.filePath ||
+                                      item.fileUrl ||
+                                      item.url ||
+                                      ""
+                                    }
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-blue-400 hover:text-blue-300 transition-colors"
+                                    title={item.displayName || item.fileName}
+                                  >
+                                    {item.displayName ||
+                                      item.fileName ||
+                                      "File"}
+                                  </a>
+                                </td>
+                                <td className="px-3 py-2">
+                                  <span
+                                    className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                      item.isAssigned === true
+                                        ? "bg-emerald-500/10 text-emerald-400"
+                                        : "bg-gray-500/10 text-gray-400"
+                                    }`}
+                                  >
+                                    {item.isAssigned === true
+                                      ? "Đã giao"
+                                      : "Chưa giao"}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-2 text-right">
+                                  {item.filePath || item.fileUrl || item.url ? (
+                                    <a
+                                      href={
+                                        item.filePath ||
+                                        item.fileUrl ||
+                                        item.url
+                                      }
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded transition-colors text-xs"
+                                    >
+                                      Xem
+                                    </a>
+                                  ) : null}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     )}
                   </div>
                 );
