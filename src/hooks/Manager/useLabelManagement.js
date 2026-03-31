@@ -5,6 +5,7 @@ import {
   importLabelsToProject,
   createCustomLabel,
   deleteProjectLabel,
+  addLabelToLibrary,
 } from "../../api/managerApi";
 
 export const useLabelManagement = (projectId) => {
@@ -46,10 +47,24 @@ export const useLabelManagement = (projectId) => {
     }
   };
 
-  // Hành động 2: Tạo nhãn mới
+  // Hành động 2: Tạo nhãn mới + đồng thời lưu vào Label Library với topic "Tạo từ project"
   const handleCreateCustom = async (labelData) => {
     try {
       await createCustomLabel(projectId, labelData);
+
+      // 🔄 Đồng thời lưu nhãn vào Label Library với category "Tạo từ project"
+      try {
+        await addLabelToLibrary({
+          labelName: labelData.labelName || labelData.customName || labelData.name,
+          defaultColor: labelData.defaultColor || labelData.colorCode || labelData.color || "#3B82F6",
+          category: "Tạo từ project",
+        });
+        console.log("✅ Đã lưu nhãn tùy chỉnh vào Label Library (Tạo từ project)");
+      } catch (libError) {
+        // Nếu lưu vào library thất bại (VD: trùng tên), vẫn không ảnh hưởng đến việc tạo nhãn project
+        console.warn("⚠️ Không thể lưu vào Label Library (có thể đã tồn tại):", libError.message);
+      }
+
       await fetchAllLabels();
       return true;
     } catch (error) {
