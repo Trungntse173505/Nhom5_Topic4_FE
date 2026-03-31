@@ -15,10 +15,30 @@ const labelSummary = [
 ];
 
 const userRows = [
-  { name: "Nguyễn An", role: "Annotator", active: true, project: "Clinical Notes NER" },
-  { name: "Trần Bình", role: "Annotator", active: true, project: "Road Scene Detection" },
-  { name: "Lê Chi", role: "Reviewer", active: false, project: "Call Center Sentiment" },
-  { name: "Phạm Duy", role: "Reviewer", active: true, project: "Video Event Tagging" },
+  {
+    name: "Nguyễn An",
+    role: "Annotator",
+    active: true,
+    project: "Clinical Notes NER",
+  },
+  {
+    name: "Trần Bình",
+    role: "Annotator",
+    active: true,
+    project: "Road Scene Detection",
+  },
+  {
+    name: "Lê Chi",
+    role: "Reviewer",
+    active: false,
+    project: "Call Center Sentiment",
+  },
+  {
+    name: "Phạm Duy",
+    role: "Reviewer",
+    active: true,
+    project: "Video Event Tagging",
+  },
 ];
 
 export default function ProjectManagement() {
@@ -115,23 +135,45 @@ export default function ProjectManagement() {
   // --- Tính toán thống kê tự động dựa trên mảng `projects` thật ---
   const stats = useMemo(() => {
     const total = projects.length;
-    let active = 0, pending = 0, closed = 0;
-    
-    projects.forEach(p => {
+    let active = 0,
+      pending = 0,
+      closed = 0;
+
+    projects.forEach((p) => {
       const s = p.status;
       if (s === "Active" || s === "Open") active++;
       else if (s === "Closed" || s === "Completed") closed++;
       else pending++; // Draft, Submitted, Reviewing...
     });
-    
+
     return { total, active, pending, closed };
   }, [projects]);
 
   const projectStats = [
-    { label: "Tổng dự án", value: stats.total.toString(), note: "đang theo dõi", tone: "bg-sky-500/10 text-sky-300" },
-    { label: "Đang active", value: stats.active.toString(), note: "đang thực hiện gắn nhãn", tone: "bg-emerald-500/10 text-emerald-300" },
-    { label: "Chờ nộp", value: stats.pending.toString(), note: "đợi annotator hoàn tất", tone: "bg-amber-500/10 text-amber-300" },
-    { label: "Đã đóng", value: stats.closed.toString(), note: "đã bàn giao / kết thúc", tone: "bg-violet-500/10 text-violet-300" },
+    {
+      label: "Tổng dự án",
+      value: stats.total.toString(),
+      note: "đang theo dõi",
+      tone: "bg-sky-500/10 text-sky-300",
+    },
+    {
+      label: "Đang active",
+      value: stats.active.toString(),
+      note: "đang thực hiện gắn nhãn",
+      tone: "bg-emerald-500/10 text-emerald-300",
+    },
+    {
+      label: "Chờ nộp",
+      value: stats.pending.toString(),
+      note: "đợi annotator hoàn tất",
+      tone: "bg-amber-500/10 text-amber-300",
+    },
+    {
+      label: "Đã đóng",
+      value: stats.closed.toString(),
+      note: "đã bàn giao / kết thúc",
+      tone: "bg-violet-500/10 text-violet-300",
+    },
   ];
 
   return (
@@ -179,9 +221,13 @@ export default function ProjectManagement() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm text-gray-400">{item.label}</p>
-                    <div className="mt-2 text-3xl font-bold text-white">{item.value}</div>
+                    <div className="mt-2 text-3xl font-bold text-white">
+                      {item.value}
+                    </div>
                   </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${item.tone}`}>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-medium ${item.tone}`}
+                  >
                     overview
                   </span>
                 </div>
@@ -193,9 +239,12 @@ export default function ProjectManagement() {
           {/* THANH CÔNG CỤ (TITTLE + FILTER + CREATE) */}
           <div className="flex justify-between items-end mb-4">
             <div>
-              <h1 className="text-2xl font-bold text-white">Danh sách Project theo trạng thái</h1>
+              <h1 className="text-2xl font-bold text-white">
+                Danh sách Project theo trạng thái
+              </h1>
               <p className="text-sm text-gray-400 mt-1">
-                Hiển thị project, loại dữ liệu, trạng thái và nhóm user đang xử lý. (Click vào dòng dự án để xem chi tiết)
+                Hiển thị project, loại dữ liệu, trạng thái và nhóm user đang xử
+                lý. (Click vào dòng dự án để xem chi tiết)
               </p>
 
               <div className="flex gap-2 mt-4">
@@ -239,8 +288,19 @@ export default function ProjectManagement() {
                 fill="none"
                 viewBox="0 0 24 24"
               >
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
               <span className="ml-3 text-gray-400">Đang tải dữ liệu...</span>
             </div>
@@ -249,19 +309,25 @@ export default function ProjectManagement() {
               Chưa có dự án nào khớp với bộ lọc này.
             </div>
           ) : (
-            <section className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6">
-              {/* CỘT TRÁI: DANH SÁCH DỰ ÁN */}
-              <div className="rounded-2xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-6 shadow-sm overflow-hidden auto-rows-max">
+            <section className="w-full">
+              {/* DANH SÁCH DỰ ÁN */}
+              <div className="rounded-2xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-5 shadow-sm overflow-hidden flex flex-col min-w-0 w-full">
                 <div className="overflow-x-auto custom-scrollbar">
-                  <table className="w-full text-left text-sm min-w-max border-collapse">
+                  <table className="w-full text-left text-sm border-collapse">
                     <thead>
                       <tr className="text-gray-500 uppercase tracking-wider text-xs border-b border-white/10">
-                        <th className="pb-3 font-medium whitespace-nowrap">Project</th>
-                        <th className="pb-3 font-medium px-3 whitespace-nowrap">Loại</th>
-                        <th className="pb-3 font-medium px-3 whitespace-nowrap">Nhãn (Static)</th>
-                        <th className="pb-3 font-medium px-3 whitespace-nowrap">Tiến độ</th>
-                        <th className="pb-3 font-medium px-3 whitespace-nowrap">User (Static)</th>
-                        <th className="pb-3 font-medium text-right whitespace-nowrap">Status</th>
+                        <th className="pb-3 font-medium min-w-[150px]">
+                          Project
+                        </th>
+                        <th className="pb-3 font-medium px-2">Loại</th>
+                        <th className="pb-3 font-medium px-2">Các Nhãn</th>
+                        <th className="pb-3 font-medium px-2">Tiến độ</th>
+                        <th className="pb-3 font-medium px-2">
+                          Số người thực hiện
+                        </th>
+                        <th className="pb-3 font-medium text-right min-w-[90px]">
+                          Status
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -269,29 +335,44 @@ export default function ProjectManagement() {
                         // Tính toán tiến độ thực tế
                         const totalItems = proj.totalDataItems || 0;
                         const labeledItems = proj.completedItems || 0;
-                        let progressRate = proj.rateComplete !== undefined 
-                          ? Math.round(proj.rateComplete) 
-                          : (totalItems > 0 ? Math.round((labeledItems / totalItems) * 100) : 0);
+                        let progressRate =
+                          proj.rateComplete !== undefined
+                            ? Math.round(proj.rateComplete)
+                            : totalItems > 0
+                              ? Math.round((labeledItems / totalItems) * 100)
+                              : 0;
                         progressRate = Math.min(Math.max(progressRate, 0), 100);
 
                         return (
-                          <tr 
-                            key={proj.projectID || Math.random()} 
+                          <tr
+                            key={proj.projectID || Math.random()}
                             className="border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors group"
                             onClick={() => handleProjectClick(proj.projectID)}
                           >
-                            <td className="py-4">
-                              <div className="font-medium text-white group-hover:text-blue-400 transition-colors line-clamp-1 max-w-[200px]" title={proj.projectName}>{proj.projectName}</div>
-                              <div className="text-xs text-gray-500 mt-1 line-clamp-1 max-w-[200px]" title={proj.description || "Project overview"}>{proj.description || "Project overview"}</div>
+                            <td className="py-4 pr-2">
+                              <div
+                                className="font-medium text-white group-hover:text-blue-400 transition-colors break-words whitespace-normal max-w-[220px]"
+                              >
+                                {proj.projectName}
+                              </div>
                             </td>
-                            <td className="py-4 text-gray-300 px-3 whitespace-nowrap">{proj.projectType || "TBD"}</td>
-                            <td className="py-4 text-gray-300 px-3 whitespace-nowrap">{proj.topic || "Phân loại tĩnh"}</td>
-                            <td className="py-4 px-3 min-w-[150px]">
-                              <div className="flex items-center gap-3">
-                                <div className="h-2 w-24 rounded-full bg-[#0B1120] overflow-hidden border border-white/5">
+                            <td className="py-4 text-gray-300 px-2 whitespace-nowrap text-xs sm:text-sm">
+                              {proj.projectType || "TBD"}
+                            </td>
+                            <td
+                              className="py-4 text-gray-300 px-2 whitespace-normal break-words text-xs min-w-[120px]"
+                            >
+                              {proj.labelCategories ||
+                                proj.topic ||
+                                "Chưa có nhãn"}
+                            </td>
+                            <td className="py-4 px-2 min-w-[120px]">
+                              <div className="flex items-center gap-2">
+                                <div className="h-1.5 flex-1 max-w-[80px] rounded-full bg-[#0B1120] overflow-hidden border border-white/5 hidden sm:block">
                                   <div
                                     className={`h-full rounded-full transition-all duration-1000 ${
-                                      proj.status === "Active" || proj.status === "Open"
+                                      proj.status === "Active" ||
+                                      proj.status === "Open"
                                         ? "bg-emerald-500"
                                         : proj.status === "Submitted"
                                           ? "bg-sky-500"
@@ -302,21 +383,37 @@ export default function ProjectManagement() {
                                     style={{ width: `${progressRate}%` }}
                                   />
                                 </div>
-                                <span className={`text-xs whitespace-nowrap ${progressRate === 100 ? "text-emerald-400" : "text-gray-300"}`}>
+                                <span
+                                  className={`text-xs whitespace-nowrap ${progressRate === 100 ? "text-emerald-400" : "text-gray-300"}`}
+                                >
                                   {progressRate}%
                                 </span>
                               </div>
                             </td>
-                            <td className="py-4 text-gray-400 text-xs px-3 whitespace-nowrap">5 annotator, 1 ref</td>
-                            <td className="py-4 text-right whitespace-nowrap">
-                              <span className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-[11px] font-medium shrink-0 min-w-[85px] ${
-                                proj.status === "Open" || proj.status === "Active"
-                                  ? "bg-emerald-500/10 text-emerald-400"
-                                  : proj.status === "Submitted"
-                                    ? "bg-sky-500/10 text-sky-400"
-                                    : "bg-gray-500/10 text-gray-400"
-                              }`}>
-                                {proj.status === "Open" || proj.status === "Active" ? "Đang mở" : proj.status || "Đã đóng"}
+                            <td className="py-4 text-gray-400 text-xs px-2 whitespace-nowrap">
+                              {proj.memberCount > 0 ? (
+                                <span className="bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">
+                                  {proj.memberCount} thành viên
+                                </span>
+                              ) : (
+                                "Trống"
+                              )}
+                            </td>
+                            <td className="py-4 text-right pl-2">
+                              <span
+                                className={`inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[11px] font-medium shrink-0 min-w-[75px] ${
+                                  proj.status === "Open" ||
+                                  proj.status === "Active"
+                                    ? "bg-emerald-500/10 text-emerald-400"
+                                    : proj.status === "Submitted"
+                                      ? "bg-sky-500/10 text-sky-400"
+                                      : "bg-gray-500/10 text-gray-400"
+                                }`}
+                              >
+                                {proj.status === "Open" ||
+                                proj.status === "Active"
+                                  ? "Đang mở"
+                                  : proj.status || "Đã đóng"}
                               </span>
                             </td>
                           </tr>
@@ -327,39 +424,6 @@ export default function ProjectManagement() {
                 </div>
               </div>
 
-              {/* CỘT PHẢI: WIDGETS TĨNH */}
-              <div className="space-y-6">
-                <div className="rounded-2xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-6 shadow-sm">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold text-white">User đang tham gia</h2>
-                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-gray-400">Static</span>
-                  </div>
-                  <div className="space-y-3">
-                    {userRows.map((user) => (
-                      <div
-                        key={user.name}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-[#0B1120]/70 p-4 hover:border-white/10 transition-colors"
-                      >
-                        <div className="min-w-0">
-                          <div className="font-medium text-gray-200 text-sm truncate">{user.name}</div>
-                          <div className="text-xs text-gray-500 truncate mt-0.5">
-                            {user.role} - {user.project}
-                          </div>
-                        </div>
-                        <span
-                          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                            user.active
-                              ? "bg-emerald-500/10 text-emerald-300"
-                              : "bg-gray-500/10 text-gray-400"
-                          }`}
-                        >
-                          {user.active ? "Active" : "Offline"}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
             </section>
           )}
         </main>

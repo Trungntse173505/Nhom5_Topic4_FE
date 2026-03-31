@@ -5,6 +5,9 @@ import {
   getProjectsList,
   createProject,
   getProjectStatistics,
+  getProjectLabels,
+  getUserPerformance,
+  getLibraryLabels,
 } from "../../api/managerApi";
 
 export const useProjectManagement = () => {
@@ -20,47 +23,72 @@ export const useProjectManagement = () => {
     try {
       setIsLoadingProjects(true);
 
-      // 1. Lấy danh sách vỏ dự án trước
-      const data = await getProjectsList();
-      const projectArray = Array.isArray(data) ? data : data?.data || [];
+      // 1. Lấy danh sách vỏ dự án VÀ toàn bộ thư viện nhãn (để map category)
+      const [listData, libRes] = await Promise.all([
+        getProjectsList(),
+        getLibraryLabels().catch(() => [])
+      ]);
+      const projectArray = Array.isArray(listData) ? listData : listData?.data || [];
+      const libraryLabels = Array.isArray(libRes) ? libRes : libRes?.data || [];
 
-      // 2. NHỒI THÊM THỐNG KÊ (STATISTICS) VÀO TỪNG DỰ ÁN
+      // 2. NHỒI THÊM THỐNG KÊ (STATISTICS), NHÃN VÀ USER VÀO TỪNG DỰ ÁN
       const projectsWithStats = await Promise.all(
         projectArray.map(async (proj) => {
           try {
             // Xác định ID của dự án
             const id = proj.projectID || proj.id;
 
-            // Gọi API lấy thống kê của riêng dự án này
-            const statsRes = await getProjectStatistics(id);
-            const statsData = statsRes.data || statsRes;
+            // Chạy song song API để gom Data đổ vào Bảng
+            const [statsRes, perfRes, labelsRes] = await Promise.all([
+              getProjectStatistics(id).catch(() => null),
+              getUserPerformance(id).catch(() => []),
+              getProjectLabels(id).catch(() => [])
+            ]);
+
+            const statsData = statsRes?.data || statsRes;
+            const perfData = Array.isArray(perfRes) ? perfRes : perfRes?.data || [];
+            const labelsData = Array.isArray(labelsRes) ? labelsRes : labelsRes?.data || [];
+
+            // Chắt lọc Category / Topic của nhãn thay vì in tên từng nhãn ra
+            const projectTopics = labelsData.map(l => {
+              // Tìm xem nhãn này đến từ (hoặc giống với) nhãn nào trong thư viện
+              const matchName = l.customName || l.labelName || l.name;
+              const matchedLibLabel = libraryLabels.find(
+                lib => lib.labelName === matchName || lib.labelID === l.labelId || lib.labelId === l.labelId
+              );
+              
+              // Ưu tiên topic/category từ library (vd: Mixed, Audio, Video, Image)
+              return matchedLibLabel?.category || matchedLibLabel?.topic || l.category || l.topic || "Khác";
+            });
+            const uniqueTopics = [...new Set(projectTopics)].filter(Boolean).join(", ");
 
             // Gộp data cũ và data thống kê mới vào làm 1 cục
             return {
               ...proj,
-              // Ghi đè mấy trường này bằng data thực tế từ API Stats
               totalDataItems: statsData?.totalItems || proj.totalDataItems || 0,
-              completedItems:
-                statsData?.completedItems || proj.completedItems || 0,
+              completedItems: statsData?.completedItems || proj.completedItems || 0,
               rateComplete: statsData?.rateComplete || 0,
+              memberCount: perfData.length,
+              labelCategories: uniqueTopics
             };
           } catch (statsError) {
             console.error(
-              `Lỗi lấy thống kê dự án ${proj.projectName}:`,
+              `Lỗi lấy dữ liệu phụ cho dự án ${proj.projectName}:`,
               statsError,
             );
-            // Nếu lỗi lấy stats (ví dụ dự án mới tinh chưa có data) thì trả về 0 hết
             return {
               ...proj,
               totalDataItems: proj.totalDataItems || 0,
               completedItems: proj.completedItems || 0,
               rateComplete: 0,
+              memberCount: 0,
+              labelCategories: ""
             };
           }
         }),
       );
 
-      // 3. Set cái mảng đã được "bơm" đầy đủ phần trăm vào State
+      // 3. Set cái mảng đã được "bơm" đầy đủ vào State
       setProjects(projectsWithStats);
     } catch (error) {
       console.error("Lỗi kéo data dự án:", error);
