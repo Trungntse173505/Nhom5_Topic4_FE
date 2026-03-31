@@ -3,8 +3,8 @@ import { useQualityScore } from "../../../hooks/Manager/useQualityScore";
 import { AuroraBackground } from "../../common/aurora-background";
 
 const SORT_PRESETS = [
-  { value: "score-desc", label: "Điểm: Cao đến thấp" },
-  { value: "score-asc", label: "Điểm: Thấp đến cao" },
+  { value: "score-desc", label: "Cao đến thấp" },
+  { value: "score-asc", label: "Thấp đến cao" },
 ];
 
 const getDisplayName = (user) =>
@@ -40,8 +40,12 @@ const UserRowItem = React.memo(({ user }) => {
     <tr className="group border-b border-white/5 bg-[#151D2F] transition-colors hover:bg-[#182034]">
       <td className="bg-[#151D2F] px-5 py-5 align-top transition-colors group-hover:bg-[#182034]">
         <div className="font-semibold text-white">{name}</div>
-        <div className="mt-2 inline-flex rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-gray-300">
-          {role}
+      </td>
+      <td className="bg-[#151D2F] px-5 py-5 text-center align-middle transition-colors group-hover:bg-[#182034]">
+        <div className="flex w-full justify-center">
+          <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-gray-300">
+            {role}
+          </div>
         </div>
       </td>
       <td className="bg-[#151D2F] px-5 py-5 text-center align-middle transition-colors group-hover:bg-[#182034]">
@@ -70,24 +74,24 @@ const UserRowItem = React.memo(({ user }) => {
 
 export default function QualityScore() {
   const { users, isLoadingUsers } = useQualityScore();
-  const [sortPreset, setSortPreset] = useState("score-desc");
+  const [scoreSort, setScoreSort] = useState("score-desc");
 
   const sortedUsers = useMemo(() => {
     const list = [...users];
-    const multiplier = sortPreset === "score-asc" ? 1 : -1;
 
     list.sort((left, right) => {
       const leftName = getDisplayName(left);
       const rightName = getDisplayName(right);
 
+      const scoreMultiplier = scoreSort === "score-asc" ? 1 : -1;
       const scoreDiff = getScore(left) - getScore(right);
       return scoreDiff !== 0
-        ? scoreDiff * multiplier
+        ? scoreDiff * scoreMultiplier
         : leftName.localeCompare(rightName, "vi");
     });
 
     return list;
-  }, [users, sortPreset]);
+  }, [users, scoreSort]);
 
   const annotatorCount = useMemo(
     () => users.filter((user) => getDisplayRole(user).toLowerCase() === "annotator").length,
@@ -98,8 +102,8 @@ export default function QualityScore() {
     [users],
   );
 
-  const handleSortPresetChange = (event) => {
-    setSortPreset(event.target.value);
+  const handleScoreSortChange = (event) => {
+    setScoreSort(event.target.value);
   };
 
   return (
@@ -141,16 +145,16 @@ export default function QualityScore() {
           </div>
 
           <div className="border-b border-white/5 bg-[#0B1120]/80 px-6 py-4">
-            <div className="flex items-center justify-end">
-              <div className="flex items-center gap-3">
+            <div className="flex w-full flex-wrap items-center justify-end gap-3">
+              <div className="flex w-full max-w-[360px] items-center gap-3">
                 <label className="text-sm text-gray-400" htmlFor="quality-sort">
-                  Sort theo:
+                  Điểm:
                 </label>
                 <select
-                  id="quality-sort"
-                  value={sortPreset}
-                  onChange={handleSortPresetChange}
-                  className="min-w-[280px] rounded-xl border border-white/10 bg-[#0B1120] px-4 py-2.5 text-sm text-gray-200 outline-none transition focus:border-blue-500/40"
+                  id="quality-score-sort"
+                  value={scoreSort}
+                  onChange={handleScoreSortChange}
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-[#0B1120] px-4 py-2.5 text-sm text-gray-200 outline-none transition focus:border-blue-500/40"
                 >
                   {SORT_PRESETS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -163,15 +167,19 @@ export default function QualityScore() {
           </div>
 
           <div className="border-b border-white/5 bg-[#151D2F] px-6">
-            <table className="w-full min-w-[860px] table-fixed border-collapse text-left bg-[#151D2F]">
+            <table className="w-full table-fixed border-collapse text-left bg-[#151D2F]">
               <colgroup>
-                <col className="w-[44%]" />
-                <col className="w-[30%]" />
+                <col className="w-[32%]" />
+                <col className="w-[18%]" />
                 <col className="w-[26%]" />
+                <col className="w-[24%]" />
               </colgroup>
               <thead>
                 <tr className="border-b border-white/10 text-xs uppercase tracking-wider text-gray-500">
-                  <th className="px-5 py-4 font-medium">Họ tên & vai trò</th>
+                  <th className="px-5 py-4 font-medium">Họ tên</th>
+                  <th className="px-5 py-4 font-medium text-center">
+                    <span className="relative left-[-10px] inline-block">Vai trò</span>
+                  </th>
                   <th className="px-5 py-4 font-medium text-center">Kinh nghiệm</th>
                   <th className="px-5 py-4 font-medium text-right">Điểm hiện tại</th>
                 </tr>
@@ -179,7 +187,10 @@ export default function QualityScore() {
             </table>
           </div>
 
-          <div className="custom-scrollbar flex-1 overflow-y-auto px-6 py-4">
+          <div
+            className="custom-scrollbar flex-1 overflow-y-scroll px-6 py-4"
+            style={{ scrollbarGutter: "stable" }}
+          >
             {isLoadingUsers ? (
               <div className="flex flex-col items-center py-24 text-center text-gray-500">
                 <svg
@@ -203,11 +214,12 @@ export default function QualityScore() {
               </div>
             ) : (
               <div className="overflow-hidden rounded-2xl border border-white/5 bg-[#151D2F]">
-                <table className="w-full min-w-[860px] table-fixed border-collapse text-left bg-[#151D2F]">
+                <table className="w-full table-fixed border-collapse text-left bg-[#151D2F]">
                   <colgroup>
-                    <col className="w-[44%]" />
-                    <col className="w-[30%]" />
+                    <col className="w-[32%]" />
+                    <col className="w-[18%]" />
                     <col className="w-[26%]" />
+                    <col className="w-[24%]" />
                   </colgroup>
                   <tbody className="bg-[#151D2F]">
                     {sortedUsers.map((user, idx) => {
