@@ -1,11 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React from "react";
 import { useQualityScore } from "../../../hooks/Manager/useQualityScore";
 import { AuroraBackground } from "../../common/aurora-background";
-
-const SORT_PRESETS = [
-  { value: "score-desc", label: "Cao đến thấp" },
-  { value: "score-asc", label: "Thấp đến cao" },
-];
 
 const getDisplayName = (user) =>
   user.fullName || user.userName || user.name || "Người dùng ẩn danh";
@@ -23,7 +18,11 @@ const formatExperience = (user) => {
   if (!normalized) return "Cơ bản";
 
   const lowered = normalized.toLowerCase();
-  if (["n/a", "na", "chưa cập nhật", "chua cap nhat", "null", "undefined"].includes(lowered)) {
+  if (
+    ["n/a", "na", "chưa cập nhật", "chua cap nhat", "null", "undefined"].includes(
+      lowered,
+    )
+  ) {
     return "Cơ bản";
   }
 
@@ -57,12 +56,13 @@ const UserRowItem = React.memo(({ user }) => {
       </td>
       <td className="bg-[#151D2F] px-5 py-5 text-right align-top transition-colors group-hover:bg-[#182034]">
         <span
-          className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm font-bold ${score >= 80
-            ? "bg-emerald-500/10 text-emerald-300"
-            : score >= 50
-              ? "bg-amber-500/10 text-amber-300"
-              : "bg-rose-500/10 text-rose-300"
-            }`}
+          className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm font-bold ${
+            score >= 80
+              ? "bg-emerald-500/10 text-emerald-300"
+              : score >= 50
+                ? "bg-amber-500/10 text-amber-300"
+                : "bg-rose-500/10 text-rose-300"
+          }`}
         >
           <span>{score}</span>
           <span className="text-xs text-yellow-300">★</span>
@@ -73,38 +73,39 @@ const UserRowItem = React.memo(({ user }) => {
 });
 
 export default function QualityScore() {
-  const { users, isLoadingUsers } = useQualityScore();
-  const [scoreSort, setScoreSort] = useState("score-desc");
+  const {
+    users,
+    filteredUsers,
+    paginatedUsers,
+    totalFilteredUsers,
+    totalPages,
+    currentPage,
+    setCurrentPage,
+    roleFilter,
+    setRoleFilter,
+    roleFilterOptions,
+    experienceFilter,
+    setExperienceFilter,
+    experienceFilterOptions,
+    scoreSort,
+    setScoreSort,
+    scoreSortOptions,
+    isLoadingUsers,
+  } = useQualityScore();
 
-  const sortedUsers = useMemo(() => {
-    const list = [...users];
+  const annotatorCount = users.filter(
+    (user) => getDisplayRole(user).toLowerCase() === "annotator",
+  ).length;
+  const reviewerCount = users.filter(
+    (user) => getDisplayRole(user).toLowerCase() === "reviewer",
+  ).length;
 
-    list.sort((left, right) => {
-      const leftName = getDisplayName(left);
-      const rightName = getDisplayName(right);
+  const pageSize = 10;
+  const pageStart = totalFilteredUsers === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const pageEnd = Math.min(currentPage * pageSize, totalFilteredUsers);
 
-      const scoreMultiplier = scoreSort === "score-asc" ? 1 : -1;
-      const scoreDiff = getScore(left) - getScore(right);
-      return scoreDiff !== 0
-        ? scoreDiff * scoreMultiplier
-        : leftName.localeCompare(rightName, "vi");
-    });
-
-    return list;
-  }, [users, scoreSort]);
-
-  const annotatorCount = useMemo(
-    () => users.filter((user) => getDisplayRole(user).toLowerCase() === "annotator").length,
-    [users],
-  );
-  const reviewerCount = useMemo(
-    () => users.filter((user) => getDisplayRole(user).toLowerCase() === "reviewer").length,
-    [users],
-  );
-
-  const handleScoreSortChange = (event) => {
-    setScoreSort(event.target.value);
-  };
+  const goPrev = () => setCurrentPage((page) => Math.max(1, page - 1));
+  const goNext = () => setCurrentPage((page) => Math.min(totalPages, page + 1));
 
   return (
     <AuroraBackground className="font-sans relative">
@@ -122,7 +123,7 @@ export default function QualityScore() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="rounded-2xl border border-white/5 bg-[#151D2F]/90 p-5 shadow-xl backdrop-blur-sm">
             <div className="text-sm text-gray-400">Tổng nhân sự</div>
-            <div className="mt-2 text-3xl font-bold text-white">{users.length}</div>
+            <div className="mt-2 text-3xl font-bold text-white">{filteredUsers.length}</div>
           </div>
           <div className="rounded-2xl border border-white/5 bg-[#151D2F]/90 p-5 shadow-xl backdrop-blur-sm">
             <div className="text-sm text-gray-400">Annotator</div>
@@ -144,19 +145,55 @@ export default function QualityScore() {
             </div>
           </div>
 
-          <div className="border-b border-white/5 bg-[#0B1120]/80 px-6 py-4">
-            <div className="flex w-full flex-wrap items-center justify-end gap-3">
-              <div className="flex w-full max-w-[360px] items-center gap-3">
-                <label className="text-sm text-gray-400" htmlFor="quality-sort">
+          <div className="border-b border-white/5 bg-[#0B1120]/80 px-4 py-4 md:px-6">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-sm text-gray-400" htmlFor="quality-role-filter">
+                  Vai trò:
+                </label>
+                <select
+                  id="quality-role-filter"
+                  value={roleFilter}
+                  onChange={(event) => setRoleFilter(event.target.value)}
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-[#0B1120] px-4 py-2.5 text-sm text-gray-200 outline-none transition focus:border-blue-500/40"
+                >
+                  {roleFilterOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-sm text-gray-400" htmlFor="quality-experience-filter">
+                  Kinh nghiệm:
+                </label>
+                <select
+                  id="quality-experience-filter"
+                  value={experienceFilter}
+                  onChange={(event) => setExperienceFilter(event.target.value)}
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-[#0B1120] px-4 py-2.5 text-sm text-gray-200 outline-none transition focus:border-blue-500/40"
+                >
+                  {experienceFilterOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-sm text-gray-400" htmlFor="quality-score-sort">
                   Điểm:
                 </label>
                 <select
                   id="quality-score-sort"
                   value={scoreSort}
-                  onChange={handleScoreSortChange}
+                  onChange={(event) => setScoreSort(event.target.value)}
                   className="w-full min-w-0 rounded-xl border border-white/10 bg-[#0B1120] px-4 py-2.5 text-sm text-gray-200 outline-none transition focus:border-blue-500/40"
                 >
-                  {SORT_PRESETS.map((option) => (
+                  {scoreSortOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -188,7 +225,7 @@ export default function QualityScore() {
           </div>
 
           <div
-            className="custom-scrollbar flex-1 overflow-y-scroll px-6 py-4"
+            className="custom-scrollbar flex-1 overflow-y-scroll px-4 py-4 md:px-6"
             style={{ scrollbarGutter: "stable" }}
           >
             {isLoadingUsers ? (
@@ -208,7 +245,7 @@ export default function QualityScore() {
                 </svg>
                 Đang tải danh sách...
               </div>
-            ) : sortedUsers.length === 0 ? (
+            ) : paginatedUsers.length === 0 ? (
               <div className="mt-4 rounded-2xl border border-dashed border-white/10 p-10 text-center text-gray-500">
                 Không tìm thấy Annotator/Reviewer nào trong dự án này.
               </div>
@@ -222,7 +259,7 @@ export default function QualityScore() {
                     <col className="w-[24%]" />
                   </colgroup>
                   <tbody className="bg-[#151D2F]">
-                    {sortedUsers.map((user, idx) => {
+                    {paginatedUsers.map((user, idx) => {
                       const id = user.id || user.userId || user.userID;
                       return <UserRowItem key={id || idx} user={user} />;
                     })}
@@ -230,6 +267,35 @@ export default function QualityScore() {
                 </table>
               </div>
             )}
+          </div>
+
+          <div className="border-t border-white/5 bg-[#0B1120]/55 px-4 py-4 md:px-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-sm text-gray-400">
+                Hiển thị {pageEnd === 0 ? 0 : pageStart}-{pageEnd} / {totalFilteredUsers} người
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={goPrev}
+                  disabled={currentPage <= 1}
+                  className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-gray-200 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Trước
+                </button>
+                <span className="rounded-xl border border-white/10 bg-[#0B1120] px-4 py-2 text-sm text-gray-300">
+                  Trang {currentPage} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={goNext}
+                  disabled={currentPage >= totalPages}
+                  className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-gray-200 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Sau
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="border-t border-white/5 bg-[#0B1120]/35 px-6 py-4 text-center">
