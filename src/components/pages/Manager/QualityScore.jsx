@@ -75,7 +75,6 @@ const UserRowItem = React.memo(({ user }) => {
 export default function QualityScore() {
   const {
     users,
-    filteredUsers,
     paginatedUsers,
     totalFilteredUsers,
     totalPages,
@@ -99,6 +98,7 @@ export default function QualityScore() {
   const reviewerCount = users.filter(
     (user) => getDisplayRole(user).toLowerCase() === "reviewer",
   ).length;
+  const totalCount = annotatorCount + reviewerCount;
 
   const pageSize = 10;
   const pageStart = totalFilteredUsers === 0 ? 0 : (currentPage - 1) * pageSize + 1;
@@ -123,7 +123,7 @@ export default function QualityScore() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="rounded-2xl border border-white/5 bg-[#151D2F]/90 p-5 shadow-xl backdrop-blur-sm">
             <div className="text-sm text-gray-400">Tổng nhân sự</div>
-            <div className="mt-2 text-3xl font-bold text-white">{filteredUsers.length}</div>
+            <div className="mt-2 text-3xl font-bold text-white">{totalCount}</div>
           </div>
           <div className="rounded-2xl border border-white/5 bg-[#151D2F]/90 p-5 shadow-xl backdrop-blur-sm">
             <div className="text-sm text-gray-400">Annotator</div>
