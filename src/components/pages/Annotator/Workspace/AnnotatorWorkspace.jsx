@@ -6,13 +6,15 @@ import ImageCanvas from "./ImageCanvas/index";
 import VideoCanvas from "./VideoCanvas/index";
 import TextEditor from "./TextEditor/index";
 import AudioEditor from "./AudioEditor/index";
-import { Save, LogOut, Loader2, AlertTriangle, Send, Sparkles, Scale, XCircle } from "lucide-react";
+import { Save, LogOut, Loader2, Send, Sparkles, Scale, XCircle, Tag } from "lucide-react";
 
 import { useWorkspace } from "../../../../hooks/Annotator/useWorkspace";
 import { useSubmitTask } from "../../../../hooks/Annotator/useSubmitTask";
-import { useFlagItem } from "../../../../hooks/Annotator/useFlagItem";
 import { useAIAssistant } from "../../../../hooks/useAIAssistant";
 import RejectTaskModals from "./../Dispute/RejectTaskModals"; 
+
+// 🔥 IMPORT COMPONENT MODAL BÁO THIẾU LABEL MỚI TẠO
+import MissingLabelModal from "./MissingLabelModal";
 
 const AnnotatorWorkspace = () => {
   const { taskId, id } = useParams();
@@ -27,9 +29,11 @@ const AnnotatorWorkspace = () => {
   } = useWorkspace(activeTaskId);
 
   const { submit } = useSubmitTask();
-  const { flag } = useFlagItem();
 
   const [rejectMode, setRejectMode] = useState("none"); 
+  
+  // 🔥 State quản lý bật/tắt Popup báo thiếu Label
+  const [isMissingLabelModalOpen, setIsMissingLabelModalOpen] = useState(false);
 
   useEffect(() => {
     if (status === "Rejected" && rejectMode === "none") {
@@ -37,7 +41,6 @@ const AnnotatorWorkspace = () => {
     }
   }, [status, rejectMode]);
 
-  // BIẾN NÀY QUYẾT ĐỊNH VIỆC ĐƯỢC PHÉP CHỈNH SỬA HAY LƯU
   const canEdit = status === "InProgress" || (status === "Rejected" && rejectMode === "resolved");
 
   const fileData = files.find((f) => f.id === currentFileId);
@@ -56,11 +59,6 @@ const AnnotatorWorkspace = () => {
   const { isAILoading, handleRunAI } = useAIAssistant({
     fileData, actualType, uniqueLabels, annotations, setAnnotations, setSelectedLabel,
   });
-
-  const handleFlagClick = async () => {
-    if (!currentFileId || !window.confirm("Báo lỗi file này?")) return;
-    try { await flag(currentFileId); alert("Đã báo lỗi!"); } catch { alert("Lỗi báo cáo."); }
-  };
 
   const handleSubmitClick = async () => {
     if (!canEdit || !window.confirm("NỘP BÀI?")) return;
@@ -86,6 +84,13 @@ const AnnotatorWorkspace = () => {
     <div className="flex flex-col h-screen bg-gray-900 text-gray-200 relative overflow-hidden">
       
       <RejectTaskModals mode={rejectMode} setMode={setRejectMode} taskId={activeTaskId} />
+
+      {/* 🔥 GỌI COMPONENT MODAL Ở ĐÂY */}
+      <MissingLabelModal 
+        isOpen={isMissingLabelModalOpen} 
+        onClose={() => setIsMissingLabelModalOpen(false)} 
+        taskId={activeTaskId} 
+      />
 
       <header className="flex justify-between items-center px-4 py-3 border-b border-gray-700 bg-gray-800 z-10">
         <div className="flex-1 flex items-center gap-4">
@@ -130,9 +135,15 @@ const AnnotatorWorkspace = () => {
             </div>
           ) : (
             <>
-              <button onClick={handleFlagClick} disabled={!canEdit} className="flex items-center gap-2 bg-red-900/30 text-red-400 px-3 py-2 rounded text-sm font-medium disabled:opacity-50">
-                <AlertTriangle size={16} /> Báo lỗi
+              {/* 🔥 NÚT BẬT MODAL */}
+              <button 
+                onClick={() => setIsMissingLabelModalOpen(true)} 
+                disabled={!canEdit} 
+                className="flex items-center gap-2 bg-red-900/30 hover:bg-red-800/50 text-red-400 px-3 py-2 rounded text-sm font-medium disabled:opacity-50 transition-colors"
+              >
+                <Tag size={16} /> Thiếu Label
               </button>
+              
               <button onClick={handleSave} disabled={!canEdit || isSaving || isLoading} className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded text-sm font-medium disabled:opacity-50">
                 {isSaving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save size={16} />} Lưu
               </button>
@@ -152,7 +163,6 @@ const AnnotatorWorkspace = () => {
         <SidebarLeft 
           files={files} 
           currentItemId={currentFileId} 
-          // 🔥 ĐÃ FIX Ở ĐÂY: Truyền cái cờ canEdit xuống hàm Select File
           onSelectItem={(id) => handleSelectFile(id, canEdit)} 
         />
         <main className="flex-1 overflow-hidden relative flex flex-col bg-[#0b1220]">{renderEditor()}</main>

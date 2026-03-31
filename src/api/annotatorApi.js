@@ -38,6 +38,10 @@ const annotatorApi = {
   getDisputes: () => axiosClient.get("/api/annotator/disputes"),
 
   getStats: () => axiosClient.get("/api/annotator/my-stats"),
+  
+  reportMissingLabel: (taskId, data) => 
+    axiosClient.post(`/api/tasks/${taskId}/missing-label`, data),
 };
+
 
 export default annotatorApi;
