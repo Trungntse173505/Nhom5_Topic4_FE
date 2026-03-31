@@ -134,6 +134,8 @@ export const useWorkspace = (taskId) => {
       name: ti.fileName, 
       url: ti.filePath,
       status: currentStatus,
+      annotations: ti.annotations || [],
+      isFlagged: ti.isFlagged || false,
     };
   }), [taskItems]);
 

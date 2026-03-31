@@ -15,7 +15,7 @@ import { useScore } from "../../../hooks/Reviewer/useScore";
 import { AuroraBackground } from "../../common/aurora-background";
 import { CardSpotlight } from "../../common/card-spotlight";
 
-// ĐỊNH DẠNG MÀU SẮC TRẠNG THÁI (TIẾNG VIỆT)
+// ĐỊNH DẠNG MÀU SẮC TRẠNG THÁI
 const STATUS_STYLES = {
   New: "bg-sky-500/20 text-sky-400 border border-sky-500/30",  
   PendingReview: "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30",
@@ -36,8 +36,8 @@ const ACTION_STYLES = {
     cls: "bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20 text-white",
   },
   Approved: {
-    label: "Đã xong",
-    cls: "bg-slate-700/50 border border-slate-600 cursor-not-allowed opacity-50 text-slate-300",
+    label: "Xem lại", // 🔥 ĐÃ ĐỔI TÊN NÚT
+    cls: "bg-emerald-600/80 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20", // 🔥 ĐÃ MỞ KHÓA MÀU SẮC
   },
   Rejected: {
     label: "Chờ sửa",
@@ -53,7 +53,6 @@ const ACTION_STYLES = {
   },
 };
 
-// ĐÃ FIX: Viết tường minh class để không bị lỗi Tailwind
 const STAT_CARDS = [
   { icon: FolderOpen, colorClass: "bg-blue-500/20 text-blue-400", label: "Tổng Task", key: "totalTasks" },
   { icon: CheckCircle2, colorClass: "bg-green-500/20 text-green-400", label: "Đã Duyệt", key: "doneTasks" },
@@ -143,7 +142,6 @@ const ReviewerDashboard = () => {
               Dashboard Kiểm Duyệt
             </h1>
             <button
-              onClick={() => navigate("/reviewer/score")}
               className="flex items-center gap-4 bg-[#151D2F]/80 backdrop-blur-md border border-white/10 hover:border-yellow-500/50 p-3 pr-6 rounded-2xl transition-all shadow-[0_0_20px_rgba(234,179,8,0.15)] group"
             >
               <div className="p-3 bg-yellow-500/20 rounded-xl text-yellow-400 group-hover:scale-110 transition-transform">
@@ -208,7 +206,6 @@ const ReviewerDashboard = () => {
             <table className="w-full text-left border-collapse">
               <thead className="bg-black/20 text-slate-400 text-sm border-b border-white/5">
                 <tr>
-                  {/* Bỏ "Người làm", cập nhật index ở class `i === 3` */}
                   {["Tên Task", "Trạng thái", "Hạn chót", ""].map((h, i) => (
                     <th key={i} className={`p-4 font-semibold tracking-wide uppercase text-[11px] ${i === 3 ? "text-right w-px" : ""}`}>
                       {h}
@@ -235,10 +232,12 @@ const ReviewerDashboard = () => {
 
                     const theTaskId = task.taskId || task.taskID;
 
+                    // 🔥 ĐÃ FIX: Cho phép click vào Xem lại nếu Task đã duyệt (Approved)
+                    const canClickAction = currentStatus === "PendingReview" || currentStatus === "Approved";
+
                     return (
                       <tr key={theTaskId} className="border-b border-white/5 hover:bg-white/5 transition-colors last:border-0">
                         <td className="p-4">
-                          {/* Đã dọn icon, ID và Current Round */}
                           <div className="font-bold text-white">
                             {task.taskName || `Task ${theTaskId?.substring(0, 5)}`}
                           </div>
@@ -259,8 +258,8 @@ const ReviewerDashboard = () => {
 
                         <td className="p-4 text-right">
                           <button
-                            onClick={() => currentStatus === "PendingReview" && navigate(`/reviewer/workspace/${theTaskId}`)}
-                            disabled={currentStatus !== "PendingReview"}
+                            onClick={() => canClickAction && navigate(`/reviewer/workspace/${theTaskId}`)}
+                            disabled={!canClickAction}
                             className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${action.cls}`}
                           >
                             {action.label}
@@ -271,7 +270,6 @@ const ReviewerDashboard = () => {
                   })
                 ) : (
                   <tr>
-                    {/* Giảm colSpan xuống 4 vì đã bỏ cột Người làm */}
                     <td colSpan="4" className="p-12 text-center text-slate-500 italic">
                       Không tìm thấy task nào phù hợp.
                     </td>

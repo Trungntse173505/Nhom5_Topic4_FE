@@ -99,7 +99,6 @@ const AnnotatorDashboard = () => {
         <h1 className="text-3xl font-bold text-white">Quản Lý Nhiệm Vụ</h1>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate("/annotator/score")}
             className="flex items-center gap-4 bg-[#1e293b] border border-yellow-500/30 hover:border-yellow-500/60 p-3 pr-6 rounded-2xl transition-all shadow-lg shadow-yellow-500/10 group"
           >
             <div className="p-3 bg-yellow-500/20 rounded-xl text-yellow-500 group-hover:scale-110 transition-transform">
