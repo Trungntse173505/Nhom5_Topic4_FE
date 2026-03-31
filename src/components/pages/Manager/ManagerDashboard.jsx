@@ -14,6 +14,7 @@ import {
 } from "../../../api/managerApi";
 import { useProjectActions } from "../../../hooks/Manager/useProjectActions";
 import { useProjectStats } from "../../../hooks/Manager/useProjectStats";
+import MissingLabelReports from "./MissingLabelReports";
 
 // Import cái card ảo ma Spotlight
 import { CardSpotlight } from "../../common/card-spotlight";
@@ -296,6 +297,8 @@ export default function ManagerDashboard() {
         return <TaskTracking />;
       case "labels":
         return <LabelSetEditor />;
+      case "missing_labels":
+        return <MissingLabelReports projectId={projectId} />;
       default:
         return null;
     }

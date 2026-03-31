@@ -18,5 +18,11 @@ export const managerDisputeApi = {
       JSON.stringify(managerComment), // Gửi body dạng chuỗi JSON
       { headers: { 'Content-Type': 'application/json' } }
     );
-  }
+  },
+
+  getMissingLabelReports: (projectId) =>
+    axiosClient.get(`/api/manager/projects/projects/${projectId}/missing-label-reports`),
+
+  getMissingLabelEvidence: (taskId) =>
+    axiosClient.get(`/api/manager/projects/missing-label-evidence/${taskId}`),
 };

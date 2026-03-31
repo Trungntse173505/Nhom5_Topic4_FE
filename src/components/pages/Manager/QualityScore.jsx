@@ -112,11 +112,7 @@ export default function QualityScore() {
       <div className="relative z-20 mx-auto w-full max-w-6xl space-y-6 p-6 md:p-8">
         <div className="space-y-4 text-center">
           <p className="text-3xl leading-tight text-white md:text-[40px]">
-            Theo dõi điểm chất lượng tổng thể của nhân sự trong dự án
-          </p>
-          <p className="mx-auto max-w-3xl text-sm text-gray-400 md:text-base">
-            Danh sách được ưu tiên theo vai trò Annotator và Reviewer, kèm kinh nghiệm
-            và điểm hiện tại để Manager dễ theo dõi.
+            Theo dõi nhân sự
           </p>
         </div>
 
@@ -139,9 +135,6 @@ export default function QualityScore() {
           <div className="flex flex-col gap-4 border-b border-white/5 bg-[#0B1120]/55 p-6 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-xl font-semibold text-white">Danh sách nhân sự</h2>
-              <p className="mt-1 text-sm text-gray-400">
-                Hiển thị vai trò, kinh nghiệm và điểm chất lượng hiện tại.
-              </p>
             </div>
           </div>
 

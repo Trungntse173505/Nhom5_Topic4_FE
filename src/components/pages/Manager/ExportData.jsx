@@ -59,7 +59,7 @@ export default function ExportData() {
                   Định Dạng Xuất
                 </label>
                 <div className="grid grid-cols-2 gap-3">
-                  {["YOLO", "COCO", "VOC", "JSON", "CSV"].map((fmt) => (
+                  {["YOLO", "COCO"].map((fmt) => (
                     <button
                       key={fmt}
                       onClick={() => setFormat(fmt)}
