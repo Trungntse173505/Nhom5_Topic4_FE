@@ -6,7 +6,6 @@ import { AuroraBackground } from "../../common/aurora-background";
 // Đẩy menu ra ngoài để không bị tạo lại mỗi lần render
 const menuItems = [
   { path: "/manager", label: "Dự án", icon: "📁" },
-  { path: "/manager/overview-project", label: "Tổng quan Project", icon: "📊" },
   { path: "/manager/labels", label: "Thư viện Nhãn", icon: "🏷️" },
   { path: "/manager/disputes", label: "Khiếu nại & Tranh chấp", icon: "⚖️" },
   { path: "/manager/quality", label: "Điểm Chất lượng", icon: "⭐" },
