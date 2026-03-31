@@ -104,13 +104,15 @@ export const useExportData = () => {
       alert(
         `Yêu cầu xuất dữ liệu ${exportJob.label} thành công! File đã được tải xuống.`,
       );
-
-      await fetchHistory(selectedProjectId); // Tải lại bảng lịch sử để thấy file mới
     } catch (error) {
       alert(error.message);
     } finally {
       setIsExporting(false);
     }
+
+    fetchHistory(selectedProjectId).catch((error) => {
+      console.error("Lỗi cập nhật lịch sử sau khi export:", error);
+    });
   };
 
   return {
