@@ -185,7 +185,7 @@ const OverviewContent = ({ project, projectId, allUsers }) => {
           </div>
           <div className="mt-6 p-4 bg-[#0B1120] rounded-lg border border-white/5">
             <p className="text-xs text-gray-500 uppercase font-bold mb-2">
-              Đường dẫn Hướng dẫn
+              Hướng dẫn
             </p>
             <div className="text-gray-300 text-sm break-all whitespace-pre-wrap">
               {project?.guidelineUrl || "Chưa có tài liệu hướng dẫn"}

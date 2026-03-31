@@ -69,18 +69,61 @@ export const updateProjectGuideline = async (projectId, guidelineUrl) => {
 };
 
 // =============================================================================
-// NHÓM 2: QUẢN LÝ DỮ LIỆU (DATA)
+// NHÓM 2: QUẢN LÝ DỮ LIỆU (DATA) - ÉP KIỂU TUYỆT ĐỐI
 // =============================================================================
 
-export const uploadDataToProject = async (projectId, fileUrls, fileType) => {
+export const uploadDataToProject = async (projectId, dataItems, fileType) => {
   try {
-    return await axiosClient.post(`/api/manager/projects/${projectId}/data`, {
-      fileUrls,
-      fileType,
-    });
+    // 1. Lọc mảng URL sạch sẽ
+    const urls = Array.isArray(dataItems)
+      ? dataItems
+          .map((item) => {
+            const url =
+              (typeof item === "string" && item) ||
+              item.fileUrl ||
+              item.link ||
+              item.url ||
+              "";
+            return url.trim();
+          })
+          .filter((url) => url !== "")
+      : [];
+
+    if (urls.length === 0) {
+      throw new Error("❌ Không có URL hợp lệ trong dữ liệu!");
+    }
+
+    // 2. Gửi schema CHÍNH XÁC theo Swagger: { fileUrls: [...], fileType: "..." }
+    const payload = {
+      fileUrls: urls,
+      fileType: fileType || "IMAGE" // Default to IMAGE if not provided just in case
+    };
+
+    console.log("=== Backend Upload ===");
+    console.log("Payload chuẩn bị gửi đi (Native Object):", payload);
+
+    return await axiosClient.post(
+      `/api/manager/projects/${projectId}/data`,
+      payload
+    );
   } catch (error) {
+    const errorData = error.response?.data || {};
+    
+    // ASP.NET Core validation errors thường lồng trong errors
+    let errorMsg = errorData.message || errorData.title || "Lỗi nạp dữ liệu vào dự án";
+    if (errorData.errors) {
+      errorMsg = JSON.stringify(errorData.errors);
+    }
+    
+    console.error("❌ uploadDataToProject Error:", {
+      status: error.response?.status,
+      message: errorMsg,
+      fullResponse: errorData,
+      isString: typeof errorData === 'string'
+    });
+    
     throw new Error(
-      error.response?.data?.message || "Lỗi nạp dữ liệu vào dự án",
+      typeof errorMsg === "string" ? errorMsg : JSON.stringify(errorMsg)
     );
   }
 };
@@ -355,6 +398,7 @@ export const getUserReputationLogs = async (userId) => {
     throw new Error(error.response?.data?.message || "Lỗi lấy lịch sử uy tín");
   }
 };
+
 // =============================================================================
 // NHÓM 7: QUẢN LÝ KHIẾU NẠI (DISPUTES)
 // =============================================================================
@@ -384,7 +428,6 @@ export const getDisputeDetail = async (disputeId) => {
 // 3. Xử lý khiếu nại (Đồng ý/Từ chối...)
 export const updateDisputeAction = async (disputeId, action) => {
   try {
-    // Chú ý: Backend yêu cầu biến 'action' nằm trên thanh URL (Query Parameter)
     return await axiosClient.patch(
       `/api/manager/projects/disputes/${disputeId}?action=${action}`,
     );

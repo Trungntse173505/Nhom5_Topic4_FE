@@ -2,31 +2,12 @@ import React, { useState, useCallback } from "react";
 import { useWorkDistribution } from "../../../hooks/Manager/useWorkDistribution";
 import { AnimatedButton } from "../../common/AnimatedButton";
 import { CardSpotlight } from "../../common/card-spotlight";
-
-const UnassignedFileItem = React.memo(({ item, isSelected, onToggle }) => {
-  const targetId = item.dataItemId || item.id || item.dataID;
-  const targetName = item.fileName || item.name || `File #${targetId}`;
-
-  return (
-    <label
-      className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition-colors ${
-        isSelected
-          ? "border-blue-500 bg-blue-500/10"
-          : "border-white/5 bg-[#0B1120] hover:border-white/20"
-      }`}
-    >
-      <input
-        type="checkbox"
-        className="w-4 h-4 rounded cursor-pointer"
-        checked={isSelected}
-        onChange={() => onToggle(targetId)}
-      />
-      <span className="text-gray-300 text-sm font-medium truncate">
-        {targetName}
-      </span>
-    </label>
-  );
-});
+import {
+  FILE_TYPE_COLORS,
+  FILE_TYPE_LABELS,
+  FILE_TYPE_ICONS,
+  groupDataByType,
+} from "../../../utils/fileTypeDetector";
 
 export default function WorkDistribution({ project, onRefresh }) {
   const projectId = project?.projectID || project?.id;
@@ -37,10 +18,26 @@ export default function WorkDistribution({ project, onRefresh }) {
   const [selectedIds, setSelectedIds] = useState([]);
   const [taskData, setTaskData] = useState({ taskName: "", deadline: "" });
 
+  // ✅ State để track expand/collapse các group
+  const [expandedGroups, setExpandedGroups] = useState({
+    IMAGE: true,
+    VIDEO: true,
+    AUDIO: true,
+    TEXT: true,
+    OTHER: false,
+  });
+
   const toggleSelection = useCallback((id) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
+  }, []);
+
+  const toggleGroup = useCallback((typeKey) => {
+    setExpandedGroups((prev) => ({
+      ...prev,
+      [typeKey]: !prev[typeKey],
+    }));
   }, []);
 
   const handleSubmit = useCallback(async () => {
@@ -73,8 +70,11 @@ export default function WorkDistribution({ project, onRefresh }) {
     }
   }, [taskData, selectedIds, createBatch]);
 
-  // Lấy ngày hôm nay dưới dạng YYYY-MM-DD để khóa lịch HTML
-  const todayString = new Date().toISOString().split("T")[0];
+  // Lấy ngày giờ hiện tại dưới dạng YYYY-MM-DDThh:mm để khóa lịch HTML (có tính toán múi giờ local)
+  const tzOffset = new Date().getTimezoneOffset() * 60000;
+  const todayString = new Date(Date.now() - tzOffset)
+    .toISOString()
+    .slice(0, 16);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -104,17 +104,173 @@ export default function WorkDistribution({ project, onRefresh }) {
               Kho dữ liệu trống.
             </div>
           ) : (
-            unassignedItems.map((item, idx) => {
-              const targetId = item.dataItemId || item.id || item.dataID;
-              return (
-                <UnassignedFileItem
-                  key={targetId || idx}
-                  item={item}
-                  isSelected={selectedIds.includes(targetId)}
-                  onToggle={toggleSelection}
-                />
-              );
-            })
+            /* ✅ Render grouped data với collapse/expand */
+            (() => {
+              const grouped = groupDataByType(unassignedItems);
+              const typeOrder = ["IMAGE", "VIDEO", "AUDIO", "TEXT", "OTHER"];
+
+              return typeOrder.map((typeKey) => {
+                const itemsInGroup = grouped[typeKey];
+                if (!itemsInGroup || itemsInGroup.length === 0) return null;
+
+                const isExpanded = expandedGroups[typeKey];
+                const typeLabel = FILE_TYPE_LABELS[typeKey];
+                const typeIcon = FILE_TYPE_ICONS[typeKey];
+                const typeColor = FILE_TYPE_COLORS[typeKey];
+
+                return (
+                  <div
+                    key={typeKey}
+                    className="border border-white/10 rounded-lg overflow-hidden relative z-10"
+                  >
+                    {/* Group Header - Collapsible */}
+                    <button
+                      onClick={() => toggleGroup(typeKey)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-[#0B1120] hover:bg-[#151D2F] transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${typeColor}`}
+                        >
+                          {typeIcon} {typeLabel}
+                        </span>
+                        <span className="text-gray-400 text-sm">
+                          {itemsInGroup.length} file
+                        </span>
+                      </div>
+                      <span className="text-gray-400 transition-transform">
+                        {isExpanded ? "▼" : "▶"}
+                      </span>
+                    </button>
+
+                    {/* Group Items - Table Format */}
+                    {isExpanded && (
+                      <table className="w-full text-left text-sm">
+                        <thead className="text-gray-400 border-t border-white/5 text-xs">
+                          <tr>
+                            <th className="px-3 py-2 font-medium w-8">
+                              <input
+                                type="checkbox"
+                                checked={itemsInGroup.every((item) =>
+                                  selectedIds.includes(
+                                    item.dataItemId || item.id || item.dataID,
+                                  ),
+                                )}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    const newIds = itemsInGroup.map(
+                                      (item) =>
+                                        item.dataItemId ||
+                                        item.id ||
+                                        item.dataID,
+                                    );
+                                    setSelectedIds((prev) => [
+                                      ...prev,
+                                      ...newIds.filter(
+                                        (id) => !prev.includes(id),
+                                      ),
+                                    ]);
+                                  } else {
+                                    const itemIds = itemsInGroup.map(
+                                      (item) =>
+                                        item.dataItemId ||
+                                        item.id ||
+                                        item.dataID,
+                                    );
+                                    setSelectedIds((prev) =>
+                                      prev.filter(
+                                        (id) => !itemIds.includes(id),
+                                      ),
+                                    );
+                                  }
+                                }}
+                                className="w-4 h-4 rounded cursor-pointer"
+                              />
+                            </th>
+                            <th className="px-3 py-2 font-medium">Tên File</th>
+                            <th className="px-3 py-2 font-medium">
+                              Trạng thái
+                            </th>
+                            <th className="px-3 py-2 font-medium text-right">
+                              Thao tác
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {itemsInGroup.map((item, idx) => {
+                            const targetId =
+                              item.dataItemId || item.id || item.dataID;
+                            const isSelected = selectedIds.includes(targetId);
+                            return (
+                              <tr
+                                key={targetId || idx}
+                                className="hover:bg-white/[0.02] transition-colors"
+                              >
+                                <td className="px-3 py-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => toggleSelection(targetId)}
+                                    className="w-4 h-4 rounded cursor-pointer"
+                                  />
+                                </td>
+                                <td className="px-3 py-2 text-gray-200 truncate max-w-xs">
+                                  <a
+                                    href={
+                                      item.filePath ||
+                                      item.fileUrl ||
+                                      item.url ||
+                                      ""
+                                    }
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-blue-400 hover:text-blue-300 transition-colors"
+                                    title={item.displayName || item.fileName}
+                                  >
+                                    {item.displayName ||
+                                      item.fileName ||
+                                      "File"}
+                                  </a>
+                                </td>
+                                <td className="px-3 py-2">
+                                  <span
+                                    className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                      item.isAssigned === true
+                                        ? "bg-emerald-500/10 text-emerald-400"
+                                        : "bg-gray-500/10 text-gray-400"
+                                    }`}
+                                  >
+                                    {item.isAssigned === true
+                                      ? "Đã giao"
+                                      : "Chưa giao"}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-2 text-right">
+                                  {item.filePath || item.fileUrl || item.url ? (
+                                    <a
+                                      href={
+                                        item.filePath ||
+                                        item.fileUrl ||
+                                        item.url
+                                      }
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded transition-colors text-xs"
+                                    >
+                                      Xem
+                                    </a>
+                                  ) : null}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                );
+              });
+            })()
           )}
         </div>
       </CardSpotlight>
@@ -125,7 +281,7 @@ export default function WorkDistribution({ project, onRefresh }) {
           Tạo Nhiệm Vụ Mới
         </h2>
 
-        <div className="space-y-6">
+        <div className="space-y-6 relative z-10">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-2">
               Tên Nhiệm Vụ <span className="text-rose-500">*</span>
@@ -146,9 +302,9 @@ export default function WorkDistribution({ project, onRefresh }) {
               Hạn chót <span className="text-rose-500">*</span>
             </label>
             <input
-              type="date"
+              type="datetime-local" // 👉 ĐỔI THÀNH DATETIME-LOCAL Ở ĐÂY NÈ SẾP
               value={taskData.deadline}
-              min={todayString} // 👉 KHÓA LỊCH HTML: Không cho bấm vào ngày quá khứ
+              min={todayString} // 👉 Khóa lịch bằng cái biến todayString vừa tút lại ở trên
               onChange={(e) =>
                 setTaskData({ ...taskData, deadline: e.target.value })
               }
@@ -167,7 +323,6 @@ export default function WorkDistribution({ project, onRefresh }) {
           </div>
         </div>
       </CardSpotlight>
-      {/* CỘT 2: FORM TẠO TASK */}
     </div>
   );
 }

@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
 import { getUnassignedItems, createBatchTask } from "../../api/managerApi";
+import {
+  sortDataByType,
+  enrichItemWithFileInfo,
+} from "../../utils/fileTypeDetector";
 
 export const useWorkDistribution = (projectId, onRefresh) => {
   const [unassignedItems, setUnassignedItems] = useState([]);
@@ -11,9 +15,16 @@ export const useWorkDistribution = (projectId, onRefresh) => {
     setIsLoading(true);
     try {
       const itemsRes = await getUnassignedItems(projectId);
-      setUnassignedItems(
-        Array.isArray(itemsRes) ? itemsRes : itemsRes.data || [],
+      let items = Array.isArray(itemsRes) ? itemsRes : itemsRes.data || [];
+
+      // ✅ Enrichment: Extract fileName + detect dataType từ URL
+      items = items.map((item, idx) =>
+        enrichItemWithFileInfo(item, `file_${idx}`),
       );
+
+      // ✅ Sort theo loại file: IMAGE -> VIDEO -> AUDIO -> TEXT
+      const sortedItems = sortDataByType(items);
+      setUnassignedItems(sortedItems);
     } catch (error) {
       console.error("Lỗi lấy dữ liệu:", error);
     } finally {

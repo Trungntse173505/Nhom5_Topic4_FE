@@ -9,60 +9,12 @@ import { useParams, useLocation } from "react-router-dom";
 import { useDatasetUpload } from "../../../hooks/Manager/useDatasetUpload";
 import { CardContainer, CardBody, CardItem } from "../../common/3d-card";
 import { AnimatedButton } from "../../common/AnimatedButton";
-
-// =====================================================================
-// BÍ KÍP 3: CÁI VỎ HỘP ĐÓNG BĂNG CHO TỪNG DÒNG DATA (Chống Lag Bảng)
-// =====================================================================
-const DataRowItem = React.memo(({ item }) => {
-  const finalLink = item.filePath || item.fileUrl || item.url || "";
-  const isAssigned = item.isAssigned === true;
-  const statusText = isAssigned ? "Đã giao Task" : "Chưa giao";
-
-  return (
-    <tr className="hover:bg-white/[0.04] transition-colors">
-      <td
-        className="px-4 py-4 text-gray-200 truncate max-w-[200px]"
-        title={finalLink}
-      >
-        {finalLink ? (
-          <a
-            href={finalLink}
-            target="_blank"
-            rel="noreferrer"
-            className="text-blue-400 hover:text-blue-300 transition-colors"
-          >
-            {item.fileName || finalLink.split("/").pop() || "Xem file"}
-          </a>
-        ) : (
-          <span className="text-rose-400">Không có link</span>
-        )}
-      </td>
-      <td className="px-4 py-4">
-        <span
-          className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-            isAssigned
-              ? "bg-emerald-500/10 text-emerald-400"
-              : "bg-gray-500/10 text-gray-400"
-          }`}
-        >
-          {statusText}
-        </span>
-      </td>
-      <td className="px-4 py-4 text-right">
-        {finalLink && (
-          <a
-            href={finalLink}
-            target="_blank"
-            rel="noreferrer"
-            className="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded transition-colors text-xs"
-          >
-            Mở xem
-          </a>
-        )}
-      </td>
-    </tr>
-  );
-});
+import {
+  FILE_TYPE_COLORS,
+  FILE_TYPE_LABELS,
+  FILE_TYPE_ICONS,
+  groupDataByType,
+} from "../../../utils/fileTypeDetector";
 
 export default function DatasetUpload({ project }) {
   const { projectId: paramProjectId } = useParams();
@@ -76,6 +28,22 @@ export default function DatasetUpload({ project }) {
   const fileInputRef = useRef(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [fileType, setFileType] = useState("Pic");
+
+  // ✅ State để track expand/collapse các group
+  const [expandedGroups, setExpandedGroups] = useState({
+    IMAGE: true,
+    VIDEO: true,
+    AUDIO: true,
+    TEXT: true,
+    OTHER: false,
+  });
+
+  const toggleGroup = useCallback((typeKey) => {
+    setExpandedGroups((prev) => ({
+      ...prev,
+      [typeKey]: !prev[typeKey],
+    }));
+  }, []);
   useEffect(() => {
     if (project?.projectType) {
       const type = project.projectType.toLowerCase();
@@ -228,81 +196,84 @@ export default function DatasetUpload({ project }) {
         </div>
 
         {/* --- KHU VỰC 3D CARD UPLOAD --- */}
-        <CardContainer containerClassName="w-full mt-2" className="w-full">
-          <CardBody
-            className="w-full h-auto min-h-[250px] bg-[#0B1120] border-2 border-dashed border-white/10 hover:border-blue-500/50 rounded-xl p-10 flex flex-col items-center justify-center text-center transition-colors cursor-pointer group/card"
-            style={{ transformStyle: "preserve-3d" }}
-          >
-            <CardItem
-              translateZ="20"
-              className="w-full h-full flex flex-col items-center justify-center"
+        {/* ✅ FIX TẬN GỐC: Dùng thẻ label natives để trỏ trực tiếp đến input id, đảm bảo 100% click được */}
+        <input
+          id="file-upload" // Đặt ID cho label trỏ tới
+          type="file"
+          multiple
+          accept={acceptTypes}
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        
+        <label htmlFor="file-upload" className="block w-full cursor-pointer mt-2">
+          <CardContainer containerClassName="w-full" className="w-full pointer-events-none">
+            <CardBody
+              className="w-full h-auto min-h-[250px] bg-[#0B1120] border-2 border-dashed border-white/10 hover:border-blue-500/50 rounded-xl p-10 flex flex-col items-center justify-center text-center transition-colors group/card"
               style={{ transformStyle: "preserve-3d" }}
-              onClick={() => fileInputRef.current?.click()}
             >
-              {selectedFiles.length > 0 ? (
-                <CardItem
-                  translateZ="60"
-                  className="text-emerald-400 font-medium flex flex-col items-center"
-                >
-                  <svg
-                    className="mx-auto h-16 w-16 mb-4 opacity-80 drop-shadow-2xl"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                  </svg>
-                  <span className="text-lg drop-shadow-md">
-                    Đã chọn {selectedFiles.length} file chờ upload
-                  </span>
-                </CardItem>
-              ) : (
-                <>
+              <CardItem
+                translateZ="20"
+                className="w-full h-full flex flex-col items-center justify-center"
+                style={{ transformStyle: "preserve-3d" }}
+              >
+                {selectedFiles.length > 0 ? (
                   <CardItem
-                    translateZ="80"
-                    className="mb-5 text-gray-400 group-hover/card:text-blue-400 transition-colors drop-shadow-2xl"
+                    translateZ="60"
+                    className="text-emerald-400 font-medium flex flex-col items-center"
                   >
                     <svg
-                      width="60"
-                      height="60"
+                      className="mx-auto h-16 w-16 mb-4 opacity-80 drop-shadow-2xl"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="1.5"
+                      strokeWidth="2"
                     >
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="17 8 12 3 7 8"></polyline>
-                      <line x1="12" y1="3" x2="12" y2="15"></line>
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                      <polyline points="22 4 12 14.01 9 11.01"></polyline>
                     </svg>
+                    <span className="text-lg drop-shadow-md">
+                      Đã chọn {selectedFiles.length} file chờ upload
+                    </span>
                   </CardItem>
-                  <CardItem
-                    translateZ="50"
-                    className="text-xl font-medium text-white mb-2 drop-shadow-md"
-                  >
-                    Bấm vào đây để chọn Files
-                  </CardItem>
-                  <CardItem
-                    translateZ="30"
-                    className="text-sm text-blue-400/80 mt-1 font-medium"
-                  >
-                    {supportedText}
-                  </CardItem>
-                </>
-              )}
-
-              <input
-                type="file"
-                multiple
-                accept={acceptTypes} // LỚP BẢO VỆ SỐ 1 ĐÃ ĐƯỢC TỐI ƯU
-                ref={fileInputRef}
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-            </CardItem>
-          </CardBody>
-        </CardContainer>
+                ) : (
+                  <>
+                    <CardItem
+                      translateZ="80"
+                      className="mb-5 text-gray-400 group-hover/card:text-blue-400 transition-colors drop-shadow-2xl"
+                    >
+                      <svg
+                        width="60"
+                        height="60"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      >
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                      </svg>
+                    </CardItem>
+                    <CardItem
+                      translateZ="50"
+                      className="text-xl font-medium text-white mb-2 drop-shadow-md"
+                    >
+                      Bấm vào đây để chọn Files
+                    </CardItem>
+                    <CardItem
+                      translateZ="30"
+                      className="text-sm text-blue-400/80 mt-1 font-medium"
+                    >
+                      {supportedText}
+                    </CardItem>
+                  </>
+                )}
+              </CardItem>
+            </CardBody>
+          </CardContainer>
+        </label>
 
         {selectedFiles.length > 0 && (
           <div className="mt-4 flex justify-end">
@@ -343,25 +314,138 @@ export default function DatasetUpload({ project }) {
                 Dự án này chưa có data nào. Hãy upload ở trên nhé!
               </div>
             ) : (
-              <table className="w-full text-left text-sm">
-                <thead className="text-gray-400 border-b border-white/5">
-                  <tr>
-                    <th className="px-4 py-4 rounded-tl-lg font-medium">
-                      Link Dữ liệu
-                    </th>
-                    <th className="px-4 py-4 font-medium">Trạng thái</th>
-                    <th className="px-4 py-4 rounded-tr-lg font-medium text-right">
-                      Thao tác
-                    </th>
-                  </tr>
-                </thead>
-                {/* ĐÃ TỐI ƯU: GỌI COMPONENT ĐÓNG BĂNG Ở ĐÂY */}
-                <tbody className="divide-y divide-white/5">
-                  {dataItems.map((item, i) => (
-                    <DataRowItem key={item.dataID || i} item={item} />
-                  ))}
-                </tbody>
-              </table>
+              <div className="space-y-2">
+                {/* ✅ Render grouped data với collapse/expand */}
+                {(() => {
+                  const grouped = groupDataByType(dataItems);
+                  const typeOrder = [
+                    "IMAGE",
+                    "VIDEO",
+                    "AUDIO",
+                    "TEXT",
+                    "OTHER",
+                  ];
+
+                  return typeOrder.map((typeKey) => {
+                    const itemsInGroup = grouped[typeKey];
+                    if (!itemsInGroup || itemsInGroup.length === 0) return null;
+
+                    const isExpanded = expandedGroups[typeKey];
+                    const typeLabel = FILE_TYPE_LABELS[typeKey];
+                    const typeIcon = FILE_TYPE_ICONS[typeKey];
+                    const typeColor = FILE_TYPE_COLORS[typeKey];
+
+                    return (
+                      <div
+                        key={typeKey}
+                        className="border border-white/10 rounded-lg overflow-hidden"
+                      >
+                        {/* Group Header - Collapsible */}
+                        <button
+                          onClick={() => toggleGroup(typeKey)}
+                          className="w-full flex items-center justify-between px-4 py-3 bg-[#0B1120] hover:bg-[#151D2F] transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium ${typeColor}`}
+                            >
+                              {typeIcon} {typeLabel}
+                            </span>
+                            <span className="text-gray-400 text-sm">
+                              {itemsInGroup.length} file
+                            </span>
+                          </div>
+                          <span className="text-gray-400 transition-transform">
+                            {isExpanded ? "▼" : "▶"}
+                          </span>
+                        </button>
+
+                        {/* Group Items */}
+                        {isExpanded && (
+                          <table className="w-full text-left text-sm">
+                            <thead className="text-gray-400 border-t border-white/5 text-xs">
+                              <tr>
+                                <th className="px-4 py-2 font-medium">
+                                  Tên File
+                                </th>
+                                <th className="px-4 py-2 font-medium">
+                                  Trạng thái
+                                </th>
+                                <th className="px-4 py-2 font-medium text-right">
+                                  Thao tác
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                              {itemsInGroup.map((item, i) => (
+                                <tr
+                                  key={item.dataID || `${typeKey}_${i}`}
+                                  className="hover:bg-white/[0.02] transition-colors"
+                                >
+                                  <td className="px-4 py-3 text-gray-200 truncate max-w-[300px]">
+                                    <a
+                                      href={
+                                        item.filePath ||
+                                        item.fileUrl ||
+                                        item.url ||
+                                        ""
+                                      }
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-blue-400 hover:text-blue-300 transition-colors"
+                                      title={
+                                        item.displayName ||
+                                        item.fileName ||
+                                        "file"
+                                      }
+                                    >
+                                      {/* ✅ Hiển thị displayName: "Ảnh 1", "Video 1", ... */}
+                                      {item.displayName ||
+                                        item.fileName ||
+                                        "File"}
+                                    </a>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span
+                                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                        item.isAssigned === true
+                                          ? "bg-emerald-500/10 text-emerald-400"
+                                          : "bg-gray-500/10 text-gray-400"
+                                      }`}
+                                    >
+                                      {item.isAssigned === true
+                                        ? "Đã giao Task"
+                                        : "Chưa giao"}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-right">
+                                    {item.filePath ||
+                                    item.fileUrl ||
+                                    item.url ? (
+                                      <a
+                                        href={
+                                          item.filePath ||
+                                          item.fileUrl ||
+                                          item.url
+                                        }
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1 rounded transition-colors text-xs"
+                                      >
+                                        Mở xem
+                                      </a>
+                                    ) : null}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
             )}
           </CardItem>
         </CardBody>
