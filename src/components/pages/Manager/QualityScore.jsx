@@ -2,16 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useQualityScore } from "../../../hooks/Manager/useQualityScore";
 import { AuroraBackground } from "../../common/aurora-background";
 
-const ROLE_ORDER = {
-  annotator: 0,
-  reviewer: 1,
-};
-
 const SORT_PRESETS = [
-  { value: "role-asc", label: "Vai trò: Annotator trước Reviewer" },
-  { value: "role-desc", label: "Vai trò: Reviewer trước Annotator" },
-  { value: "experience-desc", label: "Kinh nghiệm: Cao đến thấp" },
-  { value: "experience-asc", label: "Kinh nghiệm: Thấp đến cao" },
   { value: "score-desc", label: "Điểm: Cao đến thấp" },
   { value: "score-asc", label: "Điểm: Thấp đến cao" },
 ];
@@ -22,37 +13,21 @@ const getDisplayName = (user) =>
 const getDisplayRole = (user) =>
   String(user.roleName || user.role || "Chưa rõ").trim();
 
-const getRoleRank = (user) => {
-  const role = getDisplayRole(user).toLowerCase();
-  return Object.prototype.hasOwnProperty.call(ROLE_ORDER, role)
-    ? ROLE_ORDER[role]
-    : Number.MAX_SAFE_INTEGER;
-};
-
 const getScore = (user) =>
   Number(user.score ?? user.qualityScore ?? user.reputationScore ?? 100) || 0;
-
-const getExperienceValue = (user) => {
-  const rawExperience =
-    user.experience ?? user.expertise ?? user.level ?? user.seniority ?? "";
-
-  if (typeof rawExperience === "number") return rawExperience;
-
-  const normalized = String(rawExperience).trim();
-  if (!normalized) return Number.MAX_SAFE_INTEGER;
-
-  const numericMatch = normalized.match(/(\d+(?:[.,]\d+)?)/);
-  if (numericMatch) {
-    return Number(numericMatch[1].replace(",", "."));
-  }
-
-  return normalized.toLowerCase();
-};
 
 const formatExperience = (user) => {
   const rawExperience =
     user.experience ?? user.expertise ?? user.level ?? user.seniority ?? "";
-  return String(rawExperience).trim() || "Chưa cập nhật";
+  const normalized = String(rawExperience).trim();
+  if (!normalized) return "Cơ bản";
+
+  const lowered = normalized.toLowerCase();
+  if (["n/a", "na", "chưa cập nhật", "chua cap nhat", "null", "undefined"].includes(lowered)) {
+    return "Cơ bản";
+  }
+
+  return normalized;
 };
 
 const UserRowItem = React.memo(({ user }) => {
@@ -62,26 +37,28 @@ const UserRowItem = React.memo(({ user }) => {
   const experience = formatExperience(user);
 
   return (
-    <tr className="group border-b border-white/5 transition-colors hover:bg-white/[0.03]">
-      <td className="py-4 px-4">
+    <tr className="group border-b border-white/5 bg-[#151D2F] transition-colors hover:bg-[#182034]">
+      <td className="bg-[#151D2F] px-5 py-5 align-top transition-colors group-hover:bg-[#182034]">
         <div className="font-semibold text-white">{name}</div>
         <div className="mt-2 inline-flex rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-gray-300">
           {role}
         </div>
       </td>
-      <td className="py-4 px-4">
-        <div className="max-w-[220px] text-sm text-gray-200">{experience}</div>
-        <div className="mt-1 text-xs text-gray-500">Kinh nghiệm / chuyên môn</div>
+      <td className="bg-[#151D2F] px-5 py-5 text-center align-middle transition-colors group-hover:bg-[#182034]">
+        <div className="flex w-full justify-center">
+          <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 text-sm font-medium text-gray-200">
+            {experience}
+          </div>
+        </div>
       </td>
-      <td className="py-4 px-4 text-right">
+      <td className="bg-[#151D2F] px-5 py-5 text-right align-top transition-colors group-hover:bg-[#182034]">
         <span
-          className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm font-bold ${
-            score >= 80
-              ? "bg-emerald-500/10 text-emerald-300"
-              : score >= 50
-                ? "bg-amber-500/10 text-amber-300"
-                : "bg-rose-500/10 text-rose-300"
-          }`}
+          className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm font-bold ${score >= 80
+            ? "bg-emerald-500/10 text-emerald-300"
+            : score >= 50
+              ? "bg-amber-500/10 text-amber-300"
+              : "bg-rose-500/10 text-rose-300"
+            }`}
         >
           <span>{score}</span>
           <span className="text-xs text-yellow-300">★</span>
@@ -93,39 +70,15 @@ const UserRowItem = React.memo(({ user }) => {
 
 export default function QualityScore() {
   const { users, isLoadingUsers } = useQualityScore();
-  const [sortBy, setSortBy] = useState("role");
-  const [sortDir, setSortDir] = useState("asc");
-  const [sortPreset, setSortPreset] = useState("role-asc");
+  const [sortPreset, setSortPreset] = useState("score-desc");
 
   const sortedUsers = useMemo(() => {
     const list = [...users];
+    const multiplier = sortPreset === "score-asc" ? 1 : -1;
 
     list.sort((left, right) => {
-      const multiplier = sortDir === "asc" ? 1 : -1;
       const leftName = getDisplayName(left);
       const rightName = getDisplayName(right);
-
-      if (sortBy === "role") {
-        const roleDiff = getRoleRank(left) - getRoleRank(right);
-        return roleDiff !== 0
-          ? roleDiff * multiplier
-          : leftName.localeCompare(rightName, "vi");
-      }
-
-      if (sortBy === "experience") {
-        const leftExperience = getExperienceValue(left);
-        const rightExperience = getExperienceValue(right);
-
-        if (
-          typeof leftExperience === "number" &&
-          typeof rightExperience === "number"
-        ) {
-          const diff = leftExperience - rightExperience;
-          return diff !== 0 ? diff * multiplier : leftName.localeCompare(rightName, "vi");
-        }
-
-        return String(leftExperience).localeCompare(String(rightExperience), "vi") * multiplier;
-      }
 
       const scoreDiff = getScore(left) - getScore(right);
       return scoreDiff !== 0
@@ -134,7 +87,7 @@ export default function QualityScore() {
     });
 
     return list;
-  }, [users, sortBy, sortDir]);
+  }, [users, sortPreset]);
 
   const annotatorCount = useMemo(
     () => users.filter((user) => getDisplayRole(user).toLowerCase() === "annotator").length,
@@ -146,12 +99,7 @@ export default function QualityScore() {
   );
 
   const handleSortPresetChange = (event) => {
-    const value = event.target.value;
-    setSortPreset(value);
-
-    const [nextSortBy, nextSortDir] = value.split("-");
-    setSortBy(nextSortBy);
-    setSortDir(nextSortDir);
+    setSortPreset(event.target.value);
   };
 
   return (
@@ -171,17 +119,14 @@ export default function QualityScore() {
           <div className="rounded-2xl border border-white/5 bg-[#151D2F]/90 p-5 shadow-xl backdrop-blur-sm">
             <div className="text-sm text-gray-400">Tổng nhân sự</div>
             <div className="mt-2 text-3xl font-bold text-white">{users.length}</div>
-            <div className="mt-2 text-xs text-gray-500">Annotator + Reviewer</div>
           </div>
           <div className="rounded-2xl border border-white/5 bg-[#151D2F]/90 p-5 shadow-xl backdrop-blur-sm">
             <div className="text-sm text-gray-400">Annotator</div>
             <div className="mt-2 text-3xl font-bold text-emerald-300">{annotatorCount}</div>
-            <div className="mt-2 text-xs text-gray-500">Được xếp trước theo mặc định</div>
           </div>
           <div className="rounded-2xl border border-white/5 bg-[#151D2F]/90 p-5 shadow-xl backdrop-blur-sm">
             <div className="text-sm text-gray-400">Reviewer</div>
             <div className="mt-2 text-3xl font-bold text-sky-300">{reviewerCount}</div>
-            <div className="mt-2 text-xs text-gray-500">Xếp sau Annotator</div>
           </div>
         </div>
 
@@ -193,21 +138,11 @@ export default function QualityScore() {
                 Hiển thị vai trò, kinh nghiệm và điểm chất lượng hiện tại.
               </p>
             </div>
-            <div className="rounded-full border border-blue-500/20 bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-300">
-              Tổng số: {users.length} người
-            </div>
           </div>
 
-          <div className="border-b border-white/5 px-6 py-4">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="min-w-0">
-                <div className="text-sm font-medium text-white">Sắp xếp danh sách</div>
-                <div className="mt-1 text-xs text-gray-500">
-                  Chọn một kiểu sort để xem theo vai trò, kinh nghiệm hoặc điểm.
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="border-b border-white/5 bg-[#0B1120]/80 px-6 py-4">
+            <div className="flex items-center justify-end">
+              <div className="flex items-center gap-3">
                 <label className="text-sm text-gray-400" htmlFor="quality-sort">
                   Sort theo:
                 </label>
@@ -215,7 +150,7 @@ export default function QualityScore() {
                   id="quality-sort"
                   value={sortPreset}
                   onChange={handleSortPresetChange}
-                  className="min-w-[280px] rounded-xl border border-white/10 bg-[#0B1120]/80 px-4 py-2.5 text-sm text-gray-200 outline-none transition focus:border-blue-500/40"
+                  className="min-w-[280px] rounded-xl border border-white/10 bg-[#0B1120] px-4 py-2.5 text-sm text-gray-200 outline-none transition focus:border-blue-500/40"
                 >
                   {SORT_PRESETS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -227,7 +162,24 @@ export default function QualityScore() {
             </div>
           </div>
 
-          <div className="custom-scrollbar flex-1 overflow-y-auto px-6 py-2">
+          <div className="border-b border-white/5 bg-[#151D2F] px-6">
+            <table className="w-full min-w-[860px] table-fixed border-collapse text-left bg-[#151D2F]">
+              <colgroup>
+                <col className="w-[44%]" />
+                <col className="w-[30%]" />
+                <col className="w-[26%]" />
+              </colgroup>
+              <thead>
+                <tr className="border-b border-white/10 text-xs uppercase tracking-wider text-gray-500">
+                  <th className="px-5 py-4 font-medium">Họ tên & vai trò</th>
+                  <th className="px-5 py-4 font-medium text-center">Kinh nghiệm</th>
+                  <th className="px-5 py-4 font-medium text-right">Điểm hiện tại</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+
+          <div className="custom-scrollbar flex-1 overflow-y-auto px-6 py-4">
             {isLoadingUsers ? (
               <div className="flex flex-col items-center py-24 text-center text-gray-500">
                 <svg
@@ -250,21 +202,21 @@ export default function QualityScore() {
                 Không tìm thấy Annotator/Reviewer nào trong dự án này.
               </div>
             ) : (
-              <table className="w-full min-w-[860px] border-collapse text-left">
-                <thead className="sticky top-0 z-10 bg-[#151D2F]/95 backdrop-blur">
-                  <tr className="border-b border-white/5 text-xs uppercase tracking-wider text-gray-500">
-                    <th className="px-4 pb-3 pt-4 font-medium">Họ tên & vai trò</th>
-                    <th className="px-4 pb-3 pt-4 font-medium">Kinh nghiệm</th>
-                    <th className="px-4 pb-3 pt-4 font-medium text-right">Điểm hiện tại</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedUsers.map((user, idx) => {
-                    const id = user.id || user.userId || user.userID;
-                    return <UserRowItem key={id || idx} user={user} />;
-                  })}
-                </tbody>
-              </table>
+              <div className="overflow-hidden rounded-2xl border border-white/5 bg-[#151D2F]">
+                <table className="w-full min-w-[860px] table-fixed border-collapse text-left bg-[#151D2F]">
+                  <colgroup>
+                    <col className="w-[44%]" />
+                    <col className="w-[30%]" />
+                    <col className="w-[26%]" />
+                  </colgroup>
+                  <tbody className="bg-[#151D2F]">
+                    {sortedUsers.map((user, idx) => {
+                      const id = user.id || user.userId || user.userID;
+                      return <UserRowItem key={id || idx} user={user} />;
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 
