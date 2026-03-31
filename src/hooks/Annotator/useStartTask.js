@@ -7,7 +7,7 @@ export const useStartTask = () => {
 
   /**
    * Hàm kích hoạt bắt đầu làm Task
-   * @param {string} taskId - ID của Task cần bắt đầu
+   * @param {string} taskId - ID Task cần bắt đầu
    */
   const start = async (taskId) => {
     if (!taskId) return;
@@ -18,7 +18,7 @@ export const useStartTask = () => {
       const response = await annotatorApi.startTask(taskId);  
       return response;
     } catch (err) {
-      const errorMsg = err?.response?.data?.message || "Không thể bắt đầu làm Task này.";
+      const errorMsg = err?.response?.data?.message || "Không thể bắt đầu thực hiện Task này.";
       setError(errorMsg);
       throw err;
     } finally {

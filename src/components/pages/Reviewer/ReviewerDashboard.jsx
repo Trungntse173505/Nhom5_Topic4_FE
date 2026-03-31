@@ -1,33 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
   Clock,
   FolderOpen,
   Filter,
-  FileText,
-  Headphones,
-  Image as ImageIcon,
   Loader2,
   Trophy,
   XCircle,
-  MessageSquareWarning,
   AlertCircle,
-  PlusCircle,
 } from "lucide-react";
 import { useTasks } from "../../../hooks/Reviewer/useTasks";
 import { useScore } from "../../../hooks/Reviewer/useScore";
 import { AuroraBackground } from "../../common/aurora-background";
+import { CardSpotlight } from "../../common/card-spotlight";
 
-const TYPE_ICONS = {
-  text: <FileText size={16} className="text-blue-400" />,
-  audio: <Headphones size={16} className="text-amber-400" />,
-  image: <ImageIcon size={16} className="text-green-400" />,
-};
-
-// ĐỊNH DẠNG MÀU SẮC TRẠNG THÁI (TIẾNG VIỆT)
+// ĐỊNH DẠNG MÀU SẮC TRẠNG THÁI
 const STATUS_STYLES = {
-  New: "bg-sky-500/20 text-sky-400 border border-sky-500/30",           // Trạng thái Mới
+  New: "bg-sky-500/20 text-sky-400 border border-sky-500/30",  
   PendingReview: "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30",
   Approved: "bg-green-500/20 text-green-400 border border-green-500/30",
   Rejected: "bg-orange-500/20 text-orange-400 border border-orange-500/30",
@@ -46,8 +36,8 @@ const ACTION_STYLES = {
     cls: "bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/20 text-white",
   },
   Approved: {
-    label: "Đã xong",
-    cls: "bg-slate-700/50 border border-slate-600 cursor-not-allowed opacity-50 text-slate-300",
+    label: "Xem lại", // 🔥 ĐÃ ĐỔI TÊN NÚT
+    cls: "bg-emerald-600/80 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20", // 🔥 ĐÃ MỞ KHÓA MÀU SẮC
   },
   Rejected: {
     label: "Chờ sửa",
@@ -64,9 +54,9 @@ const ACTION_STYLES = {
 };
 
 const STAT_CARDS = [
-  { icon: FolderOpen, color: "blue", label: "Tổng Task", key: "totalTasks" },
-  { icon: CheckCircle2, color: "green", label: "Đã Duyệt", key: "doneTasks" },
-  { icon: AlertCircle, color: "yellow", label: "Chờ Duyệt", key: "pendingTasks" },
+  { icon: FolderOpen, colorClass: "bg-blue-500/20 text-blue-400", label: "Tổng Task", key: "totalTasks" },
+  { icon: CheckCircle2, colorClass: "bg-green-500/20 text-green-400", label: "Đã Duyệt", key: "doneTasks" },
+  { icon: AlertCircle, colorClass: "bg-yellow-500/20 text-yellow-400", label: "Chờ Duyệt", key: "pendingTasks" },
 ];
 
 const FILTERS = [
@@ -90,6 +80,21 @@ const ReviewerDashboard = () => {
     }, 5000);
     return () => clearInterval(intervalId);
   }, [refetch]);
+
+  const stats = useMemo(() => ({
+    totalTasks: tasks?.length || 0,
+    pendingTasks: tasks?.filter((t) => t.status === "PendingReview" || t.status === "Pending").length || 0,
+    doneTasks: tasks?.filter((t) => t.status === "Approved").length || 0,
+  }), [tasks]);
+
+  const filteredTasks = useMemo(() => tasks?.filter((task) => {
+    if (filter === "All") return true;
+    if (filter === "New") return task.status === "New";
+    if (filter === "Pending") return task.status === "PendingReview" || task.status === "Pending";
+    if (filter === "Rejected") return task.status === "Rejected";
+    if (filter === "Done") return task.status === "Approved";
+    return true;
+  }) || [], [tasks, filter]);
 
   if (isLoading && (!tasks || tasks.length === 0))
     return (
@@ -122,21 +127,6 @@ const ReviewerDashboard = () => {
       </div>
     );
 
-  const stats = {
-    totalTasks: tasks?.length || 0,
-    pendingTasks: tasks?.filter((t) => t.status === "PendingReview" || t.status === "Pending").length || 0,
-    doneTasks: tasks?.filter((t) => t.status === "Approved").length || 0,
-  };
-
-  const filteredTasks = tasks?.filter((task) => {
-    if (filter === "All") return true;
-    if (filter === "New") return task.status === "New";
-    if (filter === "Pending") return task.status === "PendingReview" || task.status === "Pending";
-    if (filter === "Rejected") return task.status === "Rejected";
-    if (filter === "Done") return task.status === "Approved";
-    return true;
-  }) || [];
-
   return (
     <div className="relative w-full h-full flex flex-col flex-1 overflow-hidden bg-[#0B1120]">
       <div className="absolute inset-0 z-0 pointer-events-none">
@@ -152,7 +142,6 @@ const ReviewerDashboard = () => {
               Dashboard Kiểm Duyệt
             </h1>
             <button
-              onClick={() => navigate("/reviewer/score")}
               className="flex items-center gap-4 bg-[#151D2F]/80 backdrop-blur-md border border-white/10 hover:border-yellow-500/50 p-3 pr-6 rounded-2xl transition-all shadow-[0_0_20px_rgba(234,179,8,0.15)] group"
             >
               <div className="p-3 bg-yellow-500/20 rounded-xl text-yellow-400 group-hover:scale-110 transition-transform">
@@ -172,19 +161,21 @@ const ReviewerDashboard = () => {
 
           {/* Stat Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 shrink-0">
-            {STAT_CARDS.map(({ icon: Icon, color, label, key }) => (
-              <div
+            {STAT_CARDS.map(({ icon: Icon, colorClass, label, key }) => (
+              <CardSpotlight
                 key={key}
-                className="bg-[#151D2F]/80 backdrop-blur-md border border-white/5 p-6 rounded-2xl flex items-center gap-4 hover:border-white/20 transition-all shadow-xl"
+                className="bg-[#151D2F]/80 backdrop-blur-md border border-white/5 p-6 rounded-2xl hover:border-white/20 transition-all shadow-xl"
               >
-                <div className={`p-4 bg-${color}-500/20 rounded-xl text-${color}-400`}>
-                  <Icon size={28} />
+                <div className="flex flex-row items-center gap-5 relative z-10">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${colorClass}`}>
+                    <Icon size={28} />
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="text-sm text-slate-400 font-medium mb-1">{label}</p>
+                    <p className="text-3xl font-bold text-white drop-shadow-md">{stats[key]}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-slate-400 font-medium">{label}</p>
-                  <p className="text-3xl font-bold text-white drop-shadow-md">{stats[key]}</p>
-                </div>
-              </div>
+              </CardSpotlight>
             ))}
           </div>
 
@@ -215,8 +206,8 @@ const ReviewerDashboard = () => {
             <table className="w-full text-left border-collapse">
               <thead className="bg-black/20 text-slate-400 text-sm border-b border-white/5">
                 <tr>
-                  {["Tên Task", "Người làm", "Trạng thái", "Hạn chót", ""].map((h, i) => (
-                    <th key={i} className={`p-4 font-semibold tracking-wide uppercase text-[11px] ${i === 4 ? "text-right w-px" : ""}`}>
+                  {["Tên Task", "Trạng thái", "Hạn chót", ""].map((h, i) => (
+                    <th key={i} className={`p-4 font-semibold tracking-wide uppercase text-[11px] ${i === 3 ? "text-right w-px" : ""}`}>
                       {h}
                     </th>
                   ))}
@@ -226,13 +217,11 @@ const ReviewerDashboard = () => {
                 {filteredTasks.length > 0 ? (
                   filteredTasks.map((task) => {
                     let currentStatus = task.status;
-                    // Chuẩn hóa trạng thái hiển thị (giữ nguyên logic cũ cho các trạng thái nộp)
                     if (currentStatus === "Pending" || currentStatus === "Submitted") currentStatus = "PendingReview";
 
                     const action = ACTION_STYLES[currentStatus] || ACTION_STYLES.New;
                     const statusStyle = STATUS_STYLES[currentStatus] || "bg-gray-500/20 text-gray-400 border border-gray-500/30";
 
-                    // Chuyển text trạng thái sang tiếng Việt
                     let statusText = "Chưa rõ";
                     if (currentStatus === "New") statusText = "Mới";
                     if (currentStatus === "PendingReview") statusText = "Chờ duyệt";
@@ -242,24 +231,15 @@ const ReviewerDashboard = () => {
                     if (currentStatus === "Fail") statusText = "Thất bại";
 
                     const theTaskId = task.taskId || task.taskID;
-                    const annotatorName = task.annotatorName || "Chưa gán";
+
+                    // 🔥 ĐÃ FIX: Cho phép click vào Xem lại nếu Task đã duyệt (Approved)
+                    const canClickAction = currentStatus === "PendingReview" || currentStatus === "Approved";
 
                     return (
                       <tr key={theTaskId} className="border-b border-white/5 hover:bg-white/5 transition-colors last:border-0">
                         <td className="p-4">
-                          <div className="flex items-center gap-3 font-bold text-white mb-1">
-                            <div className="p-2 bg-blue-500/10 rounded-lg">{TYPE_ICONS.image}</div>
+                          <div className="font-bold text-white">
                             {task.taskName || `Task ${theTaskId?.substring(0, 5)}`}
-                          </div>
-                          <p className="text-xs text-slate-400 ml-10">ID: {theTaskId?.substring(0, 8)}... • Vòng: {task.currentRound || 0}</p>
-                        </td>
-
-                        <td className="p-4">
-                          <div className="flex items-center gap-2 text-sm text-slate-300">
-                            <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold">
-                              {annotatorName.charAt(0).toUpperCase()}
-                            </div>
-                            {annotatorName}
                           </div>
                         </td>
 
@@ -278,8 +258,8 @@ const ReviewerDashboard = () => {
 
                         <td className="p-4 text-right">
                           <button
-                            onClick={() => currentStatus === "PendingReview" && navigate(`/reviewer/workspace/${theTaskId}`)}
-                            disabled={currentStatus !== "PendingReview"}
+                            onClick={() => canClickAction && navigate(`/reviewer/workspace/${theTaskId}`)}
+                            disabled={!canClickAction}
                             className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${action.cls}`}
                           >
                             {action.label}
@@ -290,7 +270,7 @@ const ReviewerDashboard = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan="5" className="p-12 text-center text-slate-500 italic">
+                    <td colSpan="4" className="p-12 text-center text-slate-500 italic">
                       Không tìm thấy task nào phù hợp.
                     </td>
                   </tr>

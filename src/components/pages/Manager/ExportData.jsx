@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useExportData } from "../../../hooks/Manager/useExportData";
 
 export default function ExportData() {
-  const [format, setFormat] = useState("JSON"); // Mặc định để JSON đi vì API xuất json thường phổ biến nhất
+  const [format, setFormat] = useState("YOLO"); // Mặc định để YOLO vì đây là định dạng export đang được hỗ trợ
 
   // Lấy toàn bộ data và hàm từ Hook
   const {
@@ -16,22 +16,12 @@ export default function ExportData() {
     handleExport,
   } = useExportData();
 
-  // Hàm render màu cho trạng thái export
-  const getStatusColor = (status) => {
-    const s = (status || "").toLowerCase();
-    if (s.includes("success") || s.includes("done") || s.includes("completed"))
-      return "bg-emerald-500/10 text-emerald-400";
-    if (s.includes("fail") || s.includes("error"))
-      return "bg-rose-500/10 text-rose-400";
-    return "bg-amber-500/10 text-amber-400"; // Processing, Pending...
-  };
-
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Export Dataset</h1>
+        <h1 className="text-2xl font-bold text-white">Xuất Dữ Liệu</h1>
         <p className="text-sm text-gray-400 mt-1">
-          Download approved annotations in your preferred format
+          Tải xuống các chú thích đã phê duyệt với định dạng bạn chọn
         </p>
       </div>
 
@@ -43,7 +33,7 @@ export default function ExportData() {
               {/* Chọn dự án */}
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Select Project
+                  Chọn Dự Án
                 </label>
                 <select
                   value={selectedProjectId}
@@ -51,7 +41,7 @@ export default function ExportData() {
                   disabled={isLoadingProjects}
                   className="w-full rounded-lg border border-white/10 bg-[#0B1120] px-4 py-3 text-sm text-white outline-none focus:border-blue-500/50"
                 >
-                  <option value="">-- Choose a project --</option>
+                  <option value="">-- Chọn một dự án --</option>
                   {projects.map((p) => {
                     const pid = p.projectID || p.id;
                     return (
@@ -66,10 +56,10 @@ export default function ExportData() {
               {/* Chọn định dạng (Chỉ làm màu UI vì API POST /exports chưa nhận params này) */}
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-3">
-                  Export Format
+                  Định Dạng Xuất
                 </label>
                 <div className="grid grid-cols-2 gap-3">
-                  {["YOLO", "VOC", "JSON", "CSV"].map((fmt) => (
+                  {["YOLO", "COCO"].map((fmt) => (
                     <button
                       key={fmt}
                       onClick={() => setFormat(fmt)}
@@ -107,21 +97,21 @@ export default function ExportData() {
                   </svg>
                   <span className="text-sm font-medium">
                     {selectedProjectId
-                      ? "Ready to Export"
-                      : "Waiting for project selection..."}
+                      ? "Sẵn sàng Xuất"
+                      : "Chờ sự lựa chọn dự án..."}
                   </span>
                 </div>
                 <p
                   className={`text-xs ${selectedProjectId ? "text-emerald-500/70" : "text-gray-500"}`}
                 >
                   {selectedProjectId
-                    ? `Approved tasks will be compiled into a ${format} file.`
-                    : "Please select a project to proceed."}
+                    ? `Các task đã duyệt sẽ được biên dịch thành tớp ${format}.`
+                    : "Vui lòng chọn một dự án để tiếp tục."}
                 </p>
               </div>
 
               <button
-                onClick={handleExport}
+                onClick={() => handleExport(format)}
                 disabled={!selectedProjectId || isExporting}
                 className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 disabled:text-gray-400 disabled:cursor-not-allowed text-white py-3 rounded-lg font-medium transition-colors flex justify-center items-center gap-2"
               >
@@ -164,7 +154,7 @@ export default function ExportData() {
                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                       ></path>
                     </svg>
-                    Download Dataset
+                    Tải Xuống {format}
                   </>
                 )}
               </button>
@@ -177,7 +167,7 @@ export default function ExportData() {
           <div className="bg-[#151D2F] border border-white/5 rounded-xl shadow-sm overflow-hidden h-full min-h-[500px] flex flex-col">
             <div className="p-6 border-b border-white/5">
               <h2 className="text-lg font-semibold text-white">
-                Export History
+                Lịch sử xuất dữ liệu
               </h2>
               <p className="text-sm text-gray-400 mt-1">
                 Lịch sử xuất dữ liệu của dự án được chọn
@@ -211,10 +201,7 @@ export default function ExportData() {
                           Ngày tạo
                         </th>
                         <th className="px-6 py-4 font-medium border-b border-white/5">
-                          Trạng thái
-                        </th>
-                        <th className="px-6 py-4 font-medium text-right border-b border-white/5">
-                          Hành động
+                          Format
                         </th>
                       </tr>
                     </thead>
@@ -227,10 +214,12 @@ export default function ExportData() {
                           `EXP-${idx}`;
                         const date =
                           hist.exportDate || hist.createdAt || hist.date;
-                        const status =
-                          hist.status || hist.exportStatus || "Processing";
-                        const fileUrl =
-                          hist.fileUrl || hist.downloadUrl || hist.url;
+                        const exportFormat =
+                          hist.format ||
+                          hist.exportFormat ||
+                          hist.fileFormat ||
+                          hist.type ||
+                          "-";
 
                         return (
                           <tr
@@ -245,28 +234,8 @@ export default function ExportData() {
                                 ? new Date(date).toLocaleString("vi-VN")
                                 : "N/A"}
                             </td>
-                            <td className="px-6 py-4">
-                              <span
-                                className={`px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider ${getStatusColor(status)}`}
-                              >
-                                {status}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              {fileUrl ? (
-                                <a
-                                  href={fileUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded transition-colors text-xs font-bold"
-                                >
-                                  Tải File {format}
-                                </a>
-                              ) : (
-                                <span className="text-gray-500 text-xs italic">
-                                  Đang xử lý...
-                                </span>
-                              )}
+                            <td className="px-6 py-4 text-gray-300 font-medium">
+                              {exportFormat}
                             </td>
                           </tr>
                         );

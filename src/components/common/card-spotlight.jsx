@@ -60,7 +60,9 @@ export const CardSpotlight = ({
         )}
       </motion.div>
       {/* Quan trọng: Phải cho nội dung nổi lên trên mặt Canvas (z-20) */}
-      <div className="relative z-20 h-full w-full">{children}</div>
+      <div className="relative z-20 h-full w-full flex flex-col">
+        {children}
+      </div>
     </div>
   );
 };

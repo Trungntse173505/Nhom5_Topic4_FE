@@ -31,12 +31,11 @@ const SidebarRight = ({
       <div
         className={`flex-1 overflow-y-auto pr-2 custom-scrollbar flex flex-col ${isClassification ? "gap-3" : "gap-2"}`}
       >
-        {/* 👉 NẠP INDEX VÀO ĐÂY ĐỂ TRÁNH LỖI KEY CỦA REACT */}
         {availableLabels.map(({ name, color }, index) => {
           const isSelected = isClassification
             ? annotations[0]?.label === name
             : selectedLabel === name;
-          // DÀNH CHO NÚT BẤM TO (CHẾ ĐỘ PHÂN LOẠI VIDEO/AUDIO/TEXT)
+          
           if (isClassification) {
             return (
               <button
@@ -50,6 +49,7 @@ const SidebarRight = ({
                       width: 0,
                       height: 0,
                       label: name,
+                      isApproved: "New" // 🔥 THÊM VÀO ĐÂY ĐỂ ĐỒNG BỘ BACKEND
                     },
                   ]);
                   setSelectedLabel(name);

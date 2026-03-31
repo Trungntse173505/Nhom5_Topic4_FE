@@ -2,38 +2,39 @@ import React, { useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTaskTracking } from "../../../hooks/Manager/useTaskTracking";
 import { useLabelManagement } from "../../../hooks/Manager/useLabelManagement";
+import { CardSpotlight } from "../../common/card-spotlight";
+
 const TaskRowItem = React.memo(
-  ({
-    task,
-    annotators,
-    reviewers,
-    onExtend,
-    onAssign,
-    onRevoke,
-    isActionLoading,
-  }) => {
+  ({ task, annotators, reviewers, onExtend, onAssign, isActionLoading }) => {
     const targetId = task.taskID || task.taskId || task.id;
     const taskName = task.taskName || `Task #${targetId}`;
     const rateComplete = task.rateComplete || 0;
     const totalItems = task.totalItems || 0;
     const isUnassigned = !task.annotatorID;
 
-    const matchedAnn = annotators.find((a) => a.userID === task.annotatorID);
-    const matchedRev = reviewers.find((r) => r.userID === task.reviewerID);
+    // Dự phòng Backend đổi tên biến userID thành userId
+    const matchedAnn = annotators.find(
+      (a) => (a.userID || a.userId) === task.annotatorID,
+    );
+    const matchedRev = reviewers.find(
+      (r) => (r.userID || r.userId) === task.reviewerID,
+    );
 
     const annName = isUnassigned
       ? "Chưa giao"
       : task.annotatorName ||
         matchedAnn?.fullName ||
+        matchedAnn?.name ||
         `User ID: ${task.annotatorID.substring(0, 8)}...`;
 
     const revName = !task.reviewerID
       ? "---"
       : task.reviewerName ||
         matchedRev?.fullName ||
+        matchedRev?.name ||
         `User ID: ${task.reviewerID.substring(0, 8)}...`;
 
-    const status = task.status || "Unknown";
+    const status = task.status || "Không xác định";
 
     const getStatusColor = (s) => {
       const st = (s || "").toLowerCase();
@@ -73,7 +74,7 @@ const TaskRowItem = React.memo(
             <span
               className={`px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider ${getStatusColor(status)}`}
             >
-              {status === "0" ? "In Progress" : status}
+              {status === "0" ? "Đang xử lý" : status}
             </span>
           </div>
         </td>
@@ -90,7 +91,13 @@ const TaskRowItem = React.memo(
             className={`text-sm ${task.isOverdue ? "text-rose-400 font-bold" : "text-gray-300"}`}
           >
             {task.deadline
-              ? new Date(task.deadline).toLocaleDateString("vi-VN")
+              ? new Date(task.deadline).toLocaleString("vi-VN", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })
               : "Chưa đặt"}
           </div>
           {task.isOverdue && (
@@ -105,21 +112,14 @@ const TaskRowItem = React.memo(
             disabled={isActionLoading || !targetId}
             className="text-xs px-3 py-1.5 rounded bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 transition-colors disabled:opacity-50"
           >
-            Extend
+            Gia hạn
           </button>
           <button
             onClick={() => onAssign(targetId, task, isUnassigned)}
             disabled={isActionLoading || !targetId}
             className={`text-xs px-3 py-1.5 rounded transition-colors disabled:opacity-50 ${isUnassigned ? "bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-bold" : "bg-white/5 hover:bg-white/10 text-gray-300"}`}
           >
-            {isUnassigned ? "Assign" : "Reassign"}
-          </button>
-          <button
-            onClick={() => onRevoke(targetId)}
-            disabled={isActionLoading || !targetId}
-            className="text-xs px-3 py-1.5 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-colors disabled:opacity-50"
-          >
-            Revoke
+            {isUnassigned ? "Giao việc" : "Giao lại"}
           </button>
         </td>
       </tr>
@@ -130,7 +130,6 @@ const TaskRowItem = React.memo(
 export default function TaskTracking({ project, setActiveTab }) {
   const { projectId: paramId } = useParams();
   const projectId = paramId || project?.projectID || project?.id;
-  const navigate = useNavigate();
 
   const {
     tasks,
@@ -140,12 +139,10 @@ export default function TaskTracking({ project, setActiveTab }) {
     isActionLoading,
     extendDeadline,
     reassignTask,
-    revoke,
   } = useTaskTracking(projectId);
 
   const { projectLabels, isLoading: isLabelLoading } =
     useLabelManagement(projectId);
-
   const [searchTerm, setSearchTerm] = useState("");
 
   const [reassignModal, setReassignModal] = useState({
@@ -155,12 +152,21 @@ export default function TaskTracking({ project, setActiveTab }) {
     reviewerId: "",
     isFirstAssign: false,
   });
+
+  // Modal gia hạn deadline (có giờ:phút, thay thế prompt() củ kỹ)
+  const [extendModal, setExtendModal] = useState({
+    show: false,
+    taskId: null,
+    value: "",
+  });
+
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
       const searchString = `${t.taskID} ${t.taskName}`.toLowerCase();
       return searchString.includes(searchTerm.toLowerCase());
     });
   }, [tasks, searchTerm]);
+
   const submitReassign = useCallback(async () => {
     if (!reassignModal.annotatorId) return alert("Vui lòng chọn Annotator!");
     const success = await reassignTask(
@@ -212,43 +218,31 @@ export default function TaskTracking({ project, setActiveTab }) {
     [projectLabels, setActiveTab],
   );
 
-  const handleExtend = useCallback(
-    (targetId, currentDeadline) => {
-      if (!targetId) return alert("Task này chưa có ID, không thể thao tác!");
-      const newDate = prompt(
-        "Nhập ngày gia hạn mới (YYYY-MM-DD):",
-        currentDeadline ? currentDeadline.split("T")[0] : "",
-      );
-      if (newDate) {
-        try {
-          const isoString = new Date(newDate).toISOString();
-          extendDeadline(targetId, isoString);
-        } catch (err) {
-          alert("Định dạng ngày không hợp lệ!");
-        }
-      }
-    },
-    [extendDeadline],
-  );
+  const handleExtend = useCallback((targetId, currentDeadline) => {
+    if (!targetId) return alert("Task này chưa có ID, không thể thao tác!");
+    // Mở modal datetime-local thay vì prompt()
+    const defaultVal = currentDeadline
+      ? new Date(currentDeadline).toISOString().slice(0, 16)
+      : new Date().toISOString().slice(0, 16);
+    setExtendModal({ show: true, taskId: targetId, value: defaultVal });
+  }, []);
 
-  const handleRevoke = useCallback(
-    (targetId) => {
-      if (!targetId) return;
-      if (
-        window.confirm(
-          "Bạn có chắc chắn muốn thu hồi (Revoke) task này về kho không?",
-        )
-      )
-        revoke(targetId);
-    },
-    [revoke],
-  );
+  const submitExtend = useCallback(() => {
+    if (!extendModal.value) return alert("Vui lòng chọn ngày giờ!");
+    try {
+      const isoString = new Date(extendModal.value).toISOString();
+      extendDeadline(extendModal.taskId, isoString);
+      setExtendModal({ show: false, taskId: null, value: "" });
+    } catch {
+      alert("Ngày giờ không hợp lệ!");
+    }
+  }, [extendModal, extendDeadline]);
 
   return (
-    <div className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm relative">
-      <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+    <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm relative">
+      <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4 relative z-10">
         <div>
-          <h2 className="text-lg font-semibold text-white">Task Tracking</h2>
+          <h2 className="text-lg font-semibold text-white">Theo dõi Task</h2>
           <p className="text-sm text-gray-400 mt-1">
             Giám sát tiến độ, gia hạn hoặc giao việc cho nhân sự.
           </p>
@@ -281,10 +275,10 @@ export default function TaskTracking({ project, setActiveTab }) {
             <thead className="bg-[#0B1120] text-gray-400 border-b border-white/5">
               <tr>
                 <th className="px-4 py-3 rounded-tl-lg font-medium">
-                  Task Info
+                  Thông tin Task
                 </th>
                 <th className="px-4 py-3 font-medium">Tiến độ</th>
-                <th className="px-4 py-3 font-medium">Nhân sự (Ann / Rev)</th>
+                <th className="px-4 py-3 font-medium">Nhân sự</th>
                 <th className="px-4 py-3 font-medium">Hạn chót</th>
                 <th className="px-4 py-3 rounded-tr-lg font-medium text-right">
                   Thao tác
@@ -308,7 +302,6 @@ export default function TaskTracking({ project, setActiveTab }) {
                     isActionLoading={isActionLoading || isLabelLoading}
                     onExtend={handleExtend}
                     onAssign={handleOpenAssignModal}
-                    onRevoke={handleRevoke}
                   />
                 ))
               )}
@@ -317,6 +310,7 @@ export default function TaskTracking({ project, setActiveTab }) {
         )}
       </div>
 
+      {/* 👉 MODAL CHUYỂN GIAO NHÂN SỰ */}
       {reassignModal.show && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-[#151D2F] border border-white/10 rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
@@ -343,6 +337,7 @@ export default function TaskTracking({ project, setActiveTab }) {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-8 custom-scrollbar">
+              {/* Danh sách Annotator */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-lg">🧑‍💻</span>
@@ -353,18 +348,19 @@ export default function TaskTracking({ project, setActiveTab }) {
                 <div className="space-y-3">
                   {annotators.length === 0 ? (
                     <div className="text-sm text-gray-500 italic p-4 border border-dashed border-white/10 rounded-xl text-center">
-                      Không có Annotator nào.
+                      Không có nhân viên ghi nhãn nào phù hợp.
                     </div>
                   ) : (
                     annotators.map((u) => {
-                      const isSelected = reassignModal.annotatorId === u.userID;
+                      const uid = u.userID || u.userId || u.id; // Dự phòng key
+                      const isSelected = reassignModal.annotatorId === uid;
                       return (
                         <div
-                          key={u.userID}
+                          key={uid}
                           onClick={() =>
                             setReassignModal({
                               ...reassignModal,
-                              annotatorId: u.userID,
+                              annotatorId: uid,
                             })
                           }
                           className={`p-4 rounded-xl border cursor-pointer transition-all ${isSelected ? "bg-blue-500/10 border-blue-500" : "bg-[#0B1120] border-white/5 hover:border-white/20"}`}
@@ -374,7 +370,10 @@ export default function TaskTracking({ project, setActiveTab }) {
                               <div
                                 className={`font-medium ${isSelected ? "text-blue-400" : "text-gray-200"}`}
                               >
-                                {u.fullName}
+                                {u.fullName ||
+                                  u.userName ||
+                                  u.name ||
+                                  "Người dùng chưa tên"}
                               </div>
                               <div className="text-xs text-gray-500 mt-1">
                                 Chuyên môn: {u.expertise || "Cơ bản"}
@@ -393,6 +392,7 @@ export default function TaskTracking({ project, setActiveTab }) {
                 </div>
               </div>
 
+              {/* Danh sách Reviewer */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-lg">👁️</span>
@@ -412,14 +412,15 @@ export default function TaskTracking({ project, setActiveTab }) {
                     </div>
                   </div>
                   {reviewers.map((u) => {
-                    const isSelected = reassignModal.reviewerId === u.userID;
+                    const uid = u.userID || u.userId || u.id; // Dự phòng key
+                    const isSelected = reassignModal.reviewerId === uid;
                     return (
                       <div
-                        key={u.userID}
+                        key={uid}
                         onClick={() =>
                           setReassignModal({
                             ...reassignModal,
-                            reviewerId: u.userID,
+                            reviewerId: uid,
                           })
                         }
                         className={`p-4 rounded-xl border cursor-pointer transition-all ${isSelected ? "bg-purple-500/10 border-purple-500" : "bg-[#0B1120] border-white/5 hover:border-white/20"}`}
@@ -429,7 +430,10 @@ export default function TaskTracking({ project, setActiveTab }) {
                             <div
                               className={`font-medium ${isSelected ? "text-purple-400" : "text-gray-200"}`}
                             >
-                              {u.fullName}
+                              {u.fullName ||
+                                u.userName ||
+                                u.name ||
+                                "Unknown User"}
                             </div>
                             <div className="text-xs text-gray-500 mt-1">
                               Chuyên môn: {u.expertise || "Cơ bản"}
@@ -468,6 +472,67 @@ export default function TaskTracking({ project, setActiveTab }) {
           </div>
         </div>
       )}
-    </div>
+
+      {/* 👉 MODAL GIA HẠN DEADLINE (VỪA ĐƯỢC BỔ SUNG) */}
+      {extendModal.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#151D2F] border border-white/10 rounded-2xl shadow-2xl w-full max-w-md flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-white/5 flex justify-between items-center">
+              <div>
+                <h3 className="text-xl font-bold text-white">
+                  Gia hạn Deadline
+                </h3>
+                <p className="text-sm text-gray-400 mt-1">
+                  Chọn ngày và giờ mới cho Task này.
+                </p>
+              </div>
+              <button
+                onClick={() =>
+                  setExtendModal({ show: false, taskId: null, value: "" })
+                }
+                className="text-gray-500 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-lg transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  Ngày giờ hoàn thành <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  value={extendModal.value}
+                  min={new Date().toISOString().slice(0, 16)}
+                  onChange={(e) =>
+                    setExtendModal({ ...extendModal, value: e.target.value })
+                  }
+                  className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-3 text-sm text-white outline-none focus:border-blue-500 [color-scheme:dark]"
+                />
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-white/5 bg-[#0B1120]/50 flex justify-end gap-3">
+              <button
+                onClick={() =>
+                  setExtendModal({ show: false, taskId: null, value: "" })
+                }
+                className="px-5 py-2.5 text-sm font-medium text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={submitExtend}
+                disabled={isActionLoading || !extendModal.value}
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-blue-500/20"
+              >
+                {isActionLoading ? "Đang xử lý..." : "Xác nhận gia hạn"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </CardSpotlight>
   );
 }

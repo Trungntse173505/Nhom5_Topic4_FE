@@ -16,7 +16,6 @@ const HighlightedText = memo(({
   annotations.forEach((hl, i) => {
     const safeStart = Math.max(lastIndex, hl.start);
 
-    // 1. Render đoạn text bình thường (không được highlight)
     if (safeStart > lastIndex) {
       elements.push(
         <span key={`t-${i}`}>
@@ -25,15 +24,21 @@ const HighlightedText = memo(({
       );
     }
 
-    // 2. Lấy màu sắc cho đoạn text được highlight
     const labelDef = availableLabels.find(
       (l) => l.name?.trim().toLowerCase() === String(hl.label || "").trim().toLowerCase()
     );
 
-    const labelColor = labelDef?.color || "#94a3b8";
+    const labelColor = labelDef?.color || "#94a3b8"; // Vẫn giữ màu của Label
     const isSelected = selectedMenuId === hl.id;
 
-    // 3. Render đoạn text được bôi đen
+    // 🔥 CHỈ THÊM DẤU CHECK/X
+    let statusIcon = "";
+    if (hl.isApproved === "True") {
+      statusIcon = " ✓";
+    } else if (hl.isApproved === "False") {
+      statusIcon = " ✗";
+    }
+
     elements.push(
       <span
         key={hl.id || `hl-${i}`}
@@ -47,7 +52,7 @@ const HighlightedText = memo(({
           boxShadow: isSelected ? `0 0 10px ${labelColor}` : "none",
         }}
       >
-        {originalText.slice(safeStart, hl.end)}
+        {originalText.slice(safeStart, hl.end)}{statusIcon}
       </span>
     );
     lastIndex = Math.max(lastIndex, hl.end);

@@ -8,7 +8,7 @@ export const useItemDetail = () => {
 
   /**
    * Hàm lấy tọa độ và thông tin của 1 ảnh duy nhất
-   * @param {string} itemId - ID của tấm ảnh (Lấy từ mảng taskItems)
+   * @param {string} itemId - ID tấm ảnh (Lấy từ mảng taskItems)
    */
   const getItem = useCallback(async (itemId) => {
     if (!itemId) return;

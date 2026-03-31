@@ -14,8 +14,34 @@ export const useTaskDetail = (taskId) => {
     setError(null);
     try {
       const data = await reviewerApi.getTaskDetail(taskId);
+      
+      // 🔥 XỬ LÝ ĐỒNG BỘ DATA GIỮA ANNOTATOR VÀ REVIEWER TẠI ĐÂY
+      const rawItems = data?.items || data?.taskItems || [];
+      const normalizedItems = rawItems.map(item => ({
+        ...item,
+        annotations: (item.annotations || []).map(ann => {
+          const rawStatus = String(ann.isApproved || ann.IsApproved).toLowerCase();
+          
+          let finalStatus = null; // Mặc định null = Chờ duyệt
+          
+          if (rawStatus === 'true') {
+            finalStatus = true; // Reviewer đã chấm Đúng
+          } else if (rawStatus === 'false') {
+            finalStatus = false; // Reviewer đã chấm Sai
+          } else if (rawStatus === 'complete') {
+            finalStatus = null; // Annotator vừa nộp, chờ Reviewer chấm
+          }
+          
+          return {
+            ...ann,
+            isApproved: finalStatus 
+          };
+        })
+      }));
+
       setTaskDetail({
         ...data,
+        items: normalizedItems, 
         availableLabels: normalizeLabels(data?.availableLabels || []),
       });
     } catch (err) {
@@ -29,13 +55,10 @@ export const useTaskDetail = (taskId) => {
     fetchTaskDetail();
   }, [fetchTaskDetail]);
 
-  // ĐÃ FIX: Nhận thẳng giá trị (targetStatus) và KHÔNG BAO GIỜ DÙNG DẤU "!" ĐẢO NGƯỢC NỮA
   const toggleAnnotationApproval = async (idDetail, targetStatus) => {
     try {
-      // Bấm Đúng là gửi True, Bấm Sai là gửi False
       await reviewerApi.checkItemDetail(idDetail, targetStatus);
 
-      // Cập nhật State cho UI xanh/đỏ chuẩn xác
       setTaskDetail((prev) => {
         if (!prev) return prev;
         return {
@@ -55,7 +78,7 @@ export const useTaskDetail = (taskId) => {
       return true;
     } catch (err) {
       console.error("Lỗi khi đánh dấu annotation:", err);
-      alert("Lỗi kết nối khi chấm điểm!"); // Báo lỗi nếu Backend sập
+      alert("Lỗi kết nối khi chấm điểm!"); 
       return false;
     }
   };

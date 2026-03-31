@@ -11,6 +11,45 @@ const translateToEnglish = (viLabel) => {
   return VI_TO_EN_DICT[cleanVi] || viLabel.toLowerCase().trim();
 };
 
+// Hàm tính IoU (Intersection over Union) và IoM (Intersection over Minimum) để NMS chống trùng lặp
+const isBoxOverlapping = (b1, b2) => {
+  // Hỗ trợ cả 2 định dạng: {x, y} và {left, top}
+  const boxA = {
+    x: b1.x !== undefined ? b1.x : b1.left,
+    y: b1.y !== undefined ? b1.y : b1.top,
+    width: b1.width,
+    height: b1.height,
+  };
+  const boxB = {
+    x: b2.x !== undefined ? b2.x : b2.left,
+    y: b2.y !== undefined ? b2.y : b2.top,
+    width: b2.width,
+    height: b2.height,
+  };
+
+  // Nếu không đủ data toạ độ thì không tính
+  if (boxA.x === undefined || boxB.x === undefined) return false;
+
+  const xA = Math.max(boxA.x, boxB.x);
+  const yA = Math.max(boxA.y, boxB.y);
+  const xB = Math.min(boxA.x + boxA.width, boxB.x + boxB.width);
+  const yB = Math.min(boxA.y + boxA.height, boxB.y + boxB.height);
+
+  const interArea = Math.max(0, xB - xA) * Math.max(0, yB - yA);
+  const boxAArea = boxA.width * boxA.height;
+  const boxBArea = boxB.width * boxB.height;
+  
+  // NMS Thresholds
+  const unionArea = boxAArea + boxBArea - interArea;
+  if (unionArea === 0) return false;
+
+  const iou = interArea / unionArea; // Mức độ đè lên nhau chung
+  const iomin = interArea / Math.min(boxAArea, boxBArea); // Box nhỏ nằm lọt lòng trong box to
+
+  // Nếu độ đè > 45% (chuẩn NMS) HOẶC box nhỏ chui tọt vào > 85% diện tích box to
+  return iou > 0.45 || iomin > 0.85;
+};
+
 export const useAIAssistant = ({
   fileData,
   actualType,
@@ -104,14 +143,16 @@ export const useAIAssistant = ({
             const scaleX = 800 / (img.naturalWidth || 800);
             const scaleY = 600 / (img.naturalHeight || 600);
             let newAnnos = [];
+            
             result.forEach((item, index) => {
               const matched = uniqueLabels.find(
                 (l) =>
                   translateToEnglish(l.name) === item.label.toLowerCase() ||
                   l.name.toLowerCase() === item.label.toLowerCase()
               );
+              
               if (matched) {
-                newAnnos.push({
+                const newBox = {
                   id: `ai_${Date.now()}_${index}`,
                   labelId: matched.id,
                   label: matched.name,
@@ -120,7 +161,19 @@ export const useAIAssistant = ({
                   width: (item.box.xmax - item.box.xmin) * scaleX,
                   height: (item.box.ymax - item.box.ymin) * scaleY,
                   isAiGenerated: true,
+                };
+
+                // KIỂM TRA TRÙNG LẶP (Chống vẽ đè theo giải thuật NMS)
+                const isDuplicate = [...currentAnnos, ...newAnnos].some(existingBox => {
+                  if (existingBox.labelId !== newBox.labelId) return false;
+                  return isBoxOverlapping(existingBox, newBox);
                 });
+
+                if (!isDuplicate) {
+                  newAnnos.push(newBox);
+                } else {
+                  console.log(`Bỏ qua box trùng: ${newBox.label}`);
+                }
               }
             });
             setAnnotations([...currentAnnos, ...newAnnos]);

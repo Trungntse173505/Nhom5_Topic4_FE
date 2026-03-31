@@ -32,7 +32,7 @@ export const useWorkspace = (taskId) => {
           coords = typeof ann.annotationData === 'string' ? JSON.parse(ann.annotationData) : (ann.annotationData || {}); 
         } catch {}
         
-        const isText = ann.field !== 'BoundingBox' && coords.start !== undefined;
+        const isText = ann.field !== 'BoundingBox' && ann.field !== 'Tag' && coords.start !== undefined;
 
         return {
           id: `ann-${idx}-${Date.now()}`,
@@ -43,7 +43,8 @@ export const useWorkspace = (taskId) => {
           y: coords.y || 0, 
           width: coords.width || 0, 
           height: coords.height || 0,
-          label: isText ? ann.field : ann.content 
+          label: isText ? ann.field : ann.content,
+          isApproved: ann.isApproved || "New" 
         };
       }));
     } catch (err) { console.error("Lỗi đồng bộ:", err); }
@@ -57,13 +58,23 @@ export const useWorkspace = (taskId) => {
         return {
           annotationData: JSON.stringify({ start: ann.start, end: ann.end }),
           content: ann.text || "",
-          field: ann.label || "" 
+          field: ann.label || "",
+          isApproved: "Complete" 
+        };
+      }
+      if (!ann.width && !ann.height) {
+        return {
+          annotationData: "[]",
+          content: String(ann.label),
+          field: "Tag",
+          isApproved: "Complete" 
         };
       }
       return {
         annotationData: JSON.stringify({ x: ann.x, y: ann.y, width: ann.width, height: ann.height }),
         content: String(ann.label),
-        field: "BoundingBox"
+        field: "BoundingBox",
+        isApproved: "Complete" 
       };
     });
   };
@@ -84,10 +95,10 @@ export const useWorkspace = (taskId) => {
     }
   };
 
-  const handleSelectFile = (newFileId) => {
+  const handleSelectFile = (newFileId, canSaveCurrent = false) => {
     if (newFileId === currentFileId) return;
 
-    if (status === 'InProgress' || status === 'Rejected') {
+    if (canSaveCurrent && (status === 'InProgress' || status === 'Rejected')) {
       const idToSave = currentFileId;
       const annotationsToSave = [...annotations];
 
@@ -104,10 +115,29 @@ export const useWorkspace = (taskId) => {
     setCurrentFileId(newFileId);
   };
 
-  const files = useMemo(() => taskItems.map(ti => ({
-    id: ti.itemID, name: ti.fileName, url: ti.filePath,
-    status: ti.isFlagged ? 'Rejected' : (ti.annotations?.length ? 'Done' : 'New'),
-  })), [taskItems]);
+  const files = useMemo(() => taskItems.map(ti => {
+    const hasError = ti.annotations?.some(ann => 
+      String(ann.isApproved || ann.IsApproved).toLowerCase() === 'false'
+    );
+
+    let currentStatus = 'New';
+    if (ti.isFlagged) {
+      currentStatus = 'Flagged';
+    } else if (hasError) {
+      currentStatus = 'Error'; 
+    } else if (ti.annotations?.length > 0) {
+      currentStatus = 'Done'; 
+    }
+
+    return {
+      id: ti.itemID, 
+      name: ti.fileName, 
+      url: ti.filePath,
+      status: currentStatus,
+      annotations: ti.annotations || [],
+      isFlagged: ti.isFlagged || false,
+    };
+  }), [taskItems]);
 
   return {
     files, 
@@ -121,7 +151,6 @@ export const useWorkspace = (taskId) => {
     annotations, 
     setAnnotations, 
     isSaving: isManualSaving, 
-    
     handleSave,
     status,
     isLoading: loadingTask || loadingItem, 

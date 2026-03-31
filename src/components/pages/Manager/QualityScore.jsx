@@ -1,264 +1,302 @@
-import React, { useCallback } from "react";
+import React from "react";
 import { useQualityScore } from "../../../hooks/Manager/useQualityScore";
 import { AuroraBackground } from "../../common/aurora-background";
-const UserRowItem = React.memo(({ user, isSelected, onToggleLog }) => {
-  const id = user.id || user.userId || user.userID;
-  const name = user.fullName || user.userName || "Người dùng ẩn danh";
-  const score = user.score ?? user.qualityScore ?? user.reputationScore ?? 100;
+
+const getDisplayName = (user) =>
+  user.fullName || user.userName || user.name || "Người dùng ẩn danh";
+
+const getDisplayRole = (user) =>
+  String(user.roleName || user.role || "Chưa rõ").trim();
+
+const getScore = (user) =>
+  Number(user.score ?? user.qualityScore ?? user.reputationScore ?? 100) || 0;
+
+const formatExperience = (user) => {
+  const rawExperience =
+    user.experience ?? user.expertise ?? user.level ?? user.seniority ?? "";
+  const normalized = String(rawExperience).trim();
+  if (!normalized) return "Cơ bản";
+
+  const lowered = normalized.toLowerCase();
+  if (
+    ["n/a", "na", "chưa cập nhật", "chua cap nhat", "null", "undefined"].includes(
+      lowered,
+    )
+  ) {
+    return "Cơ bản";
+  }
+
+  return normalized;
+};
+
+const UserRowItem = React.memo(({ user }) => {
+  const name = getDisplayName(user);
+  const role = getDisplayRole(user);
+  const score = getScore(user);
+  const experience = formatExperience(user);
 
   return (
-    <tr
-      className={`transition-colors ${isSelected ? "bg-blue-500/10" : "hover:bg-white/[0.02]"}`}
-    >
-      <td className="py-4 text-sm text-gray-200">
-        <div className="font-medium">{name}</div>
-        <div className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">
-          {user.role || user.roleName}
+    <tr className="group border-b border-white/5 bg-[#151D2F] transition-colors hover:bg-[#182034]">
+      <td className="bg-[#151D2F] px-5 py-5 align-top transition-colors group-hover:bg-[#182034]">
+        <div className="font-semibold text-white">{name}</div>
+      </td>
+      <td className="bg-[#151D2F] px-5 py-5 text-center align-middle transition-colors group-hover:bg-[#182034]">
+        <div className="flex w-full justify-center">
+          <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-gray-300">
+            {role}
+          </div>
         </div>
       </td>
-      <td className="py-4">
-        <span
-          className={`text-sm font-bold ${score >= 80 ? "text-emerald-400" : score >= 50 ? "text-amber-400" : "text-rose-400"}`}
-        >
-          {score}⭐
-        </span>
+      <td className="bg-[#151D2F] px-5 py-5 text-center align-middle transition-colors group-hover:bg-[#182034]">
+        <div className="flex w-full justify-center">
+          <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 text-sm font-medium text-gray-200">
+            {experience}
+          </div>
+        </div>
       </td>
-      <td className="py-4 text-right">
-        <button
-          onClick={() => onToggleLog(id, isSelected)}
-          className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-            isSelected
-              ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20"
-              : "bg-white/5 hover:bg-white/10 text-gray-300"
+      <td className="bg-[#151D2F] px-5 py-5 text-right align-top transition-colors group-hover:bg-[#182034]">
+        <span
+          className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-sm font-bold ${
+            score >= 80
+              ? "bg-emerald-500/10 text-emerald-300"
+              : score >= 50
+                ? "bg-amber-500/10 text-amber-300"
+                : "bg-rose-500/10 text-rose-300"
           }`}
         >
-          {isSelected ? "Đóng" : "Xem Log"}
-        </button>
+          <span>{score}</span>
+          <span className="text-xs text-yellow-300">★</span>
+        </span>
       </td>
     </tr>
-  );
-});
-
-const LogItem = React.memo(({ log }) => {
-  const date = log.date || log.createdAt || log.timestamp;
-  const change = log.scoreChange || log.change || 0;
-  const reason = log.reason || log.description || "Hệ thống tự động cập nhật";
-  const isPositive = change > 0;
-
-  return (
-    <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-      <div
-        className={`flex items-center justify-center w-10 h-10 rounded-full border-4 border-[#151D2F] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm ${isPositive ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"}`}
-      >
-        {isPositive ? "+" : ""}
-        {change}
-      </div>
-
-      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-white/5 bg-[#0B1120]/80 shadow-sm">
-        <div className="flex items-center justify-between mb-1">
-          <time className="text-xs text-gray-500 font-medium">
-            {date
-              ? new Date(date).toLocaleString("vi-VN")
-              : "Thời gian không rõ"}
-          </time>
-        </div>
-        <p className="text-sm text-gray-300">{reason}</p>
-      </div>
-    </div>
   );
 });
 
 export default function QualityScore() {
   const {
     users,
+    paginatedUsers,
+    totalFilteredUsers,
+    totalPages,
+    currentPage,
+    setCurrentPage,
+    roleFilter,
+    setRoleFilter,
+    roleFilterOptions,
+    experienceFilter,
+    setExperienceFilter,
+    experienceFilterOptions,
+    scoreSort,
+    setScoreSort,
+    scoreSortOptions,
     isLoadingUsers,
-    activeUserId,
-    selectedUserLogs,
-    isLoadingLogs,
-    fetchUserLogs,
-    closeLogs,
   } = useQualityScore();
-  const handleToggleLog = useCallback(
-    (id, isSelected) => {
-      if (isSelected) {
-        closeLogs();
-      } else {
-        fetchUserLogs(id);
-      }
-    },
-    [closeLogs, fetchUserLogs],
-  );
+
+  const annotatorCount = users.filter(
+    (user) => getDisplayRole(user).toLowerCase() === "annotator",
+  ).length;
+  const reviewerCount = users.filter(
+    (user) => getDisplayRole(user).toLowerCase() === "reviewer",
+  ).length;
+  const totalCount = annotatorCount + reviewerCount;
+
+  const pageSize = 10;
+  const pageStart = totalFilteredUsers === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const pageEnd = Math.min(currentPage * pageSize, totalFilteredUsers);
+
+  const goPrev = () => setCurrentPage((page) => Math.max(1, page - 1));
+  const goNext = () => setCurrentPage((page) => Math.min(totalPages, page + 1));
 
   return (
     <AuroraBackground className="font-sans relative">
-      <div className="p-8 max-w-7xl mx-auto space-y-6 relative z-20 w-full">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white">
-            Điểm Chất Lượng & Hiệu Suất
-          </h1>
-          <p className="text-sm text-gray-400 mt-1">
-            Theo dõi điểm uy tín và lịch sử làm việc của nhân sự
+      <div className="relative z-20 mx-auto w-full max-w-6xl space-y-6 p-6 md:p-8">
+        <div className="space-y-4 text-center">
+          <p className="text-3xl leading-tight text-white md:text-[40px]">
+            Theo dõi nhân sự
           </p>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <div className="rounded-xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm shadow-sm flex flex-col h-[600px]">
-            <div className="p-6 border-b border-white/5">
-              <h2 className="text-lg font-semibold text-white">
-                Bảng Điểm Uy Tín
-              </h2>
-              <p className="text-xs text-gray-400 mt-1">
-                Bấm "Xem" để xem lịch sử biến động điểm
-              </p>
-            </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="rounded-2xl border border-white/5 bg-[#151D2F]/90 p-5 shadow-xl backdrop-blur-sm">
+            <div className="text-sm text-gray-400">Tổng nhân sự</div>
+            <div className="mt-2 text-3xl font-bold text-white">{totalCount}</div>
+          </div>
+          <div className="rounded-2xl border border-white/5 bg-[#151D2F]/90 p-5 shadow-xl backdrop-blur-sm">
+            <div className="text-sm text-gray-400">Annotator</div>
+            <div className="mt-2 text-3xl font-bold text-emerald-300">{annotatorCount}</div>
+          </div>
+          <div className="rounded-2xl border border-white/5 bg-[#151D2F]/90 p-5 shadow-xl backdrop-blur-sm">
+            <div className="text-sm text-gray-400">Reviewer</div>
+            <div className="mt-2 text-3xl font-bold text-sky-300">{reviewerCount}</div>
+          </div>
+        </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pt-2">
-              {isLoadingUsers ? (
-                <div className="text-center py-10 text-gray-500 animate-pulse">
-                  Đang tải danh sách...
-                </div>
-              ) : users.length === 0 ? (
-                <div className="text-center py-10 text-gray-500">
-                  Không tìm thấy Annotator/Reviewer nào.
-                </div>
-              ) : (
-                <table className="w-full text-left border-collapse">
-                  <thead className="sticky top-0 bg-[#151D2F]/95 backdrop-blur z-10">
-                    <tr className="border-b border-white/5 text-xs uppercase tracking-wider text-gray-500">
-                      <th className="pb-3 pt-4 font-medium">
-                        Họ Tên & Vai Trò
-                      </th>
-                      <th className="pb-3 pt-4 font-medium">Điểm</th>
-                      <th className="pb-3 pt-4 font-medium text-right">
-                        Thao Tác
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {users.map((user, idx) => {
-                      const id = user.id || user.userId || user.userID;
-                      return (
-                        <UserRowItem
-                          key={id || idx}
-                          user={user}
-                          isSelected={activeUserId === id}
-                          onToggleLog={handleToggleLog}
-                        />
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
+        <div className="flex h-[720px] flex-col overflow-hidden rounded-3xl border border-white/5 bg-[#151D2F]/90 shadow-2xl backdrop-blur-sm">
+          <div className="flex flex-col gap-4 border-b border-white/5 bg-[#0B1120]/55 p-6 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-white">Danh sách nhân sự</h2>
             </div>
           </div>
 
-          {activeUserId ? (
-            <div className="rounded-xl border border-blue-500/20 bg-[#151D2F]/90 backdrop-blur-sm shadow-sm flex flex-col h-[600px] animate-in fade-in slide-in-from-right-4 duration-300">
-              <div className="p-6 border-b border-white/5 flex justify-between items-center bg-blue-500/5">
-                <div>
-                  <h2 className="text-lg font-semibold text-blue-400">
-                    Lịch Sử Uy Tín
-                  </h2>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Nhật ký thay đổi điểm của nhân sự
-                  </p>
-                </div>
-                <button
-                  onClick={closeLogs}
-                  className="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 transition-colors p-2 rounded-lg"
-                  title="Đóng"
+          <div className="border-b border-white/5 bg-[#0B1120]/80 px-4 py-4 md:px-6">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-sm text-gray-400" htmlFor="quality-role-filter">
+                  Vai trò:
+                </label>
+                <select
+                  id="quality-role-filter"
+                  value={roleFilter}
+                  onChange={(event) => setRoleFilter(event.target.value)}
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-[#0B1120] px-4 py-2.5 text-sm text-gray-200 outline-none transition focus:border-blue-500/40"
                 >
-                  ✕
+                  {roleFilterOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-sm text-gray-400" htmlFor="quality-experience-filter">
+                  Kinh nghiệm:
+                </label>
+                <select
+                  id="quality-experience-filter"
+                  value={experienceFilter}
+                  onChange={(event) => setExperienceFilter(event.target.value)}
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-[#0B1120] px-4 py-2.5 text-sm text-gray-200 outline-none transition focus:border-blue-500/40"
+                >
+                  {experienceFilterOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-sm text-gray-400" htmlFor="quality-score-sort">
+                  Điểm:
+                </label>
+                <select
+                  id="quality-score-sort"
+                  value={scoreSort}
+                  onChange={(event) => setScoreSort(event.target.value)}
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-[#0B1120] px-4 py-2.5 text-sm text-gray-200 outline-none transition focus:border-blue-500/40"
+                >
+                  {scoreSortOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-b border-white/5 bg-[#151D2F] px-6">
+            <table className="w-full table-fixed border-collapse text-left bg-[#151D2F]">
+              <colgroup>
+                <col className="w-[32%]" />
+                <col className="w-[18%]" />
+                <col className="w-[26%]" />
+                <col className="w-[24%]" />
+              </colgroup>
+              <thead>
+                <tr className="border-b border-white/10 text-xs uppercase tracking-wider text-gray-500">
+                  <th className="px-5 py-4 font-medium">Họ tên</th>
+                  <th className="px-5 py-4 font-medium text-center">
+                    <span className="relative left-[-10px] inline-block">Vai trò</span>
+                  </th>
+                  <th className="px-5 py-4 font-medium text-center">Kinh nghiệm</th>
+                  <th className="px-5 py-4 font-medium text-right">Điểm hiện tại</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+
+          <div
+            className="custom-scrollbar flex-1 overflow-y-scroll px-4 py-4 md:px-6"
+            style={{ scrollbarGutter: "stable" }}
+          >
+            {isLoadingUsers ? (
+              <div className="flex flex-col items-center py-24 text-center text-gray-500">
+                <svg
+                  className="mb-4 h-8 w-8 animate-spin text-blue-500/60"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <circle className="opacity-25" cx="12" cy="12" r="10" strokeWidth="4" />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Đang tải danh sách...
+              </div>
+            ) : paginatedUsers.length === 0 ? (
+              <div className="mt-4 rounded-2xl border border-dashed border-white/10 p-10 text-center text-gray-500">
+                Không tìm thấy Annotator/Reviewer nào trong dự án này.
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-2xl border border-white/5 bg-[#151D2F]">
+                <table className="w-full table-fixed border-collapse text-left bg-[#151D2F]">
+                  <colgroup>
+                    <col className="w-[32%]" />
+                    <col className="w-[18%]" />
+                    <col className="w-[26%]" />
+                    <col className="w-[24%]" />
+                  </colgroup>
+                  <tbody className="bg-[#151D2F]">
+                    {paginatedUsers.map((user, idx) => {
+                      const id = user.id || user.userId || user.userID;
+                      return <UserRowItem key={id || idx} user={user} />;
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-white/5 bg-[#0B1120]/55 px-4 py-4 md:px-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-sm text-gray-400">
+                Hiển thị {pageEnd === 0 ? 0 : pageStart}-{pageEnd} / {totalFilteredUsers} người
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={goPrev}
+                  disabled={currentPage <= 1}
+                  className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-gray-200 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Trước
+                </button>
+                <span className="rounded-xl border border-white/10 bg-[#0B1120] px-4 py-2 text-sm text-gray-300">
+                  Trang {currentPage} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={goNext}
+                  disabled={currentPage >= totalPages}
+                  className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-gray-200 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Sau
                 </button>
               </div>
-
-              <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                {isLoadingLogs ? (
-                  <div className="text-center py-20 text-blue-400/50 animate-pulse flex flex-col items-center">
-                    <svg
-                      className="animate-spin h-8 w-8 mb-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Đang tải dữ liệu...
-                  </div>
-                ) : selectedUserLogs.length === 0 ? (
-                  <div className="text-center py-20 text-gray-500">
-                    <span className="text-4xl block mb-2 opacity-50">📝</span>
-                    Nhân sự này chưa có ghi nhận thay đổi điểm nào.
-                  </div>
-                ) : (
-                  <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-white/10 before:to-transparent">
-                    {selectedUserLogs.map((log, idx) => (
-                      <LogItem key={idx} log={log} />
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
-          ) : (
-            <div className="rounded-xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-6 shadow-sm flex flex-col h-[600px] animate-in fade-in duration-500">
-              <div className="mb-6">
-                <h2 className="text-lg font-semibold text-white">
-                  Cảnh Báo Quá Hạn
-                </h2>
-                <p className="text-xs text-gray-400 mt-1">
-                  Các nhiệm vụ đang bị trễ tiến độ (Chờ tích hợp API)
-                </p>
-              </div>
+          </div>
 
-              <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                {[1, 2].map((item) => (
-                  <div
-                    key={item}
-                    className="p-4 rounded-xl border border-rose-500/20 bg-[#0B1120]/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium text-white">
-                          Task #IMG_08{item}9
-                        </span>
-                        <span className="text-[10px] uppercase font-bold text-rose-400 bg-rose-400/10 px-2 py-0.5 rounded">
-                          Trễ hạn 2 ngày
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-400">
-                        Người nhận: Nguyễn Văn Annotator
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-medium rounded transition-colors">
-                        Gia Hạn
-                      </button>
-                      <button className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-medium rounded transition-colors border border-rose-500/20">
-                        Thu Hồi Task
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-4 p-3 rounded bg-blue-500/5 border border-blue-500/10 text-xs text-blue-400/80">
-                <span className="font-semibold">Quy tắc Hệ thống:</span>{" "}
-                Annotator bị tụt xuống 0 điểm hoặc trượt 3 task liên tiếp sẽ tự
-                động bị đình chỉ tài khoản.
-              </div>
-            </div>
-          )}
+          <div className="border-t border-white/5 bg-[#0B1120]/35 px-6 py-4 text-center">
+            <p className="text-xs text-gray-500">
+              Hệ thống tự động cộng/trừ điểm dựa trên kết quả phê duyệt Task và các khiếu nại
+              (Disputes).
+            </p>
+          </div>
         </div>
       </div>
     </AuroraBackground>

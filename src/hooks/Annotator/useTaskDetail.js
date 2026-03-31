@@ -19,7 +19,7 @@ export const useTaskDetail = (taskId) => {
         availableLabels: normalizeLabels(response?.availableLabels || []),
       });
     } catch (err) {
-      setError(err?.response?.data?.message || "Không thể tải chi tiết Task");
+      setError(err?.response?.data?.message || "Lỗi Không thể tải chi tiết Task");
     } finally {
       setLoading(false);
     }

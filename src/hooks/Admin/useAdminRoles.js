@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import adminRoleApi from '../../api/adminRoleApi';
 import axiosClient from '../../api/axiosClient';
 
+/*chuyển đổi object chứa tham số thành chuỗi*/
 const buildParamsSerializer = () => (params) => {
   const sp = new URLSearchParams();
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -33,7 +34,7 @@ const buildErrorMessage = (err) => {
 
   return status ? `HTTP ${status}: ${message}` : message;
 };
-
+/*Đảm bảo luôn lấy được tên của role dưới dạng chuỗi*/
 const extractRoleLabel = (raw) => {
   if (raw === null || raw === undefined) return '';
   if (typeof raw === 'string' || typeof raw === 'number') return String(raw);

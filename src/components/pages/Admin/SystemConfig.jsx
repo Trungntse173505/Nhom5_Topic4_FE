@@ -53,7 +53,7 @@ export default function SystemConfig() {
     return (
         <div className="p-6 max-w-xl">
             <h2 className="text-xl font-bold text-white mb-1">Cấu hình hệ thống</h2>
-            <p className="text-sm text-white/40 mb-8">Thiết lập giới hạn lưu trữ và định dạng (FR-04)</p>
+            <p className="text-sm text-white/40 mb-8">Thiết lập giới hạn lưu trữ và định dạng</p>
 
             {loading && <p className="text-xs text-white/40 mb-4">Đang tải cấu hình...</p>}
             {err && <p className="text-xs text-rose-400 mb-4">{err}</p>}

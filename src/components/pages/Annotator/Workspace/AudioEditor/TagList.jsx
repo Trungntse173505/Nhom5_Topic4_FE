@@ -17,7 +17,12 @@ const TagList = memo(({ annotations, availableLabels, onDeleteTag }) => {
         <div className="flex flex-wrap gap-3">
           {annotations.map((ann, idx) => {
             const matchedDef = availableLabels.find((l) => l.name === ann.label);
-            const color = matchedDef ? matchedDef.color : "#3b82f6";
+            const color = matchedDef ? matchedDef.color : "#3b82f6"; // Giữ nguyên màu
+            
+            // 🔥 THÊM ICON ĐÚNG/SAI
+            let statusIcon = "";
+            if (ann.isApproved === "True") statusIcon = " ✓";
+            else if (ann.isApproved === "False") statusIcon = " ✗";
 
             return (
               <div
@@ -33,10 +38,9 @@ const TagList = memo(({ annotations, availableLabels, onDeleteTag }) => {
                   style={{ backgroundColor: color }}
                 ></div>
                 <span className="text-white text-sm font-bold tracking-wide">
-                  {getLabelDisplay(ann.label)}
+                  {getLabelDisplay(ann.label)}{statusIcon}
                 </span>
 
-                {/* Giữ lại đoạn text từ AI Speech-to-Text nếu có */}
                 {ann.text && (
                   <span className="text-slate-400 text-xs italic ml-1">
                     "{ann.text}"

@@ -4,13 +4,13 @@ import { useAdminRoles } from '../../../hooks/Admin/useAdminRoles';
 import { useEmailValidator } from '../../../hooks/useEmailValidator';
 
 // Component phụ giúp tái sử dụng cấu trúc HTML của các ô nhập liệu
-const FormField = ({ label, isSelect, wrapperClass = "", children, ...props }) => (
+const FormField = ({ label, isSelect, wrapperClass = "", labelClassName = "", fieldClassName = "", children, ...props }) => (
     <div className={`bg-white/5 p-4 rounded-xl ${wrapperClass}`}>
-        <label className="text-white/40 block mb-1 text-sm">{label}</label>
+        <label className={`text-white/40 block mb-1 text-sm ${labelClassName}`}>{label}</label>
         {isSelect ? (
-            <select {...props} className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20 select-dark">{children}</select>
+            <select {...props} className={`w-full bg-white/10 rounded-lg p-2 text-white border border-white/20 select-dark ${fieldClassName}`}>{children}</select>
         ) : (
-            <input {...props} className="w-full bg-white/10 rounded-lg p-2 text-white border border-white/20" />
+            <input {...props} className={`w-full bg-white/10 rounded-lg p-2 text-white border border-white/20 ${fieldClassName}`} />
         )}
     </div>
 );
@@ -37,7 +37,7 @@ export default function UserList() {
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editForm, setEditForm] = useState(null);
-    const [createForm, setCreateForm] = useState({ name: '', username: '', email: '', role: 'ANNOTATOR', password: '' });
+    const [createForm, setCreateForm] = useState({ name: '', username: '', email: '', role: 'ANNOTATOR', password: '', expertise: 'Cơ bản' });
     const [createError, setCreateError] = useState('');
 
     // --- CÁC HÀM XỬ LÝ LOGIC ---
@@ -63,7 +63,7 @@ export default function UserList() {
             setUsers(prev => [{ id: createdId, ...createForm, status: 'Active' }, ...prev]);
         }
         setIsCreateOpen(false);
-        setCreateForm({ name: '', username: '', email: '', role: 'ANNOTATOR', password: '' });
+        setCreateForm({ name: '', username: '', email: '', role: 'ANNOTATOR', password: '', expertise: 'Cơ bản' });
     };
 
     const handleToggleStatus = async (user) => {
@@ -175,11 +175,11 @@ export default function UserList() {
 
     return (
         <div className="p-6 min-h-screen bg-[#050B1A] text-white font-sans">
-            <div className="flex items-center justify-between gap-4 mb-8">
-                <h1 className="text-2xl font-bold">Quản lý nhân sự</h1>
+            <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:mb-8">
+                <h1 className="text-xl sm:text-2xl font-bold">Quản lý nhân sự</h1>
                 <button
                     onClick={() => setIsCreateOpen(true)} disabled={loading || usersLoading}
-                    className="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                     + Tạo người dùng
                 </button>
@@ -290,9 +290,9 @@ export default function UserList() {
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end gap-2">
                                         <button onClick={() => openDetail(user)} className="text-xs bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded-lg">Sửa</button>
-                                        <button onClick={() => handleResetPassword(user)} disabled={isBusy || resettingId === user.id} title="Đặt lại Mật Khẩu" className="text-xs bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 px-3 py-1.5 rounded-lg">
+                                        {/* <button onClick={() => handleResetPassword(user)} disabled={isBusy || resettingId === user.id} title="Đặt lại Mật Khẩu" className="text-xs bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 px-3 py-1.5 rounded-lg">
                                             {resettingId === user.id ? '...' : '🔑'}
-                                        </button>
+                                        </button> */}
                                         <button onClick={() => handleToggleStatus(user)} disabled={isBusy || togglingId === user.id} className={`text-xs px-3 py-1.5 rounded-lg font-bold ${user.status === 'Active' ? 'bg-rose-600/10 hover:bg-rose-600/20 text-rose-400' : 'bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400'}`}>
                                             {togglingId === user.id ? '...' : user.status === 'Active' ? 'Vô hiệu' : 'Kích hoạt'}
                                         </button>
@@ -309,35 +309,42 @@ export default function UserList() {
 
             {/* --- MODAL TẠO USER --- */}
             {isCreateOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
                     <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => !loading && setIsCreateOpen(false)}></div>
-                    <div className="relative bg-[#0A1225] border border-white/10 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in duration-200">
-                        <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
-                            <h2 className="text-xl font-bold text-emerald-400">Tạo người dùng</h2>
+                    <div className="relative origin-center scale-[0.95] sm:scale-100 bg-[#0A1225] border border-white/10 w-full max-w-2xl lg:max-w-3xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in duration-200">
+                        <div className="px-4 py-3 md:px-8 md:py-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                            <h2 className="text-base md:text-xl font-bold text-emerald-400">Tạo người dùng</h2>
                             <button onClick={() => setIsCreateOpen(false)} disabled={loading} className="text-white/40 hover:text-white text-2xl disabled:opacity-60 disabled:cursor-not-allowed">✕</button>
                         </div>
-                        <div className="p-8 space-y-4">
+                        <div className="p-4 md:p-8 grid grid-cols-1 sm:grid-cols-[1.25fr_0.75fr] gap-2 md:gap-4">
                             {createError && (
-                                <div className="text-sm text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3">
+                                <div className="sm:col-span-2 text-xs md:text-sm text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-xl px-3 py-2 md:px-4 md:py-3">
                                     {createError}
                                 </div>
                             )}
-                            <FormField label="Họ và tên" value={createForm.name} onChange={e => setCreateForm(p => ({ ...p, name: e.target.value }))} placeholder="Nguyễn Văn A" />
-                            <FormField label="Username" value={createForm.username} onChange={e => setCreateForm(p => ({ ...p, username: e.target.value }))} placeholder="vd: admin01" />
-                            <FormField type="email" label="Email" value={createForm.email} onChange={e => setCreateForm(p => ({ ...p, email: e.target.value }))} placeholder="user@email.com" />
-                            <FormField isSelect label="Vai trò" value={createForm.role} onChange={e => setCreateForm(p => ({ ...p, role: e.target.value }))}>
+                            <FormField wrapperClass="!p-3 md:!p-4" labelClassName="!mb-0.5 !text-[11px] md:!text-sm" fieldClassName="!p-2 md:!p-2.5 !text-sm md:!text-base" label="Họ và tên" value={createForm.name} onChange={e => setCreateForm(p => ({ ...p, name: e.target.value }))} placeholder="Nguyễn Văn A" />
+                            <FormField wrapperClass="!p-3 md:!p-4" labelClassName="!mb-0.5 !text-[11px] md:!text-sm" fieldClassName="!p-2 md:!p-2.5 !text-sm md:!text-base" label="Username" value={createForm.username} onChange={e => setCreateForm(p => ({ ...p, username: e.target.value }))} placeholder="vd: admin01" />
+                            <FormField wrapperClass="!p-3 md:!p-4" labelClassName="!mb-0.5 !text-[11px] md:!text-sm" fieldClassName="!p-2 md:!p-2.5 !text-sm md:!text-base" type="email" label="Email" value={createForm.email} onChange={e => setCreateForm(p => ({ ...p, email: e.target.value }))} placeholder="user@email.com" />
+                            <FormField wrapperClass="!p-3 md:!p-4" labelClassName="!mb-0.5 !text-[11px] md:!text-sm" fieldClassName="!p-2 md:!p-2.5 !text-sm md:!text-base" isSelect label="Vai trò" value={createForm.role} onChange={e => setCreateForm(p => ({ ...p, role: e.target.value }))}>
                                 <option value="ADMIN">ADMIN</option>
                                 <option value="MANAGER">MANAGER</option>
                                 <option value="ANNOTATOR">ANNOTATOR</option>
                                 <option value="REVIEWER">REVIEWER</option>
                             </FormField>
-                            <FormField type="password" label="Mật khẩu" value={createForm.password} onChange={e => setCreateForm(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" />
+                            <FormField wrapperClass="!p-3 md:!p-4" labelClassName="!mb-0.5 !text-[11px] md:!text-sm" fieldClassName="!p-2 md:!p-2.5 !text-sm md:!text-base" type="password" label="Mật khẩu" value={createForm.password} onChange={e => setCreateForm(p => ({ ...p, password: e.target.value }))} placeholder="••••••••" />
+                            <FormField wrapperClass="!p-3 md:!p-4" labelClassName="!mb-0.5 !text-[11px] md:!text-sm" fieldClassName="!p-2 md:!p-2.5 !text-sm md:!text-base" isSelect label="Kinh nghiệm" value={createForm.expertise} onChange={e => setCreateForm(p => ({ ...p, expertise: e.target.value }))}>
+                                <option value="Ảnh">Ảnh</option>
+                                <option value="Video">Video</option>
+                                <option value="Audio">Audio</option>
+                                <option value="Text">Text</option>
+                                <option value="Cơ bản">Cơ bản</option>
+                            </FormField>
                         </div>
-                        <div className="px-8 py-6 bg-white/[0.02] border-t border-white/5 flex gap-3">
-                            <button onClick={handleActionCreate} disabled={loading || verifying} className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+                        <div className="px-4 py-3 md:px-8 md:py-6 bg-white/[0.02] border-t border-white/5 grid grid-cols-2 gap-2 md:gap-3">
+                            <button onClick={handleActionCreate} disabled={loading || verifying} className="w-full bg-emerald-600 hover:bg-emerald-500 py-2.5 md:py-3 text-xs md:text-sm rounded-xl font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed">
                                 {loading ? 'Đang tạo...' : 'Tạo user'}
                             </button>
-                            <button onClick={() => setIsCreateOpen(false)} disabled={loading} className="flex-1 bg-white/5 hover:bg-white/10 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed">Hủy</button>
+                            <button onClick={() => setIsCreateOpen(false)} disabled={loading} className="w-full bg-white/5 hover:bg-white/10 py-2.5 md:py-3 text-xs md:text-sm rounded-xl font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed">Hủy</button>
                         </div>
                     </div>
                 </div>

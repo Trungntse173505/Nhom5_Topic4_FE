@@ -17,7 +17,7 @@ export const useSubmitTask = () => {
       const response = await annotatorApi.submitTask(taskId);
       return response;
     } catch (err) {
-      const errorMsg = err?.response?.data || "Nộp bài thất bại. Vui lòng kiểm tra lại các ảnh.";
+      const errorMsg = err?.response?.data || "Nộp task thất bại. Vui lòng kiểm tra lại các ảnh.";
       setError(errorMsg);
       throw err;
     } finally {

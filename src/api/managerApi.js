@@ -1,5 +1,5 @@
 // src/api/managerApi.js
-import axiosClient from './axiosClient';
+import axiosClient from "./axiosClient";
 
 // =============================================================================
 // NHÓM 1: QUẢN LÝ DỰ ÁN (PROJECTS)
@@ -7,15 +7,17 @@ import axiosClient from './axiosClient';
 
 export const getProjectsList = async () => {
   try {
-    return await axiosClient.get('/api/manager/projects');
+    return await axiosClient.get("/api/manager/projects");
   } catch (error) {
-    throw new Error(error.response?.data?.message || "Không thể lấy danh sách dự án");
+    throw new Error(
+      error.response?.data?.message || "Không thể lấy danh sách dự án",
+    );
   }
 };
 
 export const createProject = async (projectData) => {
   try {
-    return await axiosClient.post('/api/manager/projects', projectData);
+    return await axiosClient.post("/api/manager/projects", projectData);
   } catch (error) {
     throw new Error(error.response?.data?.message || "Tạo dự án thất bại");
   }
@@ -31,49 +33,113 @@ export const getProjectDetail = async (projectId) => {
 
 export const updateProjectInfo = async (projectId, updateData) => {
   try {
-    return await axiosClient.put(`/api/manager/projects/${projectId}`, updateData);
+    return await axiosClient.put(
+      `/api/manager/projects/${projectId}`,
+      updateData,
+    );
   } catch (error) {
-    throw new Error(error.response?.data?.message || "Lỗi cập nhật thông tin dự án");
+    throw new Error(
+      error.response?.data?.message || "Lỗi cập nhật thông tin dự án",
+    );
   }
 };
 
 export const updateProjectStatus = async (projectId, newStatus) => {
   try {
-    return await axiosClient.patch(`/api/manager/projects/${projectId}/status`, { status: newStatus });
+    return await axiosClient.patch(
+      `/api/manager/projects/${projectId}/status`,
+      { status: newStatus },
+    );
   } catch (error) {
-    throw new Error(error.response?.data?.message || "Lỗi đổi trạng thái dự án");
+    throw new Error(
+      error.response?.data?.message || "Lỗi đổi trạng thái dự án",
+    );
   }
 };
 
 export const updateProjectGuideline = async (projectId, guidelineUrl) => {
   try {
-    return await axiosClient.post(`/api/manager/projects/${projectId}/guideline`, { guidelineUrl });
+    return await axiosClient.post(
+      `/api/manager/projects/${projectId}/guideline`,
+      { guidelineUrl },
+    );
   } catch (error) {
     throw new Error(error.response?.data?.message || "Lỗi cập nhật Guideline");
   }
 };
 
 // =============================================================================
-// NHÓM 2: QUẢN LÝ DỮ LIỆU (DATA)
+// NHÓM 2: QUẢN LÝ DỮ LIỆU (DATA) - ÉP KIỂU TUYỆT ĐỐI
 // =============================================================================
 
-export const uploadDataToProject = async (projectId, fileUrls, fileType) => {
+export const uploadDataToProject = async (projectId, dataItems, fileType) => {
   try {
-    return await axiosClient.post(`/api/manager/projects/${projectId}/data`, { fileUrls, fileType });
+    // 1. Lọc mảng URL sạch sẽ
+    const urls = Array.isArray(dataItems)
+      ? dataItems
+          .map((item) => {
+            const url =
+              (typeof item === "string" && item) ||
+              item.fileUrl ||
+              item.link ||
+              item.url ||
+              "";
+            return url.trim();
+          })
+          .filter((url) => url !== "")
+      : [];
+
+    if (urls.length === 0) {
+      throw new Error("❌ Không có URL hợp lệ trong dữ liệu!");
+    }
+
+    // 2. Gửi schema CHÍNH XÁC theo Swagger: { fileUrls: [...], fileType: "..." }
+    const payload = {
+      fileUrls: urls,
+      fileType: fileType || "IMAGE" // Default to IMAGE if not provided just in case
+    };
+
+    console.log("=== Backend Upload ===");
+    console.log("Payload chuẩn bị gửi đi (Native Object):", payload);
+
+    return await axiosClient.post(
+      `/api/manager/projects/${projectId}/data`,
+      payload
+    );
   } catch (error) {
-    throw new Error(error.response?.data?.message || "Lỗi nạp dữ liệu vào dự án");
+    const errorData = error.response?.data || {};
+    
+    // ASP.NET Core validation errors thường lồng trong errors
+    let errorMsg = errorData.message || errorData.title || "Lỗi nạp dữ liệu vào dự án";
+    if (errorData.errors) {
+      errorMsg = JSON.stringify(errorData.errors);
+    }
+    
+    console.error("❌ uploadDataToProject Error:", {
+      status: error.response?.status,
+      message: errorMsg,
+      fullResponse: errorData,
+      isString: typeof errorData === 'string'
+    });
+    
+    throw new Error(
+      typeof errorMsg === "string" ? errorMsg : JSON.stringify(errorMsg)
+    );
   }
 };
-
 // =============================================================================
 // NHÓM 3: QUẢN LÝ CÔNG VIỆC (TASKS)
 // =============================================================================
 
 export const getUnassignedItems = async (projectId) => {
   try {
-    return await axiosClient.get(`/api/projects/${projectId}/data-items/unassigned`);
+    return await axiosClient.get(
+      `/api/projects/${projectId}/data-items/unassigned`,
+    );
   } catch (error) {
-    throw new Error(error.response?.data?.message || "Lỗi lấy dữ liệu chưa phân công");
+    throw new Error(
+      error.response?.data?.message || "Lỗi lấy dữ liệu chưa phân công",
+    );
   }
 };
 
@@ -89,13 +155,18 @@ export const getProjectTasks = async (projectId) => {
   try {
     return await axiosClient.get(`/api/projects/${projectId}/tasks`);
   } catch (error) {
-    throw new Error(error.response?.data?.message || "Không thể lấy danh sách Task");
+    throw new Error(
+      error.response?.data?.message || "Không thể lấy danh sách Task",
+    );
   }
 };
 
 export const assignTaskPersonnel = async (taskId, annotatorID, reviewerID) => {
   try {
-    return await axiosClient.patch(`/api/tasks/${taskId}/assign`, { annotatorID, reviewerID });
+    return await axiosClient.patch(`/api/tasks/${taskId}/assign`, {
+      annotatorID,
+      reviewerID,
+    });
   } catch (error) {
     throw new Error(error.response?.data?.message || "Lỗi giao nhân sự");
   }
@@ -103,7 +174,9 @@ export const assignTaskPersonnel = async (taskId, annotatorID, reviewerID) => {
 
 export const updateTaskDeadline = async (taskId, deadline) => {
   try {
-    return await axiosClient.patch(`/api/tasks/${taskId}/deadline`, { deadline });
+    return await axiosClient.patch(`/api/tasks/${taskId}/deadline`, {
+      deadline,
+    });
   } catch (error) {
     throw new Error(error.response?.data?.message || "Lỗi điều chỉnh deadline");
   }
@@ -119,25 +192,54 @@ export const revokeTask = async (taskId) => {
 
 export const splitProjectTasks = async (projectId, payload) => {
   try {
-    return await axiosClient.post(`/api/manager/projects/${projectId}/split-tasks`, payload || {});
+    return await axiosClient.post(
+      `/api/manager/projects/${projectId}/split-tasks`,
+      payload || {},
+    );
   } catch (error) {
     throw new Error(error.response?.data?.message || "Lỗi khi phân lô dữ liệu");
   }
 };
 
+// 👉 1. GIỮ LẠI HÀM CŨ: Để file useQualityScore.js (và các file khác) không bị mồ côi
 export const getAvailableAnnotators = async () => {
   try {
-    return await axiosClient.get('/api/tasks/available-annotators');
+    return await axiosClient.get("/api/tasks/available-annotators");
   } catch (error) {
-    throw new Error(error.response?.data?.message || "Lỗi lấy danh sách Annotator");
+    throw new Error(
+      error.response?.data?.message || "Lỗi lấy danh sách Annotator",
+    );
   }
 };
 
 export const getAvailableReviewers = async () => {
   try {
-    return await axiosClient.get('/api/tasks/available-reviewers');
+    return await axiosClient.get("/api/tasks/available-reviewers");
   } catch (error) {
-    throw new Error(error.response?.data?.message || "Lỗi lấy danh sách Reviewer");
+    throw new Error(
+      error.response?.data?.message || "Lỗi lấy danh sách Reviewer",
+    );
+  }
+};
+
+// 👉 2. THÊM HÀM MỚI: Để riêng cho thằng Task Tracking xài với API Suggestion
+export const getSuggestedAnnotators = async (projectId) => {
+  try {
+    return await axiosClient.get(`/api/Suggestion/annotators/${projectId}`);
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || "Lỗi lấy danh sách gợi ý Annotator",
+    );
+  }
+};
+
+export const getSuggestedReviewers = async (projectId) => {
+  try {
+    return await axiosClient.get(`/api/Suggestion/reviewers/${projectId}`);
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || "Lỗi lấy danh sách gợi ý Reviewer",
+    );
   }
 };
 
@@ -147,9 +249,11 @@ export const getAvailableReviewers = async () => {
 
 export const getUsersList = async () => {
   try {
-    return await axiosClient.get('/api/manager/users');
+    return await axiosClient.get("/api/manager/users");
   } catch (error) {
-    throw new Error(error.response?.data?.message || "Lỗi lấy danh sách người dùng");
+    throw new Error(
+      error.response?.data?.message || "Lỗi lấy danh sách người dùng",
+    );
   }
 };
 
@@ -159,15 +263,17 @@ export const getUsersList = async () => {
 
 export const getLibraryLabels = async () => {
   try {
-    return await axiosClient.get('/api/manager/labels');
+    return await axiosClient.get("/api/manager/labels");
   } catch (error) {
-    throw new Error(error.response?.data?.message || "Lỗi lấy danh sách nhãn mẫu");
+    throw new Error(
+      error.response?.data?.message || "Lỗi lấy danh sách nhãn mẫu",
+    );
   }
 };
 
 export const addLabelToLibrary = async (labelData) => {
   try {
-    return await axiosClient.post('/api/manager/labels', labelData);
+    return await axiosClient.post("/api/manager/labels", labelData);
   } catch (error) {
     throw new Error(error.response?.data?.message || "Lỗi thêm nhãn vào kho");
   }
@@ -177,7 +283,9 @@ export const updateLabelInLibrary = async (id, updateData) => {
   try {
     return await axiosClient.put(`/api/manager/labels/${id}`, updateData);
   } catch (error) {
-    throw new Error(error.response?.data?.message || "Lỗi cập nhật nhãn trong kho");
+    throw new Error(
+      error.response?.data?.message || "Lỗi cập nhật nhãn trong kho",
+    );
   }
 };
 
@@ -192,15 +300,22 @@ export const deleteLabelFromLibrary = async (id) => {
 
 export const getProjectLabels = async (projectId) => {
   try {
-    return await axiosClient.get(`/api/project-labels/api/projects/${projectId}/labels`);
+    return await axiosClient.get(
+      `/api/project-labels/api/projects/${projectId}/labels`,
+    );
   } catch (error) {
-    throw new Error(error.response?.data?.message || "Lỗi lấy danh sách nhãn dự án");
+    throw new Error(
+      error.response?.data?.message || "Lỗi lấy danh sách nhãn dự án",
+    );
   }
 };
 
 export const importLabelsToProject = async (projectId, labelIds) => {
   try {
-    return await axiosClient.post(`/api/project-labels/api/projects/${projectId}/labels/import`, { labelIds });
+    return await axiosClient.post(
+      `/api/project-labels/api/projects/${projectId}/labels/import`,
+      { labelIds },
+    );
   } catch (error) {
     throw new Error(error.response?.data?.message || "Lỗi import nhãn");
   }
@@ -208,7 +323,10 @@ export const importLabelsToProject = async (projectId, labelIds) => {
 
 export const createCustomLabel = async (projectId, labelData) => {
   try {
-    return await axiosClient.post(`/api/project-labels/api/projects/${projectId}/labels/custom`, labelData);
+    return await axiosClient.post(
+      `/api/project-labels/api/projects/${projectId}/labels/custom`,
+      labelData,
+    );
   } catch (error) {
     throw new Error(error.response?.data?.message || "Lỗi tạo nhãn tùy chỉnh");
   }
@@ -216,7 +334,9 @@ export const createCustomLabel = async (projectId, labelData) => {
 
 export const updateProjectLabelName = async (projectLabelId, customName) => {
   try {
-    return await axiosClient.put(`/api/project-labels/${projectLabelId}`, { customName });
+    return await axiosClient.put(`/api/project-labels/${projectLabelId}`, {
+      customName,
+    });
   } catch (error) {
     throw new Error(error.response?.data?.message || "Lỗi cập nhật tên nhãn");
   }
@@ -263,14 +383,55 @@ export const getExportHistories = async (projectId) => {
   try {
     return await axiosClient.get(`/api/projects/${projectId}/export-histories`);
   } catch (error) {
-    throw new Error(error.response?.data?.message || "Lỗi lấy lịch sử xuất dữ liệu");
+    throw new Error(
+      error.response?.data?.message || "Lỗi lấy lịch sử xuất dữ liệu",
+    );
   }
 };
 
 export const getUserReputationLogs = async (userId) => {
   try {
-    return await axiosClient.get(`/api/projects/users/${userId}/reputation-logs`);
+    return await axiosClient.get(
+      `/api/projects/users/${userId}/reputation-logs`,
+    );
   } catch (error) {
     throw new Error(error.response?.data?.message || "Lỗi lấy lịch sử uy tín");
+  }
+};
+
+// =============================================================================
+// NHÓM 7: QUẢN LÝ KHIẾU NẠI (DISPUTES)
+// =============================================================================
+
+// 1. Lấy danh sách khiếu nại của dự án
+export const getProjectDisputes = async (projectId) => {
+  try {
+    return await axiosClient.get(`/api/manager/projects/${projectId}/disputes`);
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || "Lỗi lấy danh sách khiếu nại",
+    );
+  }
+};
+
+// 2. Xem chi tiết 1 khiếu nại
+export const getDisputeDetail = async (disputeId) => {
+  try {
+    return await axiosClient.get(`/api/manager/projects/disputes/${disputeId}`);
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || "Lỗi lấy chi tiết khiếu nại",
+    );
+  }
+};
+
+// 3. Xử lý khiếu nại (Đồng ý/Từ chối...)
+export const updateDisputeAction = async (disputeId, action) => {
+  try {
+    return await axiosClient.patch(
+      `/api/manager/projects/disputes/${disputeId}?action=${action}`,
+    );
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "Lỗi xử lý khiếu nại");
   }
 };

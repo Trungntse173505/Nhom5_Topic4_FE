@@ -42,7 +42,7 @@ const MANAGER_TABS = [
   },
   {
     id: "distribution",
-    label: "Tạo Task",
+    label: "Tạo Nhiệm Vụ",
     icon: (
       <svg
         className="w-4 h-4"
@@ -97,6 +97,25 @@ const MANAGER_TABS = [
       </svg>
     ),
   },
+  {
+    id: "missing_labels",
+    label: "Báo cáo lỗi",
+    icon: (
+      <svg
+        className="w-4 h-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+        <line x1="12" y1="9" x2="12" y2="13"></line>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+    ),
+  },
 ];
 
 export default function ManagerLayout({ activeTab, setActiveTab, children }) {
@@ -147,7 +166,6 @@ export default function ManagerLayout({ activeTab, setActiveTab, children }) {
             <h1 className="text-lg font-semibold tracking-wide text-white">
               Không gian làm việc Dự án {projectId ? `#${projectId}` : ""}
             </h1>
-            <p className="text-sm text-gray-400">test@gmail.com</p>
           </div>
         </div>
       </header>

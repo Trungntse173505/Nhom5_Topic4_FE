@@ -3,73 +3,43 @@ import { useNavigate } from "react-router-dom";
 import { useProjectManagement } from "../../../hooks/Manager/useProjectManagement";
 
 import authApi from "../../../api/authApi";
-import { CardSpotlight } from "../../common/card-spotlight";
 import { AnimatedButton } from "../../common/AnimatedButton";
 import { AuroraBackground } from "../../common/aurora-background";
 
-const ProjectCardItem = React.memo(({ proj, onClick }) => {
-  const totalItems = proj.totalDataItems || 0;
-  const labeledItems = proj.completedItems || 0;
+// -- Dữ liệu giả (Mock data) cho những trường API chưa cung cấp (TODO: Báo Backend) --
+const labelSummary = [
+  { category: "Entity", count: 18, detail: "nhãn cho văn bản" },
+  { category: "Bounding Box", count: 24, detail: "nhãn cho ảnh / video" },
+  { category: "Classification", count: 12, detail: "nhãn cho audio / text" },
+  { category: "Multi-label", count: 9, detail: "nhiều nhãn trên một item" },
+];
 
-  let progressRate = 0;
-  if (proj.rateComplete !== undefined) {
-    progressRate = Math.round(proj.rateComplete);
-  } else if (totalItems > 0) {
-    progressRate = Math.round((labeledItems / totalItems) * 100);
-  }
-  progressRate = Math.min(Math.max(progressRate, 0), 100);
-
-  return (
-    <CardSpotlight
-      onClick={() => onClick(proj.projectID)}
-      className="rounded-xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-6 shadow-sm hover:border-white/10 transition-colors cursor-pointer flex flex-col justify-between"
-    >
-      <div>
-        <div className="flex justify-between items-start mb-4">
-          <h3 className="text-lg font-semibold text-white group-hover/spotlight:text-blue-400 transition-colors line-clamp-1 pr-2">
-            {proj.projectName || "Dự án không tên"}
-          </h3>
-          <span
-            className={`px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${
-              proj.status === "Open" || proj.status === "Active"
-                ? "bg-emerald-500/10 text-emerald-400"
-                : "bg-gray-500/10 text-gray-400"
-            }`}
-          >
-            {proj.status === "Open" || proj.status === "Active"
-              ? "Đang mở"
-              : "Đã đóng"}
-          </span>
-        </div>
-        <div className="text-sm text-gray-400 mb-6">
-          Loại:{" "}
-          <span className="text-gray-200 font-medium">
-            {proj.projectType || "Không xác định"}
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-auto">
-        <div className="flex justify-between text-xs mb-2 text-gray-400 font-medium">
-          <span>Tiến độ</span>
-          <span className={progressRate === 100 ? "text-emerald-400" : ""}>
-            {progressRate}% ({labeledItems}/{totalItems})
-          </span>
-        </div>
-        <div className="w-full bg-[#0B1120] h-1.5 rounded-full overflow-hidden border border-white/5">
-          <div
-            className={`h-full rounded-full transition-all duration-1000 ease-out ${
-              proj.status === "Open" || proj.status === "Active"
-                ? "bg-[#10B981]"
-                : "bg-gray-500"
-            }`}
-            style={{ width: `${progressRate}%` }}
-          ></div>
-        </div>
-      </div>
-    </CardSpotlight>
-  );
-});
+const userRows = [
+  {
+    name: "Nguyễn An",
+    role: "Annotator",
+    active: true,
+    project: "Clinical Notes NER",
+  },
+  {
+    name: "Trần Bình",
+    role: "Annotator",
+    active: true,
+    project: "Road Scene Detection",
+  },
+  {
+    name: "Lê Chi",
+    role: "Reviewer",
+    active: false,
+    project: "Call Center Sentiment",
+  },
+  {
+    name: "Phạm Duy",
+    role: "Reviewer",
+    active: true,
+    project: "Video Event Tagging",
+  },
+];
 
 export default function ProjectManagement() {
   const navigate = useNavigate();
@@ -123,6 +93,7 @@ export default function ProjectManagement() {
 
     fetchUserProfile();
   }, []);
+
   const filteredProjects = useMemo(() => {
     return projects.filter((p) => {
       if (filter === "All") return true;
@@ -134,6 +105,7 @@ export default function ProjectManagement() {
       return p.status === filter;
     });
   }, [projects, filter]);
+
   const handleProjectClick = useCallback(
     (id) => {
       navigate(`/manager/projects/${id}`);
@@ -159,6 +131,50 @@ export default function ProjectManagement() {
       });
     }
   }, [formData, createNewProject]);
+
+  // --- Tính toán thống kê tự động dựa trên mảng `projects` thật ---
+  const stats = useMemo(() => {
+    const total = projects.length;
+    let active = 0,
+      pending = 0,
+      closed = 0;
+
+    projects.forEach((p) => {
+      const s = p.status;
+      if (s === "Active" || s === "Open") active++;
+      else if (s === "Closed" || s === "Completed") closed++;
+      else pending++; // Draft, Submitted, Reviewing...
+    });
+
+    return { total, active, pending, closed };
+  }, [projects]);
+
+  const projectStats = [
+    {
+      label: "Tổng dự án",
+      value: stats.total.toString(),
+      note: "đang theo dõi",
+      tone: "bg-sky-500/10 text-sky-300",
+    },
+    {
+      label: "Đang active",
+      value: stats.active.toString(),
+      note: "đang thực hiện gắn nhãn",
+      tone: "bg-emerald-500/10 text-emerald-300",
+    },
+    {
+      label: "Chờ nộp",
+      value: stats.pending.toString(),
+      note: "đợi annotator hoàn tất",
+      tone: "bg-amber-500/10 text-amber-300",
+    },
+    {
+      label: "Đã đóng",
+      value: stats.closed.toString(),
+      note: "đã bàn giao / kết thúc",
+      tone: "bg-violet-500/10 text-violet-300",
+    },
+  ];
 
   return (
     <AuroraBackground className="font-sans relative w-full !justify-start !items-start !p-0">
@@ -194,12 +210,41 @@ export default function ProjectManagement() {
           </div>
         </header>
 
-        <main className="w-full p-8 max-w-7xl mx-auto space-y-6 flex-1">
-          <div className="flex justify-between items-end mb-8">
+        <main className="w-full p-8 max-w-7xl mx-auto space-y-8 flex-1">
+          {/* THỐNG KÊ (4 CARDS) */}
+          <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            {projectStats.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-2xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-5 shadow-sm hover:border-white/10 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm text-gray-400">{item.label}</p>
+                    <div className="mt-2 text-3xl font-bold text-white">
+                      {item.value}
+                    </div>
+                  </div>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-medium ${item.tone}`}
+                  >
+                    overview
+                  </span>
+                </div>
+                <p className="mt-3 text-sm text-gray-500">{item.note}</p>
+              </div>
+            ))}
+          </section>
+
+          {/* THANH CÔNG CỤ (TITTLE + FILTER + CREATE) */}
+          <div className="flex justify-between items-end mb-4">
             <div>
-              <h1 className="text-2xl font-bold text-white">Quản Lý Dự Án</h1>
+              <h1 className="text-2xl font-bold text-white">
+                Danh sách Project theo trạng thái
+              </h1>
               <p className="text-sm text-gray-400 mt-1">
-                Quản lý tất cả các dự án dán nhãn trong hệ thống
+                Hiển thị project, loại dữ liệu, trạng thái và nhóm user đang xử
+                lý. (Click vào dòng dự án để xem chi tiết)
               </p>
 
               <div className="flex gap-2 mt-4">
@@ -264,15 +309,122 @@ export default function ProjectManagement() {
               Chưa có dự án nào khớp với bộ lọc này.
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {filteredProjects.map((proj) => (
-                <ProjectCardItem
-                  key={proj.projectID || Math.random()}
-                  proj={proj}
-                  onClick={handleProjectClick}
-                />
-              ))}
-            </div>
+            <section className="w-full">
+              {/* DANH SÁCH DỰ ÁN */}
+              <div className="rounded-2xl border border-white/5 bg-[#151D2F]/90 backdrop-blur-sm p-5 shadow-sm overflow-hidden flex flex-col min-w-0 w-full">
+                <div className="overflow-x-auto custom-scrollbar">
+                  <table className="w-full text-left text-sm border-collapse">
+                    <thead>
+                      <tr className="text-gray-500 uppercase tracking-wider text-xs border-b border-white/10">
+                        <th className="pb-3 font-medium min-w-[150px]">
+                          Project
+                        </th>
+                        <th className="pb-3 font-medium px-2">Loại</th>
+                        <th className="pb-3 font-medium px-2">Các Nhãn</th>
+                        <th className="pb-3 font-medium px-2">Tiến độ</th>
+                        <th className="pb-3 font-medium px-2">
+                          Số người thực hiện
+                        </th>
+                        <th className="pb-3 font-medium text-right min-w-[90px]">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredProjects.map((proj) => {
+                        // Tính toán tiến độ thực tế
+                        const totalItems = proj.totalDataItems || 0;
+                        const labeledItems = proj.completedItems || 0;
+                        let progressRate =
+                          proj.rateComplete !== undefined
+                            ? Math.round(proj.rateComplete)
+                            : totalItems > 0
+                              ? Math.round((labeledItems / totalItems) * 100)
+                              : 0;
+                        progressRate = Math.min(Math.max(progressRate, 0), 100);
+
+                        return (
+                          <tr
+                            key={proj.projectID || Math.random()}
+                            className="border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors group"
+                            onClick={() => handleProjectClick(proj.projectID)}
+                          >
+                            <td className="py-4 pr-2">
+                              <div
+                                className="font-medium text-white group-hover:text-blue-400 transition-colors break-words whitespace-normal max-w-[220px]"
+                              >
+                                {proj.projectName}
+                              </div>
+                            </td>
+                            <td className="py-4 text-gray-300 px-2 whitespace-nowrap text-xs sm:text-sm">
+                              {proj.projectType || "TBD"}
+                            </td>
+                            <td
+                              className="py-4 text-gray-300 px-2 whitespace-normal break-words text-xs min-w-[120px]"
+                            >
+                              {proj.labelCategories ||
+                                proj.topic ||
+                                "Chưa có nhãn"}
+                            </td>
+                            <td className="py-4 px-2 min-w-[120px]">
+                              <div className="flex items-center gap-2">
+                                <div className="h-1.5 flex-1 max-w-[80px] rounded-full bg-[#0B1120] overflow-hidden border border-white/5 hidden sm:block">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-1000 ${
+                                      proj.status === "Active" ||
+                                      proj.status === "Open"
+                                        ? "bg-emerald-500"
+                                        : proj.status === "Submitted"
+                                          ? "bg-sky-500"
+                                          : proj.status === "Reviewing"
+                                            ? "bg-amber-400"
+                                            : "bg-violet-500"
+                                    }`}
+                                    style={{ width: `${progressRate}%` }}
+                                  />
+                                </div>
+                                <span
+                                  className={`text-xs whitespace-nowrap ${progressRate === 100 ? "text-emerald-400" : "text-gray-300"}`}
+                                >
+                                  {progressRate}%
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-4 text-gray-400 text-xs px-2 whitespace-nowrap">
+                              {proj.memberCount > 0 ? (
+                                <span className="bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">
+                                  {proj.memberCount} thành viên
+                                </span>
+                              ) : (
+                                "Trống"
+                              )}
+                            </td>
+                            <td className="py-4 text-right pl-2">
+                              <span
+                                className={`inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[11px] font-medium shrink-0 min-w-[75px] ${
+                                  proj.status === "Open" ||
+                                  proj.status === "Active"
+                                    ? "bg-emerald-500/10 text-emerald-400"
+                                    : proj.status === "Submitted"
+                                      ? "bg-sky-500/10 text-sky-400"
+                                      : "bg-gray-500/10 text-gray-400"
+                                }`}
+                              >
+                                {proj.status === "Open" ||
+                                proj.status === "Active"
+                                  ? "Đang mở"
+                                  : proj.status || "Đã đóng"}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </section>
           )}
         </main>
 
@@ -309,11 +461,11 @@ export default function ProjectManagement() {
                     }
                     className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
                   >
-                    <option value="Image">Ảnh (Image)</option>
-                    <option value="Text">Văn bản (Text)</option>
-                    <option value="Audio">Âm thanh (Audio)</option>
+                    <option value="Image">Ảnh</option>
+                    <option value="Text">Văn bản</option>
+                    <option value="Audio">Âm thanh</option>
                     <option value="Video">Video</option>
-                    <option value="Mixed">Hỗn hợp (Mixed)</option>
+                    <option value="Mixed">Hỗn hợp</option>
                   </select>
                 </div>
                 <div>
@@ -331,7 +483,7 @@ export default function ProjectManagement() {
                 </div>
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">
-                    Đường dẫn Hướng dẫn (Tùy chọn)
+                    Hướng dẫn (Tùy chọn)
                   </label>
                   <input
                     type="text"
@@ -340,7 +492,7 @@ export default function ProjectManagement() {
                       setFormData({ ...formData, guideline: e.target.value })
                     }
                     className="w-full bg-[#0B1120] border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
-                    placeholder="Nhập đường dẫn tài liệu..."
+                    placeholder="Nhập hướng dẫn..."
                   />
                 </div>
               </div>

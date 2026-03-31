@@ -8,7 +8,7 @@ import ReviewerVideoCanvas from "./ReviewerVideoCanvas";
 import ReviewerTextViewer from "./ReviewerTextViewer";
 import ReviewerAudioViewer from "./ReviewerAudioViewer";
 
-import { LogOut, Loader2, ArrowLeft } from "lucide-react";
+import { LogOut, Loader2, ArrowLeft, CheckCircle } from "lucide-react";
 import { useTaskDetail } from "../../../../hooks/Reviewer/useTaskDetail";
 import { useReviewerActions } from "../../../../hooks/Reviewer/useReviewActions";
 
@@ -57,6 +57,11 @@ const ReviewerWorkspace = () => {
       </div>
     );
 
+  // 🔥 THÊM ĐOẠN NÀY: KIỂM TRA TRẠNG THÁI TASK ĐỂ KHÓA CHẾ ĐỘ CHỈ XEM
+  const taskStatus = taskDetail?.status;
+  // Các status được xem là Đã hoàn thành (Chỉ xem). Bạn có thể thêm bớt status tùy theo DB của bạn trả về
+  const isReadOnly = ["Approved", "Completed", "Done"].includes(taskStatus);
+
   // Moi mảng Label từ Backend ra
   const labelsList =
     taskDetail?.availableLabels ||
@@ -77,7 +82,8 @@ const ReviewerWorkspace = () => {
     // 👉 ÉP TRUYỀN BẢNG MÀU CHO TẤT CẢ CÁC CANVAS (THÊM DÒNG NÀY)
     const commonProps = {
       currentItem,
-      toggleAnnotationApproval,
+      // 🔥 SỬA CHỖ NÀY: Nếu đang ở chế độ xem thì block luôn hàm click
+      toggleAnnotationApproval: isReadOnly ? () => {} : toggleAnnotationApproval,
       activeBoxId,
       setActiveBoxId,
       availableLabels: labelsList, 
@@ -124,10 +130,18 @@ const ReviewerWorkspace = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="bg-[#0f172a] px-3 py-1.5 rounded-lg border border-slate-800 flex items-center gap-2 text-sm font-medium text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
-            Đang duyệt bài
-          </div>
+          {/* 🔥 SỬA CHỖ NÀY: HIỂN THỊ HEADER TÙY THEO TRẠNG THÁI TASK */}
+          {isReadOnly ? (
+            <div className="bg-emerald-900/30 px-3 py-1.5 rounded-lg border border-emerald-800 flex items-center gap-2 text-sm font-medium text-emerald-400">
+              <CheckCircle size={14} />
+              Đã duyệt (Chỉ xem)
+            </div>
+          ) : (
+            <div className="bg-[#0f172a] px-3 py-1.5 rounded-lg border border-slate-800 flex items-center gap-2 text-sm font-medium text-slate-300">
+              <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+              Đang duyệt bài
+            </div>
+          )}
           <div className="w-px h-6 bg-slate-700 mx-1"></div>
           <button
             onClick={() => navigate("/reviewer")}
@@ -160,6 +174,7 @@ const ReviewerWorkspace = () => {
           isProcessing={isProcessing}
           activeBoxId={activeBoxId}
           setActiveBoxId={setActiveBoxId}
+          isReadOnly={isReadOnly} /* 🔥 THÊM DÒNG NÀY: Truyền cờ isReadOnly xuống SidebarRight */
         />
       </div>
     </div>

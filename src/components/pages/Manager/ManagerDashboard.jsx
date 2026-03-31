@@ -14,6 +14,7 @@ import {
 } from "../../../api/managerApi";
 import { useProjectActions } from "../../../hooks/Manager/useProjectActions";
 import { useProjectStats } from "../../../hooks/Manager/useProjectStats";
+import MissingLabelReports from "./MissingLabelReports";
 
 // Import cái card ảo ma Spotlight
 import { CardSpotlight } from "../../common/card-spotlight";
@@ -98,9 +99,6 @@ const OverviewContent = ({ project, projectId, allUsers }) => {
           <h2 className="text-2xl font-bold text-white">
             {project?.projectName || "Đang tải dữ liệu..."}
           </h2>
-          <p className="text-sm text-gray-400">
-            Chủ đề (Topic): {project?.topic || "N/A"}
-          </p>
         </div>
         <span
           className={`px-3 py-1 rounded-full text-xs font-bold ${
@@ -121,7 +119,7 @@ const OverviewContent = ({ project, projectId, allUsers }) => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <CardSpotlight className="rounded-xl border border-white/5 bg-[#151D2F] p-6 shadow-sm relative overflow-hidden">
           <h3 className="text-gray-400 text-sm font-medium relative z-10 group-hover/spotlight:text-white transition-colors">
-            Tổng số lượng (Items)
+            Tổng số dữ liệu
           </h3>
           <p className="text-4xl font-bold text-white mt-3 relative z-10">
             {totalItems}
@@ -188,16 +186,11 @@ const OverviewContent = ({ project, projectId, allUsers }) => {
           </div>
           <div className="mt-6 p-4 bg-[#0B1120] rounded-lg border border-white/5">
             <p className="text-xs text-gray-500 uppercase font-bold mb-2">
-              Đường dẫn Hướng dẫn (Guideline)
+              Hướng dẫn
             </p>
-            <a
-              href={project?.guidelineUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-blue-400 text-sm hover:underline break-all"
-            >
+            <div className="text-gray-300 text-sm break-all whitespace-pre-wrap">
               {project?.guidelineUrl || "Chưa có tài liệu hướng dẫn"}
-            </a>
+            </div>
           </div>
         </CardSpotlight>
 
@@ -205,7 +198,7 @@ const OverviewContent = ({ project, projectId, allUsers }) => {
           <div className="mb-6 flex justify-between items-center">
             <div>
               <h2 className="text-lg font-semibold text-white group-hover/spotlight:text-blue-400 transition-colors">
-                Hiệu suất Nhân sự (Annotator)
+                Hiệu suất Nhân sự
               </h2>
               <p className="text-xs text-gray-400 mt-1">
                 Thống kê năng suất làm việc cá nhân
@@ -304,6 +297,8 @@ export default function ManagerDashboard() {
         return <TaskTracking />;
       case "labels":
         return <LabelSetEditor />;
+      case "missing_labels":
+        return <MissingLabelReports projectId={projectId} />;
       default:
         return null;
     }
