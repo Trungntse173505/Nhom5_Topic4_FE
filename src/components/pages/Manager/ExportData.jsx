@@ -20,9 +20,6 @@ export default function ExportData() {
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">Xuất Dữ Liệu</h1>
-        <p className="text-sm text-gray-400 mt-1">
-          Tải xuống các chú thích đã phê duyệt với định dạng bạn chọn
-        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -63,11 +60,10 @@ export default function ExportData() {
                     <button
                       key={fmt}
                       onClick={() => setFormat(fmt)}
-                      className={`py-2 px-4 rounded-lg border text-sm font-medium transition-all ${
-                        format === fmt
+                      className={`py-2 px-4 rounded-lg border text-sm font-medium transition-all ${format === fmt
                           ? "border-blue-500 bg-blue-500/10 text-blue-400"
                           : "border-white/10 bg-[#0B1120] text-gray-400 hover:border-white/20"
-                      }`}
+                        }`}
                     >
                       {fmt}
                     </button>
@@ -105,7 +101,7 @@ export default function ExportData() {
                   className={`text-xs ${selectedProjectId ? "text-emerald-500/70" : "text-gray-500"}`}
                 >
                   {selectedProjectId
-                    ? `Các task đã duyệt sẽ được biên dịch thành tớp ${format}.`
+                    ? `Các task đã duyệt sẽ được biên dịch thành tệp ${format}.`
                     : "Vui lòng chọn một dự án để tiếp tục."}
                 </p>
               </div>

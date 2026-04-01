@@ -35,6 +35,14 @@ const AnnotatorWorkspace = () => {
   // 🔥 State quản lý bật/tắt Popup báo thiếu Label
   const [isMissingLabelModalOpen, setIsMissingLabelModalOpen] = useState(false);
 
+  // 🔥 FIX 1: ÉP RESET LABEL VỀ NULL KHI MỚI VÀO HOẶC ĐỔI FILE
+  // Việc này chặn lỗi "chưa chọn vẫn ra label đầu tiên"
+  useEffect(() => {
+    if (activeTaskId || currentFileId) {
+      setSelectedLabel(null);
+    }
+  }, [activeTaskId, currentFileId, setSelectedLabel]);
+
   useEffect(() => {
     if (status === "Rejected" && rejectMode === "none") {
       setRejectMode("prompting");

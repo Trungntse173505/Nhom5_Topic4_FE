@@ -18,6 +18,18 @@ const SidebarRight = ({
     sidebarTitle = `Phân loại ${actualType === "video" ? "Video" : actualType === "text" ? "Văn bản" : "Audio"}`;
   }
 
+  // 🔥 HÀM XỬ LÝ CHỌN NHÃN (CHẶN BUG TỰ TÔ)
+  const handleLabelSelect = (e, name) => {
+    // Chặn không cho click này trigger MouseUp bên TextEditor
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Xóa mọi bôi đen cũ để tránh lỗi "Ghost Selection"
+    window.getSelection()?.removeAllRanges();
+    
+    setSelectedLabel(name);
+  };
+
   return (
     <aside className="w-64 border-l border-slate-800 bg-[#0f172a] p-4 flex flex-col shrink-0 text-left h-full shadow-2xl relative z-10">
       <h3 className="text-sm font-semibold text-slate-400 mb-4 uppercase tracking-wider flex items-center gap-2">

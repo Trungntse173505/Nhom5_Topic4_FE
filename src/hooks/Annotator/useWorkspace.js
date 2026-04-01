@@ -19,7 +19,7 @@ export const useWorkspace = (taskId) => {
 
   useEffect(() => {
     if (!currentFileId && taskItems[0]) setCurrentFileId(taskItems[0].itemID);
-    if (!selectedLabel && availableLabels[0]) setSelectedLabel(availableLabels[0].name);
+    // if (!selectedLabel && availableLabels[0]) setSelectedLabel(availableLabels[0].name);
   }, [taskItems, availableLabels, currentFileId, selectedLabel]);
 
   const refreshCurrentItemData = useCallback(async (id) => {
