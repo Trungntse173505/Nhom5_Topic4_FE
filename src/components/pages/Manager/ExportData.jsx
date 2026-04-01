@@ -59,15 +59,14 @@ export default function ExportData() {
                   Định Dạng Xuất
                 </label>
                 <div className="grid grid-cols-2 gap-3">
-                  {["YOLO", "COCO", "VOC", "JSON", "CSV"].map((fmt) => (
+                  {["YOLO", "COCO"].map((fmt) => (
                     <button
                       key={fmt}
                       onClick={() => setFormat(fmt)}
-                      className={`py-2 px-4 rounded-lg border text-sm font-medium transition-all ${
-                        format === fmt
+                      className={`py-2 px-4 rounded-lg border text-sm font-medium transition-all ${format === fmt
                           ? "border-blue-500 bg-blue-500/10 text-blue-400"
                           : "border-white/10 bg-[#0B1120] text-gray-400 hover:border-white/20"
-                      }`}
+                        }`}
                     >
                       {fmt}
                     </button>
@@ -105,7 +104,7 @@ export default function ExportData() {
                   className={`text-xs ${selectedProjectId ? "text-emerald-500/70" : "text-gray-500"}`}
                 >
                   {selectedProjectId
-                    ? `Các task đã duyệt sẽ được biên dịch thành tớp ${format}.`
+                    ? `Các task đã duyệt sẽ được biên dịch thành tệp ${format}.`
                     : "Vui lòng chọn một dự án để tiếp tục."}
                 </p>
               </div>
