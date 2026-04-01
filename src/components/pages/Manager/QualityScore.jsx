@@ -15,7 +15,7 @@ const formatExperience = (user) => {
   const rawExperience =
     user.experience ?? user.expertise ?? user.level ?? user.seniority ?? "";
   const normalized = String(rawExperience).trim();
-  if (!normalized) return "Cơ bản";
+  if (!normalized) return "Basic";
 
   const lowered = normalized.toLowerCase();
   if (
@@ -23,7 +23,15 @@ const formatExperience = (user) => {
       lowered,
     )
   ) {
-    return "Cơ bản";
+    return "Basic";
+  }
+
+  if (lowered === "all" || lowered === "mixed") {
+    return "Mixed";
+  }
+
+  if (lowered === "basic") {
+    return "Basic";
   }
 
   return normalized;

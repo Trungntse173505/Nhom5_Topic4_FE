@@ -14,13 +14,13 @@ const roleFilterOptions = [
 ];
 
 const experienceFilterOptions = [
-  { value: "any", label: "Tất cả kinh nghiệm" },
-  { value: "basic", label: "Cơ bản" },
-  { value: "all", label: "all" },
-  { value: "video", label: "video" },
-  { value: "text", label: "text" },
-  { value: "audio", label: "audio" },
-  { value: "image", label: "image" },
+  { value: "any", label: "All experience" },
+  { value: "basic", label: "Basic" },
+  { value: "mixed", label: "Mixed" },
+  { value: "video", label: "Video" },
+  { value: "text", label: "Text" },
+  { value: "audio", label: "Audio" },
+  { value: "image", label: "Image" },
 ];
 
 const scoreSortOptions = [
@@ -37,7 +37,11 @@ const normalizeExperience = (user) => {
     return "basic";
   }
 
-  if (["all", "video", "text", "audio", "image"].includes(raw)) {
+  if (raw === "all" || raw === "mixed") {
+    return "mixed";
+  }
+
+  if (["video", "text", "audio", "image"].includes(raw)) {
     return raw;
   }
 
