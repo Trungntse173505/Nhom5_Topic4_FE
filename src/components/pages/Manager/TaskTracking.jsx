@@ -337,7 +337,7 @@ export default function TaskTracking({ project, setActiveTab }) {
                     : "Chuyển giao lại Task"}
                 </h3>
                 <p className="text-sm text-gray-400 mt-1">
-                  Chọn người dán nhãn (bắt buộc) và người kiểm duyệt (tùy chọn)
+                  Chọn người dán nhãn và người kiểm duyệt
                   từ danh sách gợi ý.
                 </p>
               </div>
@@ -412,7 +412,7 @@ export default function TaskTracking({ project, setActiveTab }) {
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-lg">👁️</span>
                   <h4 className="text-base font-semibold text-white">
-                    Gợi ý Reviewer (Tùy chọn)
+                    Gợi ý Reviewer
                   </h4>
                 </div>
                 <div className="space-y-3">
@@ -422,9 +422,6 @@ export default function TaskTracking({ project, setActiveTab }) {
                     }
                     className={`p-4 rounded-xl border cursor-pointer transition-all ${reassignModal.reviewerId === "" ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-400" : "bg-[#0B1120] border-white/5 hover:border-white/20 text-gray-400"}`}
                   >
-                    <div className="font-medium text-sm">
-                      -- Không cần kiểm duyệt --
-                    </div>
                   </div>
                   {reviewers.map((u) => {
                     const uid = u.userID || u.userId || u.id; // Dự phòng key

@@ -17,34 +17,28 @@ const HighlightedText = memo(({
     const safeStart = Math.max(lastIndex, hl.start);
 
     if (safeStart > lastIndex) {
-      elements.push(
-        <span key={`t-${i}`}>
-          {originalText.slice(lastIndex, safeStart)}
-        </span>
-      );
+      elements.push(<span key={`t-${i}`}>{originalText.slice(lastIndex, safeStart)}</span>);
     }
 
     const labelDef = availableLabels.find(
       (l) => l.name?.trim().toLowerCase() === String(hl.label || "").trim().toLowerCase()
     );
 
-    const labelColor = labelDef?.color || "#94a3b8"; // Vẫn giữ màu của Label
+    const labelColor = labelDef?.color || "#94a3b8"; 
     const isSelected = selectedMenuId === hl.id;
 
-    // 🔥 CHỈ THÊM DẤU CHECK/X
-    let statusIcon = "";
+    let statusIcon = null;
     if (hl.isApproved === "True") {
-      statusIcon = " ✓";
+      statusIcon = <span style={{ userSelect: 'none', pointerEvents: 'none' }} className="ml-1 opacity-80">✓</span>;
     } else if (hl.isApproved === "False") {
-      statusIcon = " ✗";
+      statusIcon = <span style={{ userSelect: 'none', pointerEvents: 'none' }} className="ml-1 opacity-70">✗</span>;
     }
 
     elements.push(
       <span
         key={hl.id || `hl-${i}`}
         onClick={(e) => onHighlightClick(e, hl)}
-        title={`Nhãn: ${getLabelDisplay(hl.label || "")} - Click để sửa/xóa`}
-        className="px-1 py-0.5 rounded mx-0.5 font-medium cursor-pointer hover:brightness-125 transition-all"
+        className="hl-span px-1 py-0.5 rounded mx-0.5 font-medium cursor-pointer hover:brightness-125 transition-all inline"
         style={{
           backgroundColor: `${labelColor}40`,
           border: isSelected ? `2px dashed #ffffff` : `1px solid ${labelColor}`,
@@ -52,7 +46,8 @@ const HighlightedText = memo(({
           boxShadow: isSelected ? `0 0 10px ${labelColor}` : "none",
         }}
       >
-        {originalText.slice(safeStart, hl.end)}{statusIcon}
+        {originalText.slice(safeStart, hl.end)}
+        {statusIcon}
       </span>
     );
     lastIndex = Math.max(lastIndex, hl.end);

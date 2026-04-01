@@ -20,9 +20,6 @@ export default function ExportData() {
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">Xuất Dữ Liệu</h1>
-        <p className="text-sm text-gray-400 mt-1">
-          Tải xuống các chú thích đã phê duyệt với định dạng bạn chọn
-        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
