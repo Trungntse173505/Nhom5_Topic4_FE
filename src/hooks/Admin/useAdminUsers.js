@@ -237,12 +237,20 @@ export const useAdminUsers = () => {
       const normalizedEmail = String(formData?.email || '').trim();
       const normalizedFullName = String(formData?.name || '').trim();
 
+      const expertiseRaw = String(formData?.expertise ?? '').trim().toLowerCase();
+      const expertise =
+        expertiseRaw === 'mixed'
+          ? 'mixed'
+          : ['', 'basic', 'null', 'undefined'].includes(expertiseRaw)
+            ? null
+            : formData?.expertise;
+
       const payload = {
         username: normalizedUsername,
         password: formData?.password,
         fullName: normalizedFullName,
         email: normalizedEmail,
-        expertise: formData?.expertise || 'N/A',
+        expertise,
         role: roleId,
         redirectUrl: buildFirstLoginRedirectUrl(),
       };

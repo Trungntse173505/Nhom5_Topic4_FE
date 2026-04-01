@@ -4,6 +4,21 @@ import { useTaskTracking } from "../../../hooks/Manager/useTaskTracking";
 import { useLabelManagement } from "../../../hooks/Manager/useLabelManagement";
 import { CardSpotlight } from "../../common/card-spotlight";
 
+const formatExpertise = (value) => {
+  const normalized = String(value ?? "").trim();
+  if (!normalized) return "Basic";
+
+  const lowered = normalized.toLowerCase();
+  if (["n/a", "na", "null", "undefined", "basic", "cơ bản"].includes(lowered)) {
+    return "Basic";
+  }
+  if (lowered === "all" || lowered === "mixed") {
+    return "Mixed";
+  }
+
+  return normalized;
+};
+
 const TaskRowItem = React.memo(
   ({ task, annotators, reviewers, onExtend, onAssign, isActionLoading }) => {
     const targetId = task.taskID || task.taskId || task.id;
@@ -376,7 +391,7 @@ export default function TaskTracking({ project, setActiveTab }) {
                                   "Người dùng chưa tên"}
                               </div>
                               <div className="text-xs text-gray-500 mt-1">
-                                Chuyên môn: {u.expertise || "Cơ bản"}
+                                Chuyên môn: {formatExpertise(u.expertise)}
                               </div>
                             </div>
                             {u.score && (
@@ -436,7 +451,7 @@ export default function TaskTracking({ project, setActiveTab }) {
                                 "Unknown User"}
                             </div>
                             <div className="text-xs text-gray-500 mt-1">
-                              Chuyên môn: {u.expertise || "Cơ bản"}
+                              Chuyên môn: {formatExpertise(u.expertise)}
                             </div>
                           </div>
                           {u.score && (
