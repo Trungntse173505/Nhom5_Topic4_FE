@@ -332,7 +332,7 @@ export default function ProjectManagement() {
                     </thead>
                     <tbody>
                       {filteredProjects.map((proj) => {
-                        // Tính toán tiến độ thực tế
+                        // Tính toán tiến độ thực tế thiệtt dựa trên số lượng item đã gắn nhãn và tổng số item, nếu API chưa cung cấp `rateComplete` chính xác
                         const totalItems = proj.totalDataItems || 0;
                         const labeledItems = proj.completedItems || 0;
                         let progressRate =
@@ -350,18 +350,14 @@ export default function ProjectManagement() {
                             onClick={() => handleProjectClick(proj.projectID)}
                           >
                             <td className="py-4 pr-2">
-                              <div
-                                className="font-medium text-white group-hover:text-blue-400 transition-colors break-words whitespace-normal max-w-[220px]"
-                              >
+                              <div className="font-medium text-white group-hover:text-blue-400 transition-colors break-words whitespace-normal max-w-[220px]">
                                 {proj.projectName}
                               </div>
                             </td>
                             <td className="py-4 text-gray-300 px-2 whitespace-nowrap text-xs sm:text-sm">
                               {proj.projectType || "TBD"}
                             </td>
-                            <td
-                              className="py-4 text-gray-300 px-2 whitespace-normal break-words text-xs min-w-[120px]"
-                            >
+                            <td className="py-4 text-gray-300 px-2 whitespace-normal break-words text-xs min-w-[120px]">
                               {proj.labelCategories ||
                                 proj.topic ||
                                 "Chưa có nhãn"}
@@ -423,7 +419,6 @@ export default function ProjectManagement() {
                   </table>
                 </div>
               </div>
-
             </section>
           )}
         </main>
