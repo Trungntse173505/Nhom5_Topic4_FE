@@ -75,7 +75,7 @@ export const useExportData = () => {
     },
     COCO: {
       label: "COCO",
-      filename: (projectId) => `project-${projectId}-coco.zip`,
+      filename: (projectId) => `project-${projectId}-coco.json`,
       request: exportCocoProjectData,
     },
   };
